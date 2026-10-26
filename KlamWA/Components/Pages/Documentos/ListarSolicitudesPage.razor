@@ -1,0 +1,90 @@
+@page "/solicitudes"
+@inject NavigationManager Nav;
+
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<PageTitle>Solicitudes de cirugía</PageTitle>
+
+<div class="d-flex justify-content-between mb-3">
+    <h3 class="mb-3">Solicitudes de cirugía</h3>
+    <button tabindex="3" class="btn btn-success" @onclick="() => RegistrarSolicitud()">
+        Registrar solicitud
+    </button>
+
+</div>
+
+<div class="row mb-3">
+    <div class="col">
+        <label class="form-label">Buscar</label>
+        <input tabindex="1" class="form-control" placeholder="Código, paciente o cliente..." @bind="Filtro" />
+    </div>
+    <div class="col">
+        <label class="form-label">Estado</label>
+        <select tabindex="2" class="form-select" @bind="FiltroEstado">
+            <option value="">Todas las solicitudes</option>
+            @foreach (string estado in Estados) {
+                <option value="@estado">@estado</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (!Solicitudes.Any()) {
+    <div class="alert alert-info">No hay solicitudes registradas.</div>
+}
+else {
+    <QuickGrid Items="Solicitudes" Pagination="Paginacion" Class="table table-striped table-hover">
+        <PropertyColumn Title="Solicitud" Property="s => s.Codigo" Sortable="true" />
+        <PropertyColumn Title="Cliente / Paciente" Property="@(s => s.Cliente + " · " + s.Paciente)" Sortable="true" />
+        <PropertyColumn Title="Procedimiento" Property="s => s.Procedimiento" Sortable="true" />
+        <PropertyColumn Title="Fecha solicitada" Property="s => s.FechaSolicitada" Format="dd/MM/yyyy HH:mm"
+                        Sortable="true" />
+        <PropertyColumn Title="Estado" Property="s => s.Estado" Sortable="true" />
+        <TemplateColumn Title="Acciones">
+            <button class="btn btn-primary btn-sm" @onclick="() => RevisarSolicitud(context.Id)">
+                Revisar
+            </button>
+            <button class="btn btn-outline-primary btn-sm" @onclick="() => VerHistorial(context.Id)">
+                Historial
+            </button>
+        </TemplateColumn>
+    </QuickGrid>
+    <Paginator State="Paginacion"></Paginator>
+}
+
+@code {
+    private IQueryable<SolicitudViewModel> Solicitudes { get; set; } = Enumerable.Empty<SolicitudViewModel>().AsQueryable();
+    private string Filtro { get; set; } = string.Empty;
+    private string FiltroEstado { get; set; } = string.Empty;
+    private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
+
+    private string[] Estados { get; } = [
+        "Por revisar",
+        "Documentación incompleta",
+        "Rechazada · Resubida habilitada",
+        "Aprobada"
+    ];
+
+    protected override void OnInitialized() {
+        Solicitudes = new List<SolicitudViewModel> {
+            new SolicitudViewModel { Id = 41, Cliente = "Particular", Paciente = "P-041", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 27, 8, 0, 0), Estado = "Por revisar" },
+            new SolicitudViewModel { Id = 40, Cliente = "Clínica San Felipe", Paciente = "P-026", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 26, 8, 0, 0), Estado = "Documentación incompleta" },
+            new SolicitudViewModel { Id = 39, Cliente = "Clínica Anglo Americana", Paciente = "P-028", Procedimiento = "Columna L4-L5", FechaSolicitada = new DateTime(2026, 10, 26, 13, 0, 0), Estado = "Rechazada · Resubida habilitada" },
+            new SolicitudViewModel { Id = 38, Cliente = "Hospital Almenara", Paciente = "P-027", Procedimiento = "Neuronavegación", FechaSolicitada = new DateTime(2026, 10, 26, 9, 0, 0), Estado = "Aprobada" },
+            new SolicitudViewModel { Id = 37, Cliente = "Hospital Sabogal", Paciente = "P-025", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 25, 10, 0, 0), Estado = "Aprobada" },
+            new SolicitudViewModel { Id = 36, Cliente = "Particular", Paciente = "P-024", Procedimiento = "Columna L5-S1", FechaSolicitada = new DateTime(2026, 10, 24, 11, 0, 0), Estado = "Aprobada" }
+        }.AsQueryable();
+    }
+
+    private void RegistrarSolicitud() {
+        Nav.NavigateTo("/solicitudes/nueva");
+    }
+
+    private void RevisarSolicitud(int id) {
+        Nav.NavigateTo($"/solicitudes/revision/{id}");
+    }
+
+    private void VerHistorial(int id) {
+        Nav.NavigateTo($"/historial-documental?solicitud={id}");
+    }
+}

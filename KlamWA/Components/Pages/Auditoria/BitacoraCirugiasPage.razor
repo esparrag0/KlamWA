@@ -1,0 +1,92 @@
+@page "/bitacora-cirugias"
+@inject NavigationManager Nav;
+
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<PageTitle>Bitácora de cirugías</PageTitle>
+
+<h3 class="mb-3">Bitácora de cirugías</h3>
+<p class="text-muted">Trazabilidad de creaciones, modificaciones y cancelaciones</p>
+
+<div class="row mb-3">
+    <div class="col">
+        <label class="form-label">Desde</label>
+        <input tabindex="1" type="date" class="form-control" @bind="Desde" />
+    </div>
+    <div class="col">
+        <label class="form-label">Hasta</label>
+        <input tabindex="2" type="date" class="form-control" @bind="Hasta" />
+    </div>
+    <div class="col">
+        <label class="form-label">Responsable</label>
+        <select tabindex="3" class="form-select" @bind="FiltroResponsable">
+            <option value="">Todos</option>
+            @foreach (string responsable in Responsables) {
+                <option value="@responsable">@responsable</option>
+            }
+        </select>
+    </div>
+    <div class="col">
+        <label class="form-label">Acción</label>
+        <select tabindex="4" class="form-select" @bind="FiltroAccion">
+            <option value="">Todas</option>
+            @foreach (string accion in Acciones) {
+                <option value="@accion">@accion</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (!Registros.Any()) {
+    <div class="alert alert-info">No hay cambios registrados en la bitácora.</div>
+}
+else {
+    <QuickGrid Items="Registros" Pagination="Paginacion" Class="table table-striped table-hover">
+        <PropertyColumn Title="Fecha y hora" Property="r => r.FechaHora" Format="dd/MM/yyyy HH:mm"
+                        Sortable="true" />
+        <PropertyColumn Title="Cirugía" Property="r => r.Cirugia" Sortable="true" />
+        <PropertyColumn Title="Acción" Property="r => r.Accion" Sortable="true" />
+        <PropertyColumn Title="Responsable" Property="r => r.Responsable" Sortable="true" />
+        <PropertyColumn Title="Detalle" Property="r => r.Detalle" />
+        <TemplateColumn Title="Acciones">
+            <button class="btn btn-primary btn-sm" @onclick="() => VerCambios(context.Id)">
+                Ver cambios
+            </button>
+        </TemplateColumn>
+    </QuickGrid>
+    <Paginator State="Paginacion"></Paginator>
+}
+
+@code {
+    private IQueryable<RegistroBitacoraViewModel> Registros { get; set; } = Enumerable.Empty<RegistroBitacoraViewModel>().AsQueryable();
+    private DateTime Desde { get; set; } = new DateTime(2026, 10, 1);
+    private DateTime Hasta { get; set; } = new DateTime(2026, 10, 31);
+    private string FiltroResponsable { get; set; } = string.Empty;
+    private string FiltroAccion { get; set; } = string.Empty;
+    private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
+
+    private string[] Responsables { get; } = [
+        "Patricia Torres",
+        "Andrea Salas"
+    ];
+
+    private string[] Acciones { get; } = [
+        "Creación",
+        "Modificación",
+        "Cancelación"
+    ];
+
+    protected override void OnInitialized() {
+        Registros = new List<RegistroBitacoraViewModel> {
+            new RegistroBitacoraViewModel { Id = 1, FechaHora = new DateTime(2026, 10, 25, 9, 20, 0), Cirugia = "CIR-026", Accion = "Creación", Responsable = "Patricia Torres", Detalle = "Alta de programación" },
+            new RegistroBitacoraViewModel { Id = 2, FechaHora = new DateTime(2026, 10, 25, 10, 10, 0), Cirugia = "CIR-026", Accion = "Modificación", Responsable = "Patricia Torres", Detalle = "Horario y equipo modificados" },
+            new RegistroBitacoraViewModel { Id = 3, FechaHora = new DateTime(2026, 10, 25, 11, 40, 0), Cirugia = "CIR-031", Accion = "Cancelación", Responsable = "Patricia Torres", Detalle = "Motivo registrado" },
+            new RegistroBitacoraViewModel { Id = 4, FechaHora = new DateTime(2026, 10, 26, 8, 5, 0), Cirugia = "CIR-027", Accion = "Creación", Responsable = "Andrea Salas", Detalle = "Alta de programación" },
+            new RegistroBitacoraViewModel { Id = 5, FechaHora = new DateTime(2026, 10, 26, 9, 15, 0), Cirugia = "CIR-028", Accion = "Modificación", Responsable = "Andrea Salas", Detalle = "Bandeja modificada" }
+        }.AsQueryable();
+    }
+
+    private void VerCambios(int id) {
+        Nav.NavigateTo($"/bitacora-cirugias/detalle/{id}");
+    }
+}
