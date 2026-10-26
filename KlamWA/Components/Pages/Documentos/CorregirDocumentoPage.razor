@@ -1,0 +1,58 @@
+@page "/mis-solicitudes/corregir/{Id:int}"
+@inject NavigationManager Nav;
+
+<PageTitle>Corregir documento</PageTitle>
+
+<h3 class="mb-3">Corregir documento</h3>
+<p class="text-muted">SOL-@Id.ToString("000") · Revisión observada por administración</p>
+
+<div class="alert alert-warning">
+    <div class="fw-bold">@DocumentoObservado rechazada</div>
+    @Motivo Adjunta una copia legible.
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Nueva versión del documento</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">@DocumentoObservado corregida</label>
+                    <input class="form-control" value="@Archivo" disabled />
+                    <div class="form-text">PDF · 1.2 MB · Adjunto</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button tabindex="1" type="button" class="btn btn-outline-primary">
+                        Seleccionar otro archivo
+                    </button>
+                    <button tabindex="2" class="btn btn-primary" @onclick="() => EnviarDocumento()">
+                        Enviar documento corregido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Seguimiento</div>
+            <div class="card-body">
+                <p class="mb-0">Versión anterior: Rechazada</p>
+                <p>Nueva versión: Por revisar</p>
+                <p class="small text-muted">La solicitud volverá a revisión tras el envío.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private string DocumentoObservado { get; set; } = "Receta médica";
+    private string Motivo { get; set; } = "No se distingue la medida del consumible prescrito.";
+    private string Archivo { get; set; } = "receta_corregida.pdf";
+
+    private void EnviarDocumento() {
+        Nav.NavigateTo("/mis-solicitudes");
+    }
+}

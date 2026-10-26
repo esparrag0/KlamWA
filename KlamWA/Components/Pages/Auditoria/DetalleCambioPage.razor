@@ -1,0 +1,79 @@
+@page "/bitacora-cirugias/detalle/{Id:int}"
+@inject NavigationManager Nav;
+
+<PageTitle>Bitácora de cirugías</PageTitle>
+
+<h3 class="mb-3">Detalle del cambio</h3>
+<p class="text-muted">
+    @Registro.Cirugia · @Registro.Accion del @Registro.FechaHora.ToString("dd/MM/yyyy") a las @Registro.FechaHora.ToString("HH:mm")
+</p>
+
+<div class="alert alert-success">
+    <div class="fw-bold">Responsable: @Registro.Responsable</div>
+    Acción: @Registro.Accion de cirugía · Registro de auditoría
+</div>
+
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>Campo modificado</th>
+            <th>Valor anterior</th>
+            <th>Valor posterior</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (CambioCampoViewModel cambio in Cambios) {
+            <tr>
+                <td>@cambio.Campo</td>
+                <td>@cambio.ValorAnterior</td>
+                <td>@cambio.ValorPosterior</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a tabindex="1" class="btn btn-outline-secondary" href="bitacora-cirugias">Volver a bitácora</a>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private RegistroBitacoraViewModel Registro { get; set; } = new();
+    private List<CambioCampoViewModel> Cambios { get; set; } = [];
+
+    private List<RegistroBitacoraViewModel> Registros { get; } = [
+        new RegistroBitacoraViewModel { Id = 1, FechaHora = new DateTime(2026, 10, 25, 9, 20, 0), Cirugia = "CIR-026", Accion = "Creación", Responsable = "Patricia Torres", Detalle = "Alta de programación" },
+        new RegistroBitacoraViewModel { Id = 2, FechaHora = new DateTime(2026, 10, 25, 10, 10, 0), Cirugia = "CIR-026", Accion = "Modificación", Responsable = "Patricia Torres", Detalle = "Horario y equipo modificados" },
+        new RegistroBitacoraViewModel { Id = 3, FechaHora = new DateTime(2026, 10, 25, 11, 40, 0), Cirugia = "CIR-031", Accion = "Cancelación", Responsable = "Patricia Torres", Detalle = "Motivo registrado" },
+        new RegistroBitacoraViewModel { Id = 4, FechaHora = new DateTime(2026, 10, 26, 8, 5, 0), Cirugia = "CIR-027", Accion = "Creación", Responsable = "Andrea Salas", Detalle = "Alta de programación" },
+        new RegistroBitacoraViewModel { Id = 5, FechaHora = new DateTime(2026, 10, 26, 9, 15, 0), Cirugia = "CIR-028", Accion = "Modificación", Responsable = "Andrea Salas", Detalle = "Bandeja modificada" }
+    ];
+
+    protected override void OnParametersSet() {
+        RegistroBitacoraViewModel? registro = Registros.Find(r => r.Id == Id);
+        if (registro == null) {
+            Nav.NavigateTo("/bitacora-cirugias");
+            return;
+        }
+        Registro = registro;
+
+        if (Registro.Accion == "Creación") {
+            Cambios = [
+                new CambioCampoViewModel { Campo = "Estado", ValorAnterior = "—", ValorPosterior = "Programada" },
+                new CambioCampoViewModel { Campo = "Hora de inicio", ValorAnterior = "—", ValorPosterior = "08:00" },
+                new CambioCampoViewModel { Campo = "Equipo", ValorAnterior = "—", ValorPosterior = "CR-02" }
+            ];
+        } else if (Registro.Accion == "Cancelación") {
+            Cambios = [
+                new CambioCampoViewModel { Campo = "Estado", ValorAnterior = "Programada", ValorPosterior = "Cancelada" },
+                new CambioCampoViewModel { Campo = "Motivo de cancelación", ValorAnterior = "—", ValorPosterior = "Reprogramación solicitada por la clínica" }
+            ];
+        } else {
+            Cambios = [
+                new CambioCampoViewModel { Campo = "Hora de inicio", ValorAnterior = "08:00", ValorPosterior = "08:30" },
+                new CambioCampoViewModel { Campo = "Hora de fin", ValorAnterior = "10:00", ValorPosterior = "10:30" },
+                new CambioCampoViewModel { Campo = "Equipo", ValorAnterior = "CR-02", ValorPosterior = "CR-03" }
+            ];
+        }
+    }
+}

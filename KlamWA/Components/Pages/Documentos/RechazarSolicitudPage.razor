@@ -1,0 +1,64 @@
+@page "/solicitudes/rechazo/{Id:int}"
+@inject NavigationManager Nav;
+
+<PageTitle>Solicitudes de cirugía</PageTitle>
+
+<h3 class="mb-3">Rechazar o solicitar corrección</h3>
+<p class="text-muted">SOL-@Id.ToString("000") · Comunica el motivo al solicitante</p>
+
+<EditForm Model="ViewModel" OnValidSubmit="ConfirmarRechazo">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Documento observado</label>
+        <InputSelect tabindex="1" class="form-select" @bind-Value="ViewModel.DocumentoObservado">
+            @foreach (string documento in Documentos) {
+                <option value="@documento">@documento</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Motivo / Mensaje para el solicitante</label>
+        <InputText tabindex="2" class="form-control" @bind-Value="ViewModel.Motivo" />
+        <ValidationMessage For="() => ViewModel.Motivo" />
+    </div>
+    <div class="form-check mb-3">
+        <InputCheckbox tabindex="3" class="form-check-input" @bind-Value="ViewModel.HabilitarResubida" />
+        <label class="form-check-label">Habilitar nueva carga del documento</label>
+    </div>
+
+    @if (ViewModel.HabilitarResubida) {
+        <div class="alert alert-warning">
+            <div class="fw-bold">El solicitante podrá corregir el archivo</div>
+            El mensaje aparecerá junto al documento rechazado.
+        </div>
+    }
+
+    <button tabindex="4" type="submit" class="btn btn-primary">
+        @(ViewModel.HabilitarResubida ? "Confirmar rechazo y habilitar resubida" : "Confirmar rechazo")
+    </button>
+    <a tabindex="5" class="btn btn-outline-secondary" href="solicitudes/revision/@Id">Cancelar</a>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private RechazoViewModel ViewModel { get; set; } = new();
+
+    private string[] Documentos { get; } = [
+        "Receta médica",
+        "DNI del paciente",
+        "Orden de compra",
+        "Comprobante bancario"
+    ];
+
+    protected override void OnParametersSet() {
+        ViewModel = new RechazoViewModel { DocumentoObservado = Documentos[0] };
+    }
+
+    private void ConfirmarRechazo() {
+        Nav.NavigateTo("/solicitudes");
+    }
+}

@@ -1,0 +1,63 @@
+@page "/historial-documental"
+
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<PageTitle>Historial documental</PageTitle>
+
+<h3 class="mb-3">Historial documental</h3>
+<p class="text-muted">Ciclo de documentos por operación</p>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <label class="text-nowrap">Operación:</label>
+    <select tabindex="1" class="form-select" @bind="IdOperacion">
+        @foreach (SolicitudViewModel operacion in Operaciones) {
+            <option value="@operacion.Id">@operacion.Codigo · @operacion.Cliente</option>
+        }
+    </select>
+    <button tabindex="2" class="btn btn-primary">Consultar</button>
+</div>
+
+@if (!Registros.Any()) {
+    <div class="alert alert-info">No hay documentos registrados para la operación.</div>
+}
+else {
+    <QuickGrid Items="Registros" Pagination="Paginacion" Class="table table-striped table-hover">
+        <PropertyColumn Title="Fecha y hora" Property="r => r.FechaHora" Format="dd/MM/yyyy HH:mm"
+                        Sortable="true" />
+        <PropertyColumn Title="Documento" Property="r => r.Documento" Sortable="true" />
+        <PropertyColumn Title="Responsable" Property="r => r.Responsable" Sortable="true" />
+        <PropertyColumn Title="Estado" Property="r => r.Estado" />
+        <PropertyColumn Title="Referencia" Property="r => r.Referencia" />
+    </QuickGrid>
+    <Paginator State="Paginacion"></Paginator>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "solicitud")]
+    public int? IdSolicitud { get; set; }
+
+    private IQueryable<RegistroHistorialViewModel> Registros { get; set; } = Enumerable.Empty<RegistroHistorialViewModel>().AsQueryable();
+    private List<SolicitudViewModel> Operaciones { get; set; } = [];
+    private int IdOperacion { get; set; }
+    private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
+
+    protected override void OnInitialized() {
+        Operaciones = [
+            new SolicitudViewModel { Id = 41, Cliente = "Particular" },
+            new SolicitudViewModel { Id = 40, Cliente = "Clínica San Felipe" },
+            new SolicitudViewModel { Id = 39, Cliente = "Clínica Anglo Americana" },
+            new SolicitudViewModel { Id = 38, Cliente = "Hospital Almenara" },
+            new SolicitudViewModel { Id = 37, Cliente = "Hospital Sabogal" },
+            new SolicitudViewModel { Id = 36, Cliente = "Particular" }
+        ];
+        IdOperacion = IdSolicitud ?? 40;
+
+        Registros = new List<RegistroHistorialViewModel> {
+            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 8, 12, 0), Documento = "Solicitud", Responsable = "Clínica San Felipe", Estado = "Recibida", Referencia = "SOL-040" },
+            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 8, 30, 0), Documento = "Cotización", Responsable = "Patricia Torres", Estado = "Emitida", Referencia = "COT-040" },
+            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 9, 10, 0), Documento = "Receta médica", Responsable = "Andrea Salas", Estado = "Válida", Referencia = "REC-040" },
+            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 9, 30, 0), Documento = "Orden de venta", Responsable = "Patricia Torres", Estado = "Registrada", Referencia = "OV-040" },
+            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 26, 10, 45, 0), Documento = "Orden de compra", Responsable = "Clínica San Felipe", Estado = "Recibida", Referencia = "OC-040" }
+        }.AsQueryable();
+    }
+}
