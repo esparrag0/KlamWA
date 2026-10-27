@@ -1,0 +1,73 @@
+﻿@page "/inventario/consumos/registrar/{IdCirugia}"
+
+<PageTitle>Registrar consumo real</PageTitle>
+
+<div class="mb-4">
+    <span class="text-muted">Operaciones / Consumos</span>
+    <h2 class="mt-2">Registrar consumo real</h2>
+    <p class="text-muted">@IdCirugia · Cirugía culminada · Registro por administración</p>
+    <span class="badge bg-light text-dark border">Culminada</span>
+</div>
+
+<table class="table table-borderless table-striped mb-5">
+    <thead class="table-light">
+        <tr>
+            <th>CONSUMIBLE</th>
+            <th>MEDIDA</th>
+            <th>DESPACHADO</th>
+            <th>CONSUMIDO</th>
+            <th>DIFERENCIA</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Fresa cortante</td>
+            <td>70 mm</td>
+            <td>4</td>
+            <td>2</td>
+            <td>2</td>
+        </tr>
+        <tr>
+            <td>Cuchilla corta</td>
+            <td>70 mm</td>
+            <td>2</td>
+            <td>1</td>
+            <td>1</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="card mb-4 p-3 shadow-sm">
+    <div class="card-body">
+        <h5 class="card-title mb-4">Ajustar consumo</h5>
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <label class="form-label">Consumible</label>
+                <div class="col-md-8">
+    <select class="form-select">
+        <option>Fresa cortante · 70 mm</option>
+        <option>Cuchilla corta · 70 mm</option>
+    </select>
+</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Cantidad consumida *</label>
+                <input type="number" class="form-control" value="2" />
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Observación</label>
+            <input type="text" class="form-control" value="Consumo cotejado con la hoja firmada en sala." />
+        </div>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <button class="btn text-white" style="background-color: #0f766e;">Guardar cantidades reales</button>
+    <button class="btn btn-light border">Ver reporte comparativo</button>
+</div>
+
+@code {
+    [Parameter]
+    public string? IdCirugia { get; set; }
+}
