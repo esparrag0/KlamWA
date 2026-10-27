@@ -28,7 +28,14 @@
                 <span class="avatar avatar-sm" aria-label="@Vista.Perfil.Persona">@Vista.Perfil.Iniciales</span>
             </div>
         </header>
-        <main id="contenido" class="app-content" tabindex="-1">@Body</main>
+        <main id="contenido" class="app-content" tabindex="-1">
+            @if (PaginaPermitida) { @Body }
+            else
+            {
+                <EstadoVacio Titulo="Pantalla no disponible en este perfil" Descripcion="Usa las opciones del menú correspondientes a tu perfil de demostración." />
+                <a class="btn btn-outline-primary" href="/inicio">Volver al inicio</a>
+            }
+        </main>
     </div>
 </div>
 <div id="blazor-error-ui" data-nosnippet>
@@ -37,6 +44,26 @@
 </div>
 
 @code {
+    // Restricción visual de la maqueta; no sustituye permisos del backend.
+    private bool PaginaPermitida
+    {
+        get
+        {
+            var ruta = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+            bool Es(string prefijo) => ruta == prefijo || ruta.StartsWith(prefijo + "/", StringComparison.OrdinalIgnoreCase);
+            if (ruta.Equals("/agenda", StringComparison.OrdinalIgnoreCase) && (Vista.Perfil.Clave is "cliente" or "vendedor")) return false;
+            if (Es("/agenda/nueva") || Es("/agenda/editar") || Es("/agenda/historial")
+                || Es("/bitacora-cirugias") || Es("/historial-documental") || Es("/usuarios")
+                || Es("/roles") || Es("/clientes") || Es("/solicitudes")
+                || Es("/reportes") || Es("/inventario"))
+                return Vista.Perfil.Clave == "administrador";
+            if (Es("/mis-solicitudes")) return Vista.Perfil.Clave is "cliente" or "vendedor";
+            if (ruta == "/cotizaciones") return Vista.Perfil.Clave == "administrador";
+            if (Es("/cotizaciones/cliente")) return Vista.Perfil.Clave == "cliente";
+            if (Es("/cotizaciones/documento")) return Vista.Perfil.Clave is "administrador" or "cliente";
+            return true;
+        }
+    }
     protected override void OnInitialized() => Vista.Cambio += Actualizar;
     private void Actualizar() => _ = InvokeAsync(StateHasChanged);
     private void CambiarVista(ChangeEventArgs e)

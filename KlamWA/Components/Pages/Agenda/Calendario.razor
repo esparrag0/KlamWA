@@ -1,15 +1,16 @@
+@inject VistaPreviaRol Vista
 @page "/agenda"
 @using KlamWA.Components.Shared
 
 <PageTitle>Agenda de cirugías</PageTitle>
 
 <PageHeader Titulo="Agenda de cirugías" Subtitulo="Calendario mensual (datos de ejemplo)">
-    <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a>
+    @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
     <a class="btn btn-outline-secondary" href="/agenda/lista">Ver lista</a>
-    <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a>
+    @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a> }
 </PageHeader>
 
-<ResumenEstados Cirugias="DatosAgenda.Cirugias" />
+<ResumenEstados Cirugias="DatosAgenda.ParaPerfil(Vista.Perfil.Clave)" />
 
 <h5 class="mb-2">Octubre 2026</h5>
 <div class="table-responsive">
@@ -28,7 +29,7 @@
                             <div class="numero @(dia.Date == hoy ? "hoy" : "")">@dia.Day</div>
                             @if (dia.Month == 10)
                             {
-                                @foreach (var c in DatosAgenda.Cirugias.Where(x => x.Inicio.Date == dia.Date))
+                                @foreach (var c in DatosAgenda.ParaPerfil(Vista.Perfil.Clave).Where(x => x.Inicio.Date == dia.Date))
                                 {
                                     <a href="/agenda/cirugia/@c.Id" class="evento"
                                        style="background-color:@DatosAgenda.Color(c.Estado); color:@DatosAgenda.ColorTexto(c.Estado)">

@@ -1,10 +1,11 @@
+@inject VistaPreviaRol Vista
 @page "/mis-solicitudes"
 @using KlamWA.Components.Shared
 
 <PageTitle>Solicitudes de cirugía</PageTitle>
 
 <PageHeader Titulo="Solicitudes de cirugía" Subtitulo="Solicitudes enviadas por clientes y estado de su documentación (datos de ejemplo)">
-    <a class="btn btn-outline-secondary" href="/clientes">Clientes</a>
+
     <a class="btn btn-primary" href="/mis-solicitudes/nueva">Nueva solicitud</a>
 </PageHeader>
 
@@ -24,12 +25,12 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var s in DatosClientes.Solicitudes)
+            @foreach (var s in DatosClientes.Solicitudes.Where(s => Vista.Perfil.Clave == "cliente" ? s.IdCliente == 1 : s.Id == 2))
             {
                 <tr>
                     <td>@s.Id</td>
                     <td>@s.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td><a href="/clientes/@s.IdCliente">@s.Cliente</a></td>
+                    <td>@s.Cliente</td>
                     <td>@s.Clinica</td>
                     <td>@s.Procedimiento</td>
                     <td>@s.Doctor</td>

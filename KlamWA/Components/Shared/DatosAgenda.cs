@@ -31,6 +31,14 @@ public static class DatosAgenda
         new() { Id=5, Inicio=new DateTime(2026,10,30,11,0,0), Fin=new DateTime(2026,10,30,15,0,0), Procedimiento="Cirugía de columna",    Doctor="Dra. Lima", Cliente="Clínica Anglo",       Equipo="Taladro",     Bandeja="Bandeja Columna",     Estado="Programada", PrecioCotizacion=12000, EstadoCotizacion="Emitida" },
     };
 
+    // Selección fija de muestras por perfil; sin consultas ni autorización real.
+    public static IEnumerable<CirugiaMock> ParaPerfil(string perfil) => perfil switch
+    {
+        "instrumentista" => Cirugias.Where(c => c.Id is 1 or 3 or 4 or 5),
+        "vendedor" => Cirugias.Where(c => c.Id is 2 or 4),
+        "cliente" => Cirugias.Where(c => c.Cliente == "Clínica San Felipe"),
+        _ => Cirugias
+    };
     // Catálogos ficticios para los selectores (id, nombre)
     public static Dictionary<int, string> Clientes = new()
     {

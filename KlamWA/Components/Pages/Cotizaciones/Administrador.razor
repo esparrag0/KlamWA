@@ -1,11 +1,9 @@
 @page "/cotizaciones"
 @using KlamWA.Components.Shared
 <PageTitle>Cotizaciones | Klam</PageTitle>
-<PageHeader Titulo="Cotizaciones" Subtitulo="Administrador · Documentos elaborados en el ERP externo">
-    <a class="btn btn-outline-secondary" href="/cotizaciones/cliente">Vista de cliente</a>
+<PageHeader Titulo="Cotizaciones" Subtitulo="Administrador">
 </PageHeader>
-<div class="alert alert-info small">Demostración visual. No se suben archivos ni se envían cotizaciones. Los estados son ejemplos fijos.</div>
-<div class="card mb-3"><div class="card-header">Solicitud de reserva · SOL-028</div><div class="card-body">
+<div class="card mb-3"><div class="card-header">Solicitud de reserva</div><div class="card-body">
     <dl class="row mb-0">
         <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">Clínica San Felipe</dd>
         <dt class="col-sm-3">Paciente</dt><dd class="col-sm-9">María López Pérez</dd>
@@ -16,18 +14,15 @@
     </dl>
 </div></div>
 <div class="row g-3">
-    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Adjuntar cotización del ERP</div><div class="card-body">
-        <p class="small text-muted">Adjunta el documento elaborado en el ERP para que el cliente pueda revisarlo.</p>
-        <label for="archivo-cotizacion" class="form-label">Archivo de cotización</label>
+    <div class="col-lg-6"><div class="card h-80"><div class="card-header">Adjuntar cotización</div><div class="card-body">
         <input id="archivo-cotizacion" type="file" class="form-control" disabled aria-describedby="archivo-ayuda" />
-        <div id="archivo-ayuda" class="form-text">Control ilustrativo. La carga de archivos estará disponible en una etapa posterior.</div>
         <button type="button" class="btn btn-primary mt-3" disabled>Enviar al cliente</button>
     </div></div></div>
     <div class="col-lg-6"><div class="card h-100"><div class="card-header">Cotización adjunta · Ejemplo</div><div class="card-body">
         <h4 class="h6">COT-2026-028.pdf</h4>
-        <p class="small text-muted">Documento del ERP · Adjuntado el 27/10/2026</p>
+        <p class="small text-muted">Adjuntado el 27/10/2026</p>
         <p><span class="badge text-bg-warning">Pendiente de aprobación</span></p>
         <div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-primary" href="/cotizaciones/documento">Ver documento de ejemplo</a><button type="button" class="btn btn-outline-secondary" disabled>Descargar</button></div>
     </div></div></div>
 </div>
-<p class="small text-muted mt-3">La solicitud podrá programarse después de la aprobación del cliente. Esta maqueta no modifica el calendario.</p>
+<p class="small text-muted mt-3">La solicitud podrá programarse después de la aprobación del cliente. </p>

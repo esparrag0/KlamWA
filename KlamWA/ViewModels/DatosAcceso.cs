@@ -19,9 +19,9 @@ public static class DatosAcceso
 {
     public static IReadOnlyList<PerfilVista> Perfiles { get; } = Array.AsReadOnly<PerfilVista>([
         new("administrador", "Administrador", "Valeria Torres", "VT", "Supervisa la coordinación quirúrgica y administra los accesos del equipo."),
-        new("vendedor", "Vendedor", "Diego Mendoza", "DM", "Acompaña las solicitudes de los clientes y consulta la programación."),
-        new("instrumentista", "Instrumentista", "Camila Rojas", "CR", "Consulta las cirugías programadas y los avisos de coordinación."),
-        new("cliente", "Cliente", "Clínica San Felipe", "SF", "Consulta el calendario y el historial de tus procedimientos.")
+        new("vendedor", "Vendedor", "Diego Mendoza", "DM", "Registra solicitudes con documentos y consulta las cirugías que coordinas."),
+        new("instrumentista", "Instrumentista", "Camila Rojas", "CR", "Consulta el calendario, las cirugías en las que participas y tus notificaciones."),
+        new("cliente", "Cliente", "Clínica San Felipe", "SF", "Solicita una cirugía, adjunta documentos y revisa tus cotizaciones.")
     ]);
 
     public static PerfilVista? Perfil(string? clave) => Perfiles.FirstOrDefault(p => p.Clave == clave);
