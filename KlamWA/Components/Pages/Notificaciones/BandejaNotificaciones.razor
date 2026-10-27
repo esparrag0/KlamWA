@@ -1,0 +1,45 @@
+@page "/notificaciones"
+@page "/notificaciones/{Rol}"
+@inject VistaPreviaRol Vista
+
+<PageTitle>Notificaciones | Klam</PageTitle>
+<div class="breadcrumb-line">Espacio de trabajo <span>/</span> Notificaciones</div>
+<PageHeader Titulo="Notificaciones" Subtitulo="Mantente al tanto de las solicitudes y la programación quirúrgica.">
+    <BotonDemo Clase="btn-outline-secondary" Mensaje="Acción visual. Los avisos de ejemplo mantienen su estado de lectura."><Icono Nombre="check" Tamano="17" /> Marcar todas como leídas</BotonDemo>
+</PageHeader>
+<nav class="view-tabs" aria-label="Bandejas de demostración"><a href="/notificaciones/administrador" class="@(perfil == "administrador" ? "active" : "")" aria-current="@(perfil == "administrador" ? "page" : null)"><Icono Nombre="escudo" Tamano="17" /> Administrador</a><a href="/notificaciones/instrumentista" class="@(perfil == "instrumentista" ? "active" : "")" aria-current="@(perfil == "instrumentista" ? "page" : null)"><Icono Nombre="usuarios" Tamano="17" /> Instrumentista</a><a href="/notificaciones/sin-avisos" class="@(vacia ? "active" : "")">Ejemplo sin avisos</a></nav>
+@if (desconocido)
+{
+    <EstadoVacio Titulo="Bandeja no disponible" Descripcion="Selecciona la bandeja de administrador o instrumentista." Enlace="/notificaciones/administrador" TextoEnlace="Ir a notificaciones" />
+}
+else if (vacia)
+{
+    <EstadoVacio Icono="campana" Titulo="Estás al día" Descripcion="Cuando haya nuevas notificaciones, las encontrarás en este espacio." Enlace="/notificaciones/administrador" TextoEnlace="Volver a la bandeja de ejemplo" />
+}
+else
+{
+    <div class="row g-4"><div class="col-xl-8"><section class="card"><div class="section-heading"><h2>Bandeja de @perfil <span class="count-label">3</span></h2><EtiquetaEstado Texto="2 sin leer" Tono="teal" /></div>
+        @foreach (var n in avisos)
+        {
+            <article class="notification-row @(n.Leida ? "" : "is-unread")"><span class="notification-symbol"><Icono Nombre="@(perfil == "administrador" ? "lista" : "calendario")" Tamano="23" /></span><div class="notification-content"><div class="notification-meta"><span>@n.Categoria</span><time>@n.Fecha</time></div><h2><a href="@($"/notificaciones/detalle/{n.Id}")">@n.Titulo</a></h2><p>@n.Mensaje</p><div class="notification-bottom"><EtiquetaEstado Texto="@(n.Leida ? "Leída" : "Sin leer")" Tono="@(n.Leida ? "neutral" : "teal")" /><a href="@($"/notificaciones/detalle/{n.Id}")">Ver detalle <Icono Nombre="flecha" Tamano="15" /></a></div></div></article>
+        }
+        <div class="table-footer"><span>3 notificaciones de ejemplo</span><span>Octubre 2026</span></div></section></div>
+        <div class="col-xl-4"><aside class="card notification-aside"><span class="stat-icon"><Icono Nombre="campana" Tamano="24" /></span><h2>Tus canales de aviso</h2><p>@(perfil == "administrador" ? "Las nuevas solicitudes se presentan en el panel y en una vista de correo." : "Las nuevas cirugías se presentan en el panel de coordinación.")</p><div class="channel-row"><Icono Nombre="campana" Tamano="18" /><span>Panel de notificaciones</span><EtiquetaEstado Texto="Visual" Tono="teal" /></div>@if(perfil == "administrador") { <div class="channel-row"><Icono Nombre="correo" Tamano="18" /><span>Correo electrónico</span><EtiquetaEstado Texto="Visual" Tono="neutral" /></div> }<p class="field-help mt-3 mb-0">Avisos ilustrativos. No se envían correos ni notificaciones push.</p></aside></div></div>
+}
+<AvisoDemostracion />
+
+@code {
+    [Parameter] public string? Rol { get; set; }
+    private string perfil = "administrador";
+    private bool vacia;
+    private bool desconocido;
+    private IReadOnlyList<NotificacionVista> avisos = DatosAcceso.AvisosAdministrador;
+    protected override void OnParametersSet()
+    {
+        vacia = Rol == "sin-avisos";
+        desconocido = Rol is not null and not "administrador" and not "instrumentista" and not "sin-avisos";
+        perfil = Rol is "administrador" or "instrumentista" ? Rol : Vista.Perfil.Clave == "instrumentista" ? "instrumentista" : "administrador";
+        avisos = perfil == "instrumentista" ? DatosAcceso.AvisosInstrumentista : DatosAcceso.AvisosAdministrador;
+        if (!vacia && !desconocido) Vista.Mostrar(DatosAcceso.Perfil(perfil)!);
+    }
+}

@@ -1,47 +1,47 @@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href=""><img src="img/klam-wordmark-blanco.svg" alt="Klam" /></a>
-    </div>
+<div class="sidebar-brand">
+    <a href="@($"/inicio/{Perfil.Clave}")" aria-label="Klam, ir al inicio"><img src="img/klam-wordmark-blanco.svg" alt="Klam" /></a>
+    <button class="mobile-toggle" type="button" aria-label="Abrir o cerrar menú" aria-controls="menu-principal" aria-expanded="@abierto.ToString().ToLowerInvariant()" @onclick="() => abierto = !abierto"><Icono Nombre="menu" /></button>
 </div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
+<div id="menu-principal" class="sidebar-body @(abierto ? "is-open" : "")">
+    <nav aria-label="Navegación principal" @onclick="() => abierto = false">
         <div class="nav-section">Principal</div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Inicio
-            </NavLink>
-        </div>
-
+        <NavLink class="nav-link" href="/inicio"><Icono Nombre="inicio" /> Inicio</NavLink>
+        @if (Perfil.Clave is "administrador" or "instrumentista")
+        {
+            <NavLink class="nav-link" href="/notificaciones"><Icono Nombre="campana" /> Notificaciones <span class="nav-count">2</span></NavLink>
+        }
         <div class="nav-section">Agenda y cirugías</div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="agenda" Match="NavLinkMatch.All">
-                <span class="bi bi-calendar-nav-menu" aria-hidden="true"></span> Calendario
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="agenda/lista">
-                <span class="bi bi-lista-nav-menu" aria-hidden="true"></span> Lista de cirugías
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="agenda/nueva">
-                <span class="bi bi-nueva-nav-menu" aria-hidden="true"></span> Nueva cirugía
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="agenda/historial">
-                <span class="bi bi-historial-nav-menu" aria-hidden="true"></span> Historial
-            </NavLink>
-        </div>
-
-        <div class="nav-section">Cotizaciones</div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="cotizaciones" Match="NavLinkMatch.All"><span class="bi bi-cotizacion-admin-nav-menu" aria-hidden="true"></span> Administrador</NavLink></div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="cotizaciones/cliente"><span class="bi bi-cotizacion-cliente-nav-menu" aria-hidden="true"></span> Cliente</NavLink></div>
-        <div class="nav-section">Reportes</div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="reportes/consumo"><span class="bi bi-consumo-nav-menu" aria-hidden="true"></span> Uso de insumos</NavLink></div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="reportes/comparativo"><span class="bi bi-comparativo-nav-menu" aria-hidden="true"></span> Despacho y consumo</NavLink></div>
+        <NavLink class="nav-link" href="/agenda" Match="NavLinkMatch.All"><Icono Nombre="calendario" /> Calendario</NavLink>
+        <NavLink class="nav-link" href="/agenda/lista"><Icono Nombre="lista" /> Lista de cirugías</NavLink>
+        @if (Perfil.Clave is "administrador" or "vendedor")
+        {
+            <NavLink class="nav-link" href="/agenda/nueva"><Icono Nombre="mas" /> Nueva cirugía</NavLink>
+        }
+        <NavLink class="nav-link" href="/agenda/historial"><Icono Nombre="reloj" /> Historial</NavLink>
+        @if (Perfil.Clave == "administrador")
+        {
+            <div class="nav-section">Administración</div>
+            <NavLink class="nav-link" href="/usuarios"><Icono Nombre="usuarios" /> Usuarios</NavLink>
+            <NavLink class="nav-link" href="/roles"><Icono Nombre="escudo" /> Roles y responsabilidades</NavLink>
+        }
+        @if (Perfil.Clave == "administrador")
+        {
+            <div class="nav-section">Cotizaciones</div>
+            <NavLink class="nav-link" href="/cotizaciones" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Cotizaciones</NavLink>
+            <div class="nav-section">Reportes</div>
+            <NavLink class="nav-link" href="/reportes/consumo"><Icono Nombre="lista" /> Uso de insumos</NavLink>
+            <NavLink class="nav-link" href="/reportes/comparativo"><Icono Nombre="flecha" /> Despacho y consumo</NavLink>
+        }
+        @if (Perfil.Clave == "cliente")
+        {
+            <div class="nav-section">Cotizaciones</div>
+            <NavLink class="nav-link" href="/cotizaciones/cliente"><Icono Nombre="lista" /> Mis cotizaciones</NavLink>
+        }
     </nav>
+    <div class="sidebar-bottom"><a class="exit-link" href="/login"><Icono Nombre="salir" Tamano="18" /> Volver al acceso</a></div>
 </div>
+
+@code {
+    [Parameter, EditorRequired] public PerfilVista Perfil { get; set; } = DatosAcceso.Perfiles[0];
+    private bool abierto;
+}

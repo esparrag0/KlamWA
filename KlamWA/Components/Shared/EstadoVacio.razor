@@ -1,0 +1,14 @@
+<div class="empty-state card">
+    <span class="empty-icon"><Icono Nombre="@Icono" Tamano="32" /></span>
+    <h2>@Titulo</h2>
+    <p>@Descripcion</p>
+    <a class="btn btn-primary" href="@Enlace">@TextoEnlace</a>
+</div>
+
+@code {
+    [Parameter] public string Icono { get; set; } = "buscar";
+    [Parameter] public string Titulo { get; set; } = "No encontramos este registro";
+    [Parameter] public string Descripcion { get; set; } = "El registro solicitado no forma parte de los datos de ejemplo.";
+    [Parameter] public string Enlace { get; set; } = "/inicio";
+    [Parameter] public string TextoEnlace { get; set; } = "Volver al inicio";
+}

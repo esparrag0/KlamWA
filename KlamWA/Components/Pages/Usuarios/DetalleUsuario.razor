@@ -1,0 +1,22 @@
+@page "/usuarios/{Id:int}"
+
+<PageTitle>Detalle de usuario | Klam</PageTitle>
+<div class="breadcrumb-line"><a href="/usuarios">Usuarios</a><span>/</span>Detalle</div>
+<PageHeader Titulo="Detalle de usuario" Subtitulo="Información de la cuenta y su perfil de acceso."><a class="btn btn-outline-secondary" href="/usuarios"><Icono Nombre="volver" Tamano="17" /> Volver</a></PageHeader>
+@if (usuario is null)
+{
+    <EstadoVacio Enlace="/usuarios" TextoEnlace="Volver a usuarios" />
+}
+else
+{
+    <section class="card detail-card"><div class="user-detail-header"><span class="avatar avatar-lg">@usuario.Iniciales</span><div><h2>@usuario.NombreCompleto</h2><p>@@@usuario.Username · ID @usuario.Id.ToString("D3")</p><EtiquetaEstado Texto="@(usuario.Activo ? "Activo" : "Inactivo")" Tono="@(usuario.Activo ? "success" : "neutral")" /></div></div>
+        <dl class="detail-grid"><div><dt>Nombres</dt><dd>@usuario.Nombres</dd></div><div><dt>Apellidos</dt><dd>@usuario.Apellidos</dd></div><div><dt>Correo electrónico</dt><dd>@usuario.Email</dd></div><div><dt>Rol del personal</dt><dd>@usuario.Rol</dd></div><div><dt>Contraseña</dt><dd>No se muestra</dd></div><div><dt>Responsabilidades</dt><dd><a href="/roles">Consultar referencia de roles</a></dd></div></dl>
+        <div class="card-actions"><a class="btn btn-primary" href="@($"/usuarios/editar/{Id}")"><Icono Nombre="editar" Tamano="17" /> Editar usuario</a><a class="btn btn-outline-danger" href="@($"/usuarios/eliminar/{Id}")"><Icono Nombre="eliminar" Tamano="17" /> Eliminar usuario</a></div>
+    </section><AvisoDemostracion />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private UsuarioVista? usuario;
+    protected override void OnParametersSet() => usuario = DatosAcceso.Usuario(Id);
+}

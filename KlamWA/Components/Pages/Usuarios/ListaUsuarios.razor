@@ -1,0 +1,34 @@
+@page "/usuarios"
+
+<PageTitle>Usuarios | Klam</PageTitle>
+<div class="breadcrumb-line">Administración <span>/</span> Usuarios</div>
+<PageHeader Titulo="Usuarios" Subtitulo="Organiza las cuentas y los accesos del equipo de BIOKLAM.">
+    <a class="btn btn-outline-secondary" href="/roles"><Icono Nombre="escudo" Tamano="17" /> Ver roles</a>
+    <a class="btn btn-primary" href="/usuarios/nuevo"><Icono Nombre="mas" Tamano="18" /> Nuevo usuario</a>
+</PageHeader>
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="metric-card"><span>Usuarios registrados</span><strong>06 <small>en esta demostración</small></strong><Icono Nombre="usuarios" /></div></div>
+    <div class="col-md-4"><div class="metric-card"><span>Cuentas activas</span><strong>05 <small>acceso habilitado</small></strong><Icono Nombre="check" /></div></div>
+    <div class="col-md-4"><div class="metric-card"><span>Roles del personal</span><strong>03 <small>perfiles de responsabilidad</small></strong><Icono Nombre="escudo" /></div></div>
+</div>
+<section class="card">
+    <div class="section-heading"><h2>Directorio del equipo <span class="count-label">6</span></h2><span>Datos de ejemplo</span></div>
+    <div class="filter-toolbar">
+        <div class="search-control"><label class="visually-hidden" for="buscar-usuario">Buscar usuarios (visual)</label><Icono Nombre="buscar" Tamano="18" /><input class="form-control" id="buscar-usuario" placeholder="Buscar por nombre, usuario o correo" /></div>
+        <div><label class="visually-hidden" for="filtro-rol">Rol (visual)</label><select class="form-select" id="filtro-rol"><option>Todos los roles</option><option>Administrador</option><option>Vendedor</option><option>Instrumentista</option></select></div>
+        <div><label class="visually-hidden" for="filtro-estado">Estado (visual)</label><select class="form-select" id="filtro-estado"><option>Todos los estados</option><option>Activo</option><option>Inactivo</option></select></div>
+        <BotonDemo Clase="btn-outline-secondary" Mensaje="Los filtros son visuales en esta entrega. La lista de ejemplo no cambia.">Filtrar</BotonDemo>
+    </div>
+    <p class="mobile-table-hint"><Icono Nombre="flecha" Tamano="15" /> Desliza la tabla para ver roles, estados y acciones.</p>
+    <TablaBase Descripcion="Directorio de usuarios ficticios con acceso a detalle, edición y eliminación visual">
+        <Cabecera><th scope="col">Usuario</th><th scope="col">Correo electrónico</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col" class="text-end">Acciones</th></Cabecera>
+        <ChildContent>
+            @foreach(var u in DatosAcceso.Usuarios)
+            {
+                <tr><td><a class="user-cell" href="@($"/usuarios/{u.Id}")"><span class="avatar">@u.Iniciales</span><span><strong>@u.NombreCompleto</strong><small>@@@u.Username</small></span></a></td><td class="email-cell">@u.Email</td><td><span class="role-chip">@u.Rol</span></td><td><EtiquetaEstado Texto="@(u.Activo ? "Activo" : "Inactivo")" Tono="@(u.Activo ? "success" : "neutral")" /></td><td><div class="table-actions"><a href="@($"/usuarios/{u.Id}")" title="Ver detalle" aria-label="Ver a @u.NombreCompleto"><Icono Nombre="ojo" Tamano="18" /></a><a href="@($"/usuarios/editar/{u.Id}")" title="Editar" aria-label="Editar a @u.NombreCompleto"><Icono Nombre="editar" Tamano="18" /></a><a class="danger-link" href="@($"/usuarios/eliminar/{u.Id}")" title="Eliminar (visual)" aria-label="Eliminar a @u.NombreCompleto (visual)"><Icono Nombre="eliminar" Tamano="18" /></a></div></td></tr>
+            }
+        </ChildContent>
+    </TablaBase>
+    <div class="table-footer"><span>Mostrando 6 usuarios de ejemplo</span><span class="page-number" aria-label="Página 1">1</span></div>
+</section>
+<AvisoDemostracion Texto="Los filtros y las acciones de mantenimiento son visuales; no modifican los datos de ejemplo." />

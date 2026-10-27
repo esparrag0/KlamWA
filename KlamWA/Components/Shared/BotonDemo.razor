@@ -1,0 +1,14 @@
+<span class="demo-action">
+    <button type="button" class="btn @Clase" @onclick="() => mostrar = true">@ChildContent</button>
+    @if (mostrar)
+    {
+        <span class="demo-feedback" role="status">@Mensaje</span>
+    }
+</span>
+
+@code {
+    [Parameter] public string Clase { get; set; } = "btn-primary";
+    [Parameter] public string Mensaje { get; set; } = "Acción de muestra. No se guardó ningún cambio.";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    private bool mostrar;
+}
