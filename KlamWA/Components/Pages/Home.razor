@@ -1,7 +1,77 @@
-﻿@page "/"
+@page "/"
+@page "/inicio"
+@page "/inicio/{Rol}"
+@inject VistaPreviaRol Vista
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Inicio | Klam</PageTitle>
+@if (rolDesconocido)
+{
+    <EstadoVacio Titulo="Perfil no disponible" Descripcion="Elige uno de los perfiles de demostración desde el encabezado." />
+}
+else
+{
+    <PageHeader Titulo="Inicio" Subtitulo="@($"Vista de {Vista.Perfil.Nombre.ToLowerInvariant()} (datos de ejemplo)")" />
+    <div class="alert alert-info" role="note">@Vista.Perfil.Descripcion</div>
+    <div class="row g-3 mb-4">
+        @if (Vista.Perfil.Clave == "administrador")
+        {
+            <div class="col-md-4"><a class="stat-card" href="/usuarios"><span class="stat-icon"><Icono Nombre="usuarios" /></span><div><span>Usuarios del equipo</span><strong>06</strong><small>5 activos · 1 inactivo</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
+            <div class="col-md-4"><a class="stat-card" href="/notificaciones/administrador"><span class="stat-icon warm"><Icono Nombre="campana" /></span><div><span>Avisos sin leer</span><strong>02</strong><small>Nuevas solicitudes</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
+        }
+        else
+        {
+            <div class="col-md-4"><a class="stat-card" href="/agenda/lista"><span class="stat-icon"><Icono Nombre="lista" /></span><div><span>Programación de ejemplo</span><strong>05</strong><small>Procedimientos en agenda</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
+            <div class="col-md-4"><a class="stat-card" href="@(Vista.Perfil.Clave == "instrumentista" ? "/notificaciones/instrumentista" : "/agenda/historial")"><span class="stat-icon warm"><Icono Nombre="reloj" /></span><div><span>@(Vista.Perfil.Clave == "instrumentista" ? "Avisos sin leer" : "Historial disponible")</span><strong>@(Vista.Perfil.Clave == "instrumentista" ? "02" : "05")</strong><small>Datos de demostración</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
+        }
+        <div class="col-md-4"><a class="stat-card" href="/agenda"><span class="stat-icon blue"><Icono Nombre="calendario" /></span><div><span>Cirugías programadas</span><strong>02</strong><small>Próximas en octubre</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
+    </div>
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <section class="card h-100"><div class="section-heading"><h2>Accesos rápidos</h2></div><div class="quick-links">
+                @if (Vista.Perfil.Clave == "administrador")
+                {
+                    <a href="/usuarios/nuevo"><span class="quick-icon"><Icono Nombre="mas" /></span><div><strong>Registrar un usuario</strong><small>Datos personales, rol y estado de acceso</small></div><Icono Nombre="flecha" Tamano="18" /></a>
+                    <a href="/roles"><span class="quick-icon"><Icono Nombre="escudo" /></span><div><strong>Roles y responsabilidades</strong><small>Consulta la organización de los accesos</small></div><Icono Nombre="flecha" Tamano="18" /></a>
+                }
+                else if (Vista.Perfil.Clave == "vendedor")
+                {
+                    <a href="/agenda/nueva"><span class="quick-icon"><Icono Nombre="mas" /></span><div><strong>Nueva solicitud de cirugía</strong><small>Abre el formulario visual del equipo</small></div><Icono Nombre="flecha" Tamano="18" /></a>
+                }
+                <a href="/agenda"><span class="quick-icon"><Icono Nombre="calendario" /></span><div><strong>Consultar el calendario</strong><small>Fechas, procedimientos y estados</small></div><Icono Nombre="flecha" Tamano="18" /></a>
+                @if (Vista.Perfil.Clave == "cliente")
+                {
+                    <a href="/agenda/historial"><span class="quick-icon"><Icono Nombre="reloj" /></span><div><strong>Historial de cirugías</strong><small>Recorre los procedimientos de ejemplo</small></div><Icono Nombre="flecha" Tamano="18" /></a>
+                }
+            </div></section>
+        </div>
+        <div class="col-xl-5">
+            <section class="card h-100"><div class="section-heading"><h2>@(TieneAvisos ? "Últimas notificaciones" : "Próximo en la agenda")</h2><Icono Nombre="@(TieneAvisos ? "campana" : "calendario")" Tamano="18" /></div>
+                @if (TieneAvisos)
+                {
+                    @foreach (var n in Avisos.Take(2))
+                    {
+                        <a class="mini-notification" href="@($"/notificaciones/detalle/{n.Id}")"><span class="unread-dot"></span><div><strong>@n.Titulo</strong><p>@n.Mensaje</p><small>@n.Fecha</small></div></a>
+                    }
+                    <a class="card-footer-link" href="@($"/notificaciones/{Vista.Perfil.Clave}")">Ver todas las notificaciones <Icono Nombre="flecha" Tamano="16" /></a>
+                }
+                else
+                {
+                    <div class="p-4"><EtiquetaEstado Texto="Programada" Tono="warning" /><h3 class="h6 mt-3">Artroscopia de hombro</h3><p class="text-muted small">28 de octubre · 14:00<br />Luis Rojas (particular)</p><a href="/agenda/cirugia/4">Ver detalle <Icono Nombre="flecha" Tamano="16" /></a></div>
+                }
+            </section>
+        </div>
+    </div>
+    <AvisoDemostracion />
+}
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+@code {
+    [Parameter] public string? Rol { get; set; }
+    private bool rolDesconocido;
+    private bool TieneAvisos => Vista.Perfil.Clave is "administrador" or "instrumentista";
+    private IReadOnlyList<NotificacionVista> Avisos => Vista.Perfil.Clave == "instrumentista" ? DatosAcceso.AvisosInstrumentista : DatosAcceso.AvisosAdministrador;
+    protected override void OnParametersSet()
+    {
+        rolDesconocido = Rol is not null && DatosAcceso.Perfil(Rol) is null;
+        if (DatosAcceso.Perfil(Rol) is { } perfil) Vista.Mostrar(perfil);
+    }
+}
