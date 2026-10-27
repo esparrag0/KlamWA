@@ -1,0 +1,78 @@
+@page "/clientes"
+@using KlamWA.Components.Shared
+
+<PageTitle>Clientes</PageTitle>
+
+<PageHeader Titulo="Clientes" Subtitulo="Pacientes particulares y clínicas/hospitales (datos de ejemplo)">
+    <a class="btn btn-outline-secondary" href="/mis-solicitudes">Solicitudes de cirugía</a>
+    <a class="btn btn-primary" href="/clientes/nuevo">Nuevo cliente</a>
+</PageHeader>
+
+@* Barra de filtros solo visual (Lab 9: no filtra datos) *@
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small mb-1">Buscar</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Nombre, DNI o RUC" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Tipo de cliente</label>
+                <select class="form-select form-select-sm">
+                    <option>Todos</option>
+                    <option>@DatosClientes.Particular</option>
+                    <option>@DatosClientes.Clinica</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Estado</label>
+                <select class="form-select form-select-sm">
+                    <option>Todos</option>
+                    <option>Activo</option>
+                    <option>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="button" class="btn btn-secondary btn-sm">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Documento</th>
+                <th>Contacto</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in DatosClientes.Lista)
+            {
+                <tr>
+                    <td>@c.Nombre</td>
+                    <td>
+                        <span class="badge @(c.Tipo == DatosClientes.Particular ? "text-bg-info" : "text-bg-primary")">@c.Tipo</span>
+                    </td>
+                    <td>@c.Documento</td>
+                    <td>
+                        <div>@c.Email</div>
+                        <small class="text-muted">@c.Telefono</small>
+                    </td>
+                    <td>
+                        <span class="badge @(c.Activo ? "text-bg-success" : "text-bg-secondary")">@(c.Activo ? "Activo" : "Inactivo")</span>
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" href="/clientes/@c.Id">Detalle</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="/clientes/editar/@c.Id">Editar</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
