@@ -22,12 +22,12 @@
         <div class="card-header">Datos de la cirugía</div>
         <div class="card-body">
             <div class="row g-3">
-                <CampoForm Etiqueta="Cliente (clínica, hospital o particular)" Columnas="col-12">
-                    <InputSelect class="form-select" @bind-Value="ViewModel.IdCliente">
+                <CampoForm Etiqueta="Clínica u hospital donde se realizará" Columnas="col-12">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.IdClinica">
                         <option value="0">-- Seleccione --</option>
-                        @foreach (var x in DatosClientes.Nombres) { <option value="@x.Key">@x.Value</option> }
+                        @foreach (var x in DatosClientes.Clinicas) { <option value="@x.Key">@x.Value</option> }
                     </InputSelect>
-                    <ValidationMessage For="() => ViewModel.IdCliente" />
+                    <ValidationMessage For="() => ViewModel.IdClinica" />
                 </CampoForm>
                 <CampoForm Etiqueta="Diagnóstico" Columnas="col-12">
                     <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
@@ -64,7 +64,13 @@
             @foreach (var tipo in DatosClientes.TiposDocumento)
             {
                 <div class="row g-2 align-items-center mb-2">
-                    <div class="col-md-3">@tipo</div>
+                    <div class="col-md-3">
+                        @tipo
+                        @if (tipo == DatosClientes.ComprobantePago)
+                        {
+                            <div class="small text-muted">Para clientes particulares</div>
+                        }
+                    </div>
                     <div class="col-md-6"><input type="file" class="form-control form-control-sm" /></div>
                     <div class="col-md-3"><DocumentoEstadoBadge Estado="Pendiente" /></div>
                 </div>

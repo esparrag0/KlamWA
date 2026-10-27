@@ -35,11 +35,13 @@ public class SolicitudMock
     public int Id { get; set; }
     public int IdCliente { get; set; }
     public string Cliente { get; set; } = "";
+    public string Clinica { get; set; } = "";          // clínica u hospital donde se realizará
     public string Procedimiento { get; set; } = "";
     public string Doctor { get; set; } = "";
     public string Diagnostico { get; set; } = "";
     public DateTime Fecha { get; set; }
-    public string Estado { get; set; } = "";    // Pendiente, Validado, Rechazado
+    public string Estado { get; set; } = "";    // Por revisar, Documentación incompleta, Rechazada · Resubida habilitada, Aprobada (mismos nombres que usa el Rol 4)
+    public string MotivoRechazo { get; set; } = ""; // mensaje del administrador (RF07)
     public List<DocumentoMock> Documentos { get; set; } = new();
 }
 
@@ -48,7 +50,9 @@ public static class DatosClientes
     public const string Particular = "Particular";
     public const string Clinica = "Clínica/Hospital";
 
-    public static string[] TiposDocumento = { "DNI", "Receta médica", "Orden de compra" };
+    // El comprobante de pago bancario aplica a clientes particulares (RF08).
+    public const string ComprobantePago = "Comprobante de pago bancario";
+    public static string[] TiposDocumento = { "DNI", "Receta médica", "Orden de compra", ComprobantePago };
 
     public static List<ClienteMock> Lista = new()
     {
@@ -60,23 +64,26 @@ public static class DatosClientes
         new() { Id=6, Tipo=Clinica,    Nombre="Clínica Santa Teresa",   Direccion="Av. Primavera 1200, Surco",              Email="info@santateresa.example", Telefono="013450000", Ruc="20100000044", TieneConsignacion=false, PeriodoCredito="30 días", Activo=false },
     };
 
-    public static Dictionary<int, string> Nombres =>
-        Lista.Where(c => c.Activo).ToDictionary(c => c.Id, c => c.Nombre);
+    // Clínicas y hospitales activos (para elegir dónde se realizará la cirugía)
+    public static Dictionary<int, string> Clinicas =>
+        Lista.Where(c => c.Activo && c.Tipo == Clinica).ToDictionary(c => c.Id, c => c.Nombre);
 
     public static List<SolicitudMock> Solicitudes = new()
     {
-        new() { Id=1, IdCliente=1, Cliente="Clínica San Felipe", Procedimiento="Artroscopia de rodilla", Doctor="Dr. Ramos",
-                Diagnostico="Lesión de menisco medial", Fecha=new DateTime(2026,11,4,8,0,0), Estado="Validado",
+        new() { Id=1, IdCliente=1, Cliente="Clínica San Felipe", Clinica="Clínica San Felipe", Procedimiento="Artroscopia de rodilla", Doctor="Dr. Ramos",
+                Diagnostico="Lesión de menisco medial", Fecha=new DateTime(2026,11,4,8,0,0), Estado="Aprobada",
                 Documentos = new() {
                     new() { Tipo="Orden de compra", Archivo="oc-0001.pdf", Estado="Validado" },
                     new() { Tipo="Receta médica",   Archivo="receta-0001.pdf", Estado="Validado" } } },
-        new() { Id=2, IdCliente=4, Cliente="Luis Rojas (particular)", Procedimiento="Artroscopia de hombro", Doctor="Dr. Vega",
-                Diagnostico="Desgarro del manguito rotador", Fecha=new DateTime(2026,11,10,14,0,0), Estado="Pendiente",
+        new() { Id=2, IdCliente=4, Cliente="Luis Rojas (particular)", Clinica="Clínica Anglo", Procedimiento="Artroscopia de hombro", Doctor="Dr. Vega",
+                Diagnostico="Desgarro del manguito rotador", Fecha=new DateTime(2026,11,10,14,0,0), Estado="Por revisar",
                 Documentos = new() {
                     new() { Tipo="DNI",           Archivo="dni-luis.jpg", Estado="Validado" },
-                    new() { Tipo="Receta médica", Archivo="receta-luis.pdf", Estado="Pendiente" } } },
-        new() { Id=3, IdCliente=3, Cliente="Clínica Anglo", Procedimiento="Cirugía de columna", Doctor="Dra. Lima",
-                Diagnostico="Hernia discal L4-L5", Fecha=new DateTime(2026,11,18,11,0,0), Estado="Rechazado",
+                    new() { Tipo="Receta médica", Archivo="receta-luis.pdf", Estado="Pendiente" },
+                    new() { Tipo=ComprobantePago, Archivo="pago-luis.pdf", Estado="Pendiente" } } },
+        new() { Id=3, IdCliente=3, Cliente="Clínica Anglo", Clinica="Clínica Anglo", Procedimiento="Cirugía de columna", Doctor="Dra. Lima",
+                Diagnostico="Hernia discal L4-L5", Fecha=new DateTime(2026,11,18,11,0,0), Estado="Rechazada · Resubida habilitada",
+                MotivoRechazo="La orden de compra no se puede leer. Suba una copia más nítida.",
                 Documentos = new() {
                     new() { Tipo="Orden de compra", Archivo="oc-0003.pdf", Estado="Rechazado" } } },
     };
