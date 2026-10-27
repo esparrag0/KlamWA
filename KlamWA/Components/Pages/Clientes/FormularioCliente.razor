@@ -1,0 +1,125 @@
+@page "/clientes/nuevo"
+@page "/clientes/editar/{Id:int}"
+@using KlamWA.Components.Shared
+@using KlamWA.ViewModels
+@inject NavigationManager Nav
+
+<PageTitle>Formulario de cliente</PageTitle>
+
+<PageHeader Titulo="@(Id == null ? "Registrar cliente" : "Editar cliente #" + Id)"
+            Subtitulo="Los datos se validan pero no se guardan en este laboratorio" />
+
+@if (MensajeOk != null)
+{
+    <div class="alert alert-success">@MensajeOk</div>
+}
+
+<EditForm Model="ViewModel" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card" style="max-width:900px">
+        <div class="card-body">
+            <div class="row g-3">
+                <CampoForm Etiqueta="Tipo de cliente" Columnas="col-12">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.Tipo" disabled="@(Id != null)">
+                        <option value="@DatosClientes.Particular">Paciente particular</option>
+                        <option value="@DatosClientes.Clinica">Clínica / hospital</option>
+                    </InputSelect>
+                </CampoForm>
+
+                <CampoForm Etiqueta="@(ViewModel.Tipo == DatosClientes.Particular ? "Nombre completo" : "Razón social")">
+                    <InputText class="form-control" @bind-Value="ViewModel.Nombre" />
+                    <ValidationMessage For="() => ViewModel.Nombre" />
+                </CampoForm>
+
+                @if (ViewModel.Tipo == DatosClientes.Particular)
+                {
+                    <CampoForm Etiqueta="DNI">
+                        <InputText class="form-control" maxlength="8" placeholder="8 dígitos" @bind-Value="ViewModel.Dni" />
+                        <ValidationMessage For="() => ViewModel.Dni" />
+                    </CampoForm>
+                }
+                else
+                {
+                    <CampoForm Etiqueta="RUC">
+                        <InputText class="form-control" maxlength="11" placeholder="11 dígitos" @bind-Value="ViewModel.Ruc" />
+                        <ValidationMessage For="() => ViewModel.Ruc" />
+                    </CampoForm>
+                }
+
+                <CampoForm Etiqueta="Dirección" Columnas="col-12">
+                    <InputText class="form-control" @bind-Value="ViewModel.Direccion" />
+                    <ValidationMessage For="() => ViewModel.Direccion" />
+                </CampoForm>
+                <CampoForm Etiqueta="Correo de contacto">
+                    <InputText class="form-control" @bind-Value="ViewModel.Email" />
+                    <ValidationMessage For="() => ViewModel.Email" />
+                </CampoForm>
+                <CampoForm Etiqueta="Teléfono">
+                    <InputText class="form-control" @bind-Value="ViewModel.Telefono" />
+                    <ValidationMessage For="() => ViewModel.Telefono" />
+                </CampoForm>
+
+                @if (ViewModel.Tipo == DatosClientes.Particular)
+                {
+                    <div class="col-12">
+                        <div class="form-check">
+                            <InputCheckbox class="form-check-input" id="pagoConfirmado" @bind-Value="ViewModel.PagoConfirmado" />
+                            <label class="form-check-label" for="pagoConfirmado">Pago confirmado</label>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <CampoForm Etiqueta="Periodo de crédito">
+                        <InputText class="form-control" placeholder="Ej. 30 días" @bind-Value="ViewModel.PeriodoCredito" />
+                    </CampoForm>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div class="form-check">
+                            <InputCheckbox class="form-check-input" id="consignacion" @bind-Value="ViewModel.TieneConsignacion" />
+                            <label class="form-check-label" for="consignacion">Trabaja con consignación</label>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a class="btn btn-outline-secondary" href="/clientes">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private ClienteViewModel ViewModel { get; set; } = new();
+    private string? MensajeOk { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        MensajeOk = null;
+        if (Id == null)
+        {
+            ViewModel = new ClienteViewModel();
+            return;
+        }
+        var c = DatosClientes.Lista.FirstOrDefault(x => x.Id == Id);
+        if (c == null)
+        {
+            Nav.NavigateTo("/clientes");
+            return;
+        }
+        ViewModel = new ClienteViewModel(c);
+    }
+
+    // Solo se ejecuta si el ViewModel es válido (validación de frontend).
+    private void Guardar()
+    {
+        // Lab 9: NO se guarda nada.
+        // Siguiente lab: llamar al servicio web de Java (PacienteParticularBL / ClinicaHospitalBL
+        // insert/update) y mostrar el mensaje de BLException si falla.
+        MensajeOk = "Datos válidos (en este laboratorio no se guarda).";
+    }
+}

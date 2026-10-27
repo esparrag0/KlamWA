@@ -1,0 +1,92 @@
+@page "/mis-solicitudes"
+@using KlamWA.Components.Shared
+
+<PageTitle>Solicitudes de cirugía</PageTitle>
+
+<PageHeader Titulo="Solicitudes de cirugía" Subtitulo="Solicitudes enviadas por clientes y estado de su documentación (datos de ejemplo)">
+    <a class="btn btn-outline-secondary" href="/clientes">Clientes</a>
+    <a class="btn btn-primary" href="/mis-solicitudes/nueva">Nueva solicitud</a>
+</PageHeader>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>N.º</th>
+                <th>Fecha solicitada</th>
+                <th>Cliente</th>
+                <th>Clínica</th>
+                <th>Procedimiento</th>
+                <th>Médico</th>
+                <th>Documentos</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in DatosClientes.Solicitudes)
+            {
+                <tr>
+                    <td>@s.Id</td>
+                    <td>@s.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><a href="/clientes/@s.IdCliente">@s.Cliente</a></td>
+                    <td>@s.Clinica</td>
+                    <td>@s.Procedimiento</td>
+                    <td>@s.Doctor</td>
+                    <td>@(s.Documentos.Count(d => d.Estado == "Validado") + " de " + s.Documentos.Count + " validados")</td>
+                    <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
+                    <td class="text-end text-nowrap">
+                        @if (s.Estado.StartsWith("Rechazada"))
+                        {
+                            <a class="btn btn-sm btn-warning" href="/mis-solicitudes/corregir/@s.Id">Resubir documento</a>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.Id)">
+                            @(abierta == s.Id ? "Ocultar documentos" : "Ver documentos")
+                        </button>
+                    </td>
+                </tr>
+                @if (abierta == s.Id)
+                {
+                    <tr>
+                        <td colspan="9" class="bg-light">
+                            <div class="p-2">
+                                <div class="mb-2"><strong>Diagnóstico:</strong> @s.Diagnostico</div>
+                                @if (s.Estado.StartsWith("Rechazada"))
+                                {
+                                    <div class="alert alert-danger py-2">
+                                        <strong>Mensaje del administrador:</strong> @s.MotivoRechazo
+                                        <a class="alert-link ms-2" href="/mis-solicitudes/corregir/@s.Id">Resubir documento</a>
+                                    </div>
+                                }
+                                <table class="table table-sm mb-2">
+                                    <thead>
+                                        <tr><th>Documento</th><th>Archivo</th><th>Estado</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var d in s.Documentos)
+                                        {
+                                            <tr>
+                                                <td>@d.Tipo</td>
+                                                <td>@d.Archivo</td>
+                                                <td><DocumentoEstadoBadge Estado="@d.Estado" /></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                                <a class="btn btn-sm btn-outline-secondary" href="/solicitudes">Revisión documental</a>
+                                <a class="btn btn-sm btn-outline-secondary" href="/agenda/lista">Ver en agenda</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private int abierta;
+
+    // Solo alterna qué fila se muestra expandida (estado de pantalla, no lógica de negocio).
+    private void Alternar(int id) => abierta = abierta == id ? 0 : id;
+}

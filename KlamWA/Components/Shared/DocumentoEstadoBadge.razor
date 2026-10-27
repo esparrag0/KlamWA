@@ -1,0 +1,18 @@
+@* Etiqueta de estado. Sirve para documentos (Pendiente, Validado, Rechazado: mismos nombres que
+   EstadoValidacionDocumento de Java) y para solicitudes (Por revisar, Documentación incompleta,
+   Rechazada · Resubida habilitada, Aprobada: mismos nombres que usa el Rol 4). *@
+<span class="badge @Clase">@Estado</span>
+
+@code {
+    [Parameter] public string Estado { get; set; } = "";
+
+    private string Clase => Estado switch
+    {
+        "Validado" or "Aprobada"                   => "text-bg-success",
+        "Rechazado"                                => "text-bg-danger",
+        "Pendiente" or "Documentación incompleta"  => "text-bg-warning",
+        "Por revisar"                              => "text-bg-info",
+        _ when Estado.StartsWith("Rechazada")      => "text-bg-danger",
+        _                                          => "text-bg-secondary"
+    };
+}

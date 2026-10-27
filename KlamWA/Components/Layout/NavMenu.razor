@@ -50,6 +50,18 @@
             <NavLink class="nav-link" href="/inventario/despachos"><Icono Nombre="flecha" /> Despachos y retornos</NavLink>
             <NavLink class="nav-link" href="/inventario/consumos"><Icono Nombre="lista" /> Consumos</NavLink>
         }
+        @if (Perfil.Clave == "administrador")
+        {
+            <div class="nav-section">Clientes</div>
+            <NavLink class="nav-link" href="/clientes" Match="NavLinkMatch.All"><Icono Nombre="usuarios" /> Lista de clientes</NavLink>
+            <NavLink class="nav-link" href="/clientes/nuevo"><Icono Nombre="mas" /> Nuevo cliente</NavLink>
+        }
+        @if (Perfil.Clave is "cliente" or "vendedor" or "administrador")
+        {
+            <div class="nav-section">Solicitudes de cirugía</div>
+            <NavLink class="nav-link" href="/mis-solicitudes" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Mis solicitudes</NavLink>
+            <NavLink class="nav-link" href="/mis-solicitudes/nueva"><Icono Nombre="mas" /> Nueva solicitud</NavLink>
+        }
     </nav>
     <div class="sidebar-bottom"><a class="exit-link" href="/login"><Icono Nombre="salir" Tamano="18" /> Volver al acceso</a></div>
 </div>

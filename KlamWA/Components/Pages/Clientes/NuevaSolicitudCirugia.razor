@@ -1,0 +1,98 @@
+@page "/mis-solicitudes/nueva"
+@using KlamWA.Components.Shared
+@using KlamWA.ViewModels
+
+<PageTitle>Nueva solicitud de cirugía</PageTitle>
+
+<PageHeader Titulo="Solicitar cirugía" Subtitulo="Los datos se validan pero no se envían en este laboratorio" />
+
+@if (MensajeOk != null)
+{
+    <div class="alert alert-success">
+        @MensajeOk
+        <a href="/mis-solicitudes" class="alert-link">Ir a mis solicitudes</a>
+    </div>
+}
+
+<EditForm Model="ViewModel" OnValidSubmit="Enviar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card mb-3" style="max-width:900px">
+        <div class="card-header">Datos de la cirugía</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <CampoForm Etiqueta="Clínica u hospital donde se realizará" Columnas="col-12">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.IdClinica">
+                        <option value="0">-- Seleccione --</option>
+                        @foreach (var x in DatosClientes.Clinicas) { <option value="@x.Key">@x.Value</option> }
+                    </InputSelect>
+                    <ValidationMessage For="() => ViewModel.IdClinica" />
+                </CampoForm>
+                <CampoForm Etiqueta="Diagnóstico" Columnas="col-12">
+                    <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
+                    <ValidationMessage For="() => ViewModel.Diagnostico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Procedimiento">
+                    <InputText class="form-control" @bind-Value="ViewModel.Procedimiento" />
+                    <ValidationMessage For="() => ViewModel.Procedimiento" />
+                </CampoForm>
+                <CampoForm Etiqueta="Médico">
+                    <InputText class="form-control" @bind-Value="ViewModel.Medico" />
+                    <ValidationMessage For="() => ViewModel.Medico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Fecha">
+                    <InputDate Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" />
+                    <ValidationMessage For="() => ViewModel.Fecha" />
+                </CampoForm>
+                <CampoForm Etiqueta="Hora">
+                    <InputDate Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" />
+                    <ValidationMessage For="() => ViewModel.Hora" />
+                </CampoForm>
+                <CampoForm Etiqueta="Observaciones (opcional)" Columnas="col-12">
+                    <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Observaciones" />
+                    <ValidationMessage For="() => ViewModel.Observaciones" />
+                </CampoForm>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3" style="max-width:900px">
+        <div class="card-header">Documentos adjuntos</div>
+        <div class="card-body">
+            <p class="text-muted small">Vista de ejemplo: en este laboratorio los archivos no se suben.</p>
+            @foreach (var tipo in DatosClientes.TiposDocumento)
+            {
+                <div class="row g-2 align-items-center mb-2">
+                    <div class="col-md-3">
+                        @tipo
+                        @if (tipo == DatosClientes.ComprobantePago)
+                        {
+                            <div class="small text-muted">Para clientes particulares</div>
+                        }
+                    </div>
+                    <div class="col-md-6"><input type="file" class="form-control form-control-sm" /></div>
+                    <div class="col-md-3"><DocumentoEstadoBadge Estado="Pendiente" /></div>
+                </div>
+            }
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+            <a class="btn btn-outline-secondary" href="/mis-solicitudes">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private SolicitudCirugiaViewModel ViewModel { get; set; } = new();
+    private string? MensajeOk { get; set; }
+
+    // Solo se ejecuta si el ViewModel es válido (validación de frontend).
+    private void Enviar()
+    {
+        // Lab 9: NO se envía nada.
+        // Siguiente lab: llamar al servicio web de Java (CirugiaBL.insert) y mostrar
+        // el mensaje de BLException si falla.
+        MensajeOk = "Datos válidos (en este laboratorio no se envía).";
+    }
+}
