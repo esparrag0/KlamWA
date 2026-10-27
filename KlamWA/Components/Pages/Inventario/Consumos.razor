@@ -1,0 +1,62 @@
+﻿@page "/inventario/consumos"
+
+<PageTitle>Consumo por cirugía</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">Operaciones / Consumos</span>
+        <h2 class="mt-2">Consumo por cirugía</h2>
+        <p class="text-muted">Consulta y registra cantidades reales de intervenciones culminadas</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <label class="form-label">Cirugía</label>
+        <select class="form-select"><option>Todas</option></select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Cliente</label>
+        <select class="form-select"><option>Todos</option></select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Desde</label>
+        <input type="date" class="form-control" value="2026-10-01" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Hasta</label>
+        <input type="date" class="form-control" value="2026-10-31" />
+    </div>
+</div>
+
+<div class="table-responsive mb-4">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>CIRUGÍA</th>
+                <th>CLIENTE</th>
+                <th>FECHA</th>
+                <th>ESTADO</th>
+                <th>REGISTRO DE CONSUMO</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>CIR-024</td>
+                <td>San Felipe</td>
+                <td>22 oct</td>
+                <td>Culminada</td>
+                <td>Completo</td>
+            </tr>
+            <tr class="table-active">
+                <td>CIR-026</td>
+                <td>San Felipe</td>
+                <td>26 oct</td>
+                <td>Culminada</td>
+                <td>Por registrar</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<a href="inventario/consumos/registrar/CIR-026" class="btn text-white" style="background-color: #0f766e;">Registrar consumo de CIR-026</a>
