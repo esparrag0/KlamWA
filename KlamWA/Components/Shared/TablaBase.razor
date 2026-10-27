@@ -1,0 +1,13 @@
+<div class="table-responsive">
+    <table class="table align-middle klam-table mb-0">
+        <caption class="visually-hidden">@Descripcion</caption>
+        <thead><tr>@Cabecera</tr></thead>
+        <tbody>@ChildContent</tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Descripcion { get; set; } = "";
+    [Parameter, EditorRequired] public RenderFragment? Cabecera { get; set; }
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+}

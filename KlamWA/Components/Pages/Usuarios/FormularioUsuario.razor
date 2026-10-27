@@ -1,0 +1,54 @@
+@page "/usuarios/nuevo"
+@page "/usuarios/editar/{Id:int}"
+
+<PageTitle>@(Id.HasValue ? "Editar usuario" : "Nuevo usuario") | Klam</PageTitle>
+<div class="breadcrumb-line"><a href="/usuarios">Usuarios</a><span>/</span>@(Id.HasValue ? "Editar usuario" : "Nuevo usuario")</div>
+<PageHeader Titulo="@(Id.HasValue ? "Editar usuario" : "Nuevo usuario")" Subtitulo="Completa los datos de la cuenta y su perfil de acceso.">
+    <a class="btn btn-outline-secondary" href="/usuarios"><Icono Nombre="volver" Tamano="17" /> Volver al listado</a>
+</PageHeader>
+@if (Id.HasValue && usuario is null)
+{
+    <EstadoVacio Enlace="/usuarios" TextoEnlace="Volver a usuarios" />
+}
+else
+{
+    <div class="row g-4" @key="Id">
+        <div class="col-lg-8">
+            <section class="card mb-4"><div class="section-heading"><h2><Icono Nombre="usuarios" Tamano="18" /> Datos personales</h2><span>01</span></div>
+                <div class="card-body p-4"><div class="row g-3">
+                    <CampoForm Etiqueta="Nombres" Para="nombres"><input class="form-control" id="nombres" value="@usuario?.Nombres" placeholder="Ej. Valeria" /></CampoForm>
+                    <CampoForm Etiqueta="Apellidos" Para="apellidos"><input class="form-control" id="apellidos" value="@usuario?.Apellidos" placeholder="Ej. Torres" /></CampoForm>
+                    <CampoForm Etiqueta="Nombre de usuario" Para="username"><div class="input-group"><span class="input-group-text">@@</span><input class="form-control" id="username" value="@usuario?.Username" placeholder="Ej. vtorres" /></div></CampoForm>
+                    <CampoForm Etiqueta="Correo electrónico" Para="email"><input class="form-control" id="email" type="email" value="@usuario?.Email" placeholder="nombre@empresa.com" /></CampoForm>
+                </div></div>
+            </section>
+            <section class="card"><div class="section-heading"><h2><Icono Nombre="escudo" Tamano="18" /> Acceso y responsabilidades</h2><span>02</span></div>
+                <div class="card-body p-4"><div class="row g-3">
+                    <CampoForm Etiqueta="Rol del personal" Para="usuario-rol"><select id="usuario-rol" class="form-select" @bind="rol"><option value="Administrador">Administrador</option><option value="Vendedor">Vendedor</option><option value="Instrumentista">Instrumentista</option></select></CampoForm>
+                    <CampoForm Etiqueta="Estado de la cuenta" Para="usuario-estado"><select id="usuario-estado" class="form-select" value="@(usuario?.Activo == false ? "Inactivo" : "Activo")"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select></CampoForm>
+                    @if (rol == "Instrumentista")
+                    {
+                        <CampoForm Etiqueta="Especialidad" Para="usuario-especialidad" Columnas="col-12"><input id="usuario-especialidad" class="form-control" value="@usuario?.Especialidad" placeholder="Ej. Cirugía de columna" /></CampoForm>
+                    }
+                    <CampoForm Etiqueta="Contraseña" Para="usuario-clave"><input id="usuario-clave" class="form-control" type="password" placeholder="@(Id.HasValue ? "No se muestra la contraseña existente" : "Contraseña de ejemplo")" autocomplete="new-password" /></CampoForm>
+                    <CampoForm Etiqueta="Confirmar contraseña" Para="usuario-confirmacion"><input id="usuario-confirmacion" class="form-control" type="password" placeholder="Repite la contraseña de ejemplo" autocomplete="new-password" /></CampoForm>
+                </div><p class="field-help mt-3 mb-0">Los campos son ilustrativos. No ingreses contraseñas reales.</p></div>
+            </section>
+            <div class="form-actions"><a class="btn btn-outline-secondary" href="/usuarios">Cancelar</a><BotonDemo Mensaje="Formulario de muestra. No se creó ni actualizó ninguna cuenta."><Icono Nombre="check" Tamano="17" /> @(Id.HasValue ? "Guardar cambios" : "Registrar usuario")</BotonDemo></div>
+        </div>
+        <div class="col-lg-4"><aside class="card profile-summary"><span class="stat-icon"><Icono Nombre="escudo" Tamano="24" /></span><span class="eyebrow text-teal mt-3">PERFIL SELECCIONADO</span><h2>@rol</h2><p>@DescripcionRol</p><hr /><h3>Responsabilidad de referencia</h3><p>La cuenta se presenta dentro de la organización de roles del equipo. Los permisos mostrados son ilustrativos.</p><a href="/roles">Consultar roles <Icono Nombre="flecha" Tamano="16" /></a></aside></div>
+    </div>
+    <AvisoDemostracion />
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private UsuarioVista? usuario;
+    private string rol = "Vendedor";
+    private string DescripcionRol => rol switch {
+        "Administrador" => "Gestión de usuarios, revisión de solicitudes y coordinación de la agenda.",
+        "Instrumentista" => "Consulta del calendario y recepción de avisos sobre nuevas cirugías.",
+        _ => "Registro de solicitudes y seguimiento de la programación de clientes."
+    };
+    protected override void OnParametersSet() { usuario = Id.HasValue ? DatosAcceso.Usuario(Id.Value) : null; rol = usuario?.Rol ?? "Vendedor"; }
+}

@@ -1,0 +1,19 @@
+@page "/usuarios/eliminar/{Id:int}"
+
+<PageTitle>Eliminar usuario | Klam</PageTitle>
+<div class="breadcrumb-line"><a href="/usuarios">Usuarios</a><span>/</span>Eliminar</div>
+<PageHeader Titulo="Eliminar usuario" Subtitulo="Revisión de la cuenta seleccionada." />
+@if (usuario is null)
+{
+    <EstadoVacio Enlace="/usuarios" TextoEnlace="Volver a usuarios" />
+}
+else
+{
+    <section class="card delete-preview"><span class="empty-icon danger"><Icono Nombre="eliminar" Tamano="30" /></span><h2>¿Eliminar esta cuenta?</h2><p>Revisa los datos del usuario antes de continuar.</p><div class="delete-person"><span class="avatar">@usuario.Iniciales</span><div><strong>@usuario.NombreCompleto</strong><small>@usuario.Email · @usuario.Rol</small></div></div><div class="alert alert-light border text-start small">Esta es una confirmación visual. El usuario seguirá apareciendo en el directorio después de pulsar el botón.</div><div class="d-flex justify-content-center flex-wrap gap-2"><a class="btn btn-outline-secondary" href="@($"/usuarios/{Id}")">Cancelar</a><BotonDemo Clase="btn-danger" Mensaje="Demostración terminada. La cuenta no se eliminó.">Confirmar eliminación</BotonDemo></div></section>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private UsuarioVista? usuario;
+    protected override void OnParametersSet() => usuario = DatosAcceso.Usuario(Id);
+}

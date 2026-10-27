@@ -1,0 +1,27 @@
+@page "/notificaciones/detalle/{Id:int}"
+@inject VistaPreviaRol Vista
+
+<PageTitle>Detalle de notificación | Klam</PageTitle>
+<div class="breadcrumb-line"><a href="/notificaciones">Notificaciones</a><span>/</span>Detalle del aviso</div>
+<PageHeader Titulo="Detalle de notificación" Subtitulo="Información del evento y su destinatario."><a class="btn btn-outline-secondary" href="@($"/notificaciones/{aviso?.Perfil ?? "administrador"}")"><Icono Nombre="volver" Tamano="17" /> Volver a la bandeja</a></PageHeader>
+@if (aviso is null)
+{
+    <EstadoVacio Enlace="/notificaciones" TextoEnlace="Volver a notificaciones" />
+}
+else
+{
+    <section class="card detail-card"><div class="notification-detail-title"><span class="notification-symbol"><Icono Nombre="campana" Tamano="26" /></span><div><EtiquetaEstado Texto="@(aviso.Leida ? "Leída" : "Sin leer")" Tono="@(aviso.Leida ? "neutral" : "teal")" /><h2>@aviso.Titulo</h2><p>@aviso.Fecha</p></div></div><div class="notification-message">@aviso.Mensaje</div><dl class="detail-grid"><div><dt>Destinatario</dt><dd>@aviso.Destinatario</dd></div><div><dt>Perfil</dt><dd>@DatosAcceso.Perfil(aviso.Perfil)?.Nombre</dd></div><div><dt>Tipo de aviso</dt><dd>@aviso.Categoria</dd></div><div><dt>Canal</dt><dd>@(aviso.Perfil == "administrador" ? "Panel y correo (vista de ejemplo)" : "Panel de notificaciones")</dd></div></dl>
+        <div class="card-actions"><BotonDemo Clase="btn-outline-secondary" Mensaje="Acción de muestra. El estado de lectura no cambia.">Marcar como leída</BotonDemo>@if(aviso.Enlace is not null) { <a class="btn btn-primary" href="@aviso.Enlace">Ver cirugía <Icono Nombre="flecha" Tamano="17" /></a> }</div>
+    </section>
+    @if(aviso.Perfil == "administrador")
+    {
+        <section class="card detail-card mt-4"><div class="section-heading"><h2><Icono Nombre="correo" Tamano="18" /> Vista del correo</h2><span>Sin envío</span></div><div class="p-4"><p class="field-help">PARA: @aviso.Destinatario · ASUNTO: @aviso.Titulo</p><p>Hola, @aviso.Destinatario.Split(' ')[0]:</p><p>@aviso.Mensaje</p><p class="text-muted small mb-0">Equipo de coordinación · BIOKLAM</p></div></section>
+    }
+    <AvisoDemostracion />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private NotificacionVista? aviso;
+    protected override void OnParametersSet() { aviso = DatosAcceso.Aviso(Id); if(aviso is not null) Vista.Mostrar(DatosAcceso.Perfil(aviso.Perfil)!); }
+}

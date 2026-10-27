@@ -1,0 +1,9 @@
+@page "/guia-componentes"
+
+<PageTitle>Guía de componentes | Klam</PageTitle>
+<PageHeader Titulo="Guía de componentes" Subtitulo="Referencia visual compartida para los seis roles del equipo." />
+<section class="card p-4 mb-4"><h2 class="h6 mb-3">Botones Bootstrap</h2><div class="d-flex flex-wrap gap-3"><a class="btn btn-primary" href="/usuarios">Acción principal</a><a class="btn btn-outline-secondary" href="/inicio">Acción secundaria</a><BotonDemo Clase="btn-outline-danger">Acción visual</BotonDemo></div></section>
+<section class="card p-4 mb-4"><h2 class="h6 mb-3">Etiquetas de usuarios y avisos</h2><div class="d-flex flex-wrap gap-3"><EtiquetaEstado Texto="Activo" Tono="success" /><EtiquetaEstado Texto="Inactivo" /><EtiquetaEstado Texto="Sin leer" Tono="teal" /><EtiquetaEstado Texto="Pendiente" Tono="warning" /></div><h2 class="h6 mt-4 mb-3">Estados de cirugía existentes</h2><div class="d-flex flex-wrap gap-3">@foreach(var estado in DatosAgenda.Estados) { <EstadoBadge Estado="@estado" /> }</div></section>
+<section class="card p-4 mb-4"><h2 class="h6 mb-3">Campos reutilizables</h2><div class="row g-3"><CampoForm Etiqueta="Nombre" Para="guia-nombre"><input id="guia-nombre" class="form-control" placeholder="Texto de ejemplo" /></CampoForm><CampoForm Etiqueta="Rol" Para="guia-rol"><select id="guia-rol" class="form-select"><option>Administrador</option></select></CampoForm></div></section>
+<section class="card"><TablaBase Descripcion="Tabla de referencia de componentes"><Cabecera><th scope="col">Componente</th><th scope="col">Uso</th></Cabecera><ChildContent><tr><td>PageHeader</td><td>Título, subtítulo y acciones de la página.</td></tr><tr><td>CampoForm</td><td>Etiqueta asociada al control y distribución Bootstrap.</td></tr><tr><td>TablaBase</td><td>Tabla adaptable con cabecera y contenido.</td></tr><tr><td>BotonDemo</td><td>Muestra un aviso sin ejecutar operaciones de negocio.</td></tr></ChildContent></TablaBase></section>
+<AvisoDemostracion />
