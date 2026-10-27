@@ -1,0 +1,30 @@
+@page "/reportes/comparativo"
+@using KlamWA.Components.Shared
+<PageTitle>Despachado vs. consumido | Klam</PageTitle>
+<PageHeader Titulo="Despachado vs. consumido" Subtitulo="RF19 · Consumo por cirugía y cliente (datos de ejemplo)">
+    <a class="btn btn-outline-secondary" href="/reportes/consumo">Ver uso de insumos</a>
+</PageHeader>
+<div class="alert alert-info small">Prototipo visual: la consulta y las descargas no procesan información.</div>
+<div class="card mb-3"><div class="card-body"><div class="row g-2 align-items-end">
+    <div class="col-md-5"><label for="cliente" class="form-label small">Cliente</label><select id="cliente" class="form-select form-select-sm"><option>Clínica San Felipe</option><option>Hospital Rebagliati</option><option>Luis Rojas (particular)</option></select></div>
+    <div class="col-md-5"><label for="cirugia" class="form-label small">Cirugía</label><select id="cirugia" class="form-select form-select-sm"><option>CIR-026 · Craneotomía · 26/10/2026</option></select></div>
+    <div class="col-md-2 d-grid"><button type="button" class="btn btn-secondary btn-sm" disabled>Consultar</button></div>
+</div></div></div>
+<div class="card mb-3"><div class="card-header">Datos del reporte · Ejemplo fijo</div><div class="card-body">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Generado</dt><dd class="col-sm-9">27/10/2026 · 10:00</dd>
+        <dt class="col-sm-3">Fecha de cirugía</dt><dd class="col-sm-9">26/10/2026</dd>
+        <dt class="col-sm-3">Procedimiento</dt><dd class="col-sm-9">Craneotomía</dd>
+        <dt class="col-sm-3">Paciente</dt><dd class="col-sm-9">Ana Torres Medina</dd>
+        <dt class="col-sm-3">Médico responsable</dt><dd class="col-sm-9">Dr. Luis Rojas</dd>
+        <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">Clínica San Felipe</dd>
+    </dl>
+</div></div>
+<div class="card"><div class="card-header">Detalle de insumos</div>
+<div class="table-responsive"><table class="table table-striped table-hover align-middle mb-0">
+    <caption class="visually-hidden">Comparativo de insumos de la cirugía CIR-026</caption>
+    <thead class="table-light"><tr><th scope="col">Insumo</th><th scope="col">Medida</th><th scope="col" class="text-end">Despachado</th><th scope="col" class="text-end">Consumido</th><th scope="col" class="text-end">Diferencia</th></tr></thead>
+    <tbody><tr><td>Fresa cortante</td><td>70 mm</td><td class="text-end">4</td><td class="text-end">2</td><td class="text-end">2</td></tr><tr><td>Cuchilla</td><td>70 mm</td><td class="text-end">2</td><td class="text-end">1</td><td class="text-end">1</td></tr></tbody>
+</table></div>
+<div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center"><small class="text-muted">Diferencia: cantidad despachada menos cantidad consumida.</small><div class="d-flex gap-2"><button type="button" class="btn btn-outline-secondary btn-sm" disabled>Descargar Excel</button><button type="button" class="btn btn-outline-secondary btn-sm" disabled>Descargar PDF</button></div></div>
+</div>

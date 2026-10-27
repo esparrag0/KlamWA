@@ -1,0 +1,20 @@
+@page "/cotizaciones/documento"
+@using KlamWA.Components.Shared
+<PageTitle>Documento de cotización | Klam</PageTitle>
+<PageHeader Titulo="Documento de cotización" Subtitulo="COT-2026-028.pdf · Representación visual de un archivo del ERP">
+    <a class="btn btn-outline-secondary" href="/cotizaciones/cliente">Volver al cliente</a>
+    <a class="btn btn-outline-secondary" href="/cotizaciones">Volver al administrador</a>
+</PageHeader>
+<div class="alert alert-info small">Vista previa ilustrativa. No se ha cargado un PDF real; los importes son datos fijos del documento de ejemplo.</div>
+<div class="card mx-auto" style="max-width: 900px"><div class="card-body p-4">
+    <div class="d-flex flex-wrap gap-3 justify-content-between border-bottom pb-3 mb-3"><div><h3 class="h5">KLAM · Cotización</h3><span class="text-muted">Documento emitido en ERP externo</span></div><div><strong>COT-2026-028</strong><br /><small>27/10/2026</small></div></div>
+    <dl class="row"><dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">Clínica San Felipe</dd><dt class="col-sm-3">Referencia</dt><dd class="col-sm-9">SOL-028 · Craneotomía</dd><dt class="col-sm-3">Paciente</dt><dd class="col-sm-9">María López Pérez</dd></dl>
+    <div class="table-responsive"><table class="table">
+        <caption class="visually-hidden">Detalle ilustrativo del documento externo</caption>
+        <thead class="table-light"><tr><th scope="col">Descripción</th><th scope="col" class="text-end">Cantidad</th><th scope="col" class="text-end">Precio unitario</th><th scope="col" class="text-end">Importe</th></tr></thead>
+        <tbody><tr><td>Fresa cortante · 70 mm</td><td class="text-end">2</td><td class="text-end">S/ 150.00</td><td class="text-end">S/ 300.00</td></tr><tr><td>Cuchilla · 70 mm</td><td class="text-end">1</td><td class="text-end">S/ 100.00</td><td class="text-end">S/ 100.00</td></tr></tbody>
+    </table></div>
+    <p class="text-end"><strong>Total cotizado: S/ 400.00</strong></p>
+    <p class="small text-muted border-top pt-3 mb-0">Muestra académica. KLAM presenta el documento adjunto; no elabora ni calcula la cotización.</p>
+</div></div>
+<div class="text-center mt-3"><button type="button" class="btn btn-outline-secondary" disabled>Descargar documento</button></div>
