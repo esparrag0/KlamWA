@@ -1,0 +1,26 @@
+@page "/login"
+@layout AccesoLayout
+@inject NavigationManager Nav
+
+<PageTitle>Iniciar sesión | Klam</PageTitle>
+<div class="login-page">
+    <section class="login-form-panel card">
+        <img class="login-logo" src="img/klam-wordmark.svg" alt="Klam" />
+        <h1>Iniciar sesión</h1>
+        <p class="text-muted mb-4">Sistema de coordinación quirúrgica BIOKLAM</p>
+            <form @onsubmit="Entrar" @onsubmit:preventDefault novalidate autocomplete="off">
+                <div class="mb-3"><label for="login-email" class="form-label">Correo electrónico</label><input id="login-email" type="email" class="form-control" placeholder="nombre@empresa.com" autocomplete="off" /></div>
+                <div class="mb-4"><label for="login-password" class="form-label">Contraseña</label><div class="password-field"><input id="login-password" type="@(verClave ? "text" : "password")" class="form-control" placeholder="Ingresa tu contraseña" autocomplete="new-password" /><button type="button" class="password-toggle" @onclick="() => verClave = !verClave" aria-label="@(verClave ? "Ocultar contraseña" : "Mostrar contraseña")"><Icono Nombre="ojo" Tamano="18" /></button></div></div>
+                <div class="preview-selector"><label for="login-perfil" class="form-label">Vista según rol</label><select id="login-perfil" class="form-select" @bind="perfil">@foreach(var p in DatosAcceso.Perfiles) { <option value="@p.Clave">@p.Nombre</option> }</select><small class="text-muted">Solo cambia la vista de ejemplo.</small></div>
+                <button type="submit" class="btn btn-primary w-100 mt-4 login-submit">Ingresar (demostración)</button>
+            </form>
+            <AvisoDemostracion Texto="Acceso visual: no verifica ni guarda credenciales. No uses datos reales." />
+    </section>
+</div>
+
+@code {
+    private string perfil = "administrador";
+    private bool verClave;
+    // Los campos de credenciales no se enlazan a C# ni se envían a ningún servicio.
+    private void Entrar() => Nav.NavigateTo($"/inicio/{perfil}");
+}
