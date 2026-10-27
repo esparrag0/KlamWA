@@ -1,23 +1,51 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject VistaPreviaRol Vista
+@inject NavigationManager Nav
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
+<div class="app-shell">
+    <aside class="app-sidebar"><NavMenu Perfil="Vista.Perfil" /></aside>
+    <div class="app-main">
+        <header class="app-topbar">
+            <a class="topbar-brand" href="/inicio">BIOKLAM</a>
+            <div class="topbar-actions">
+                <div class="role-preview">
+                    <label for="vista-rol">Vista según rol</label>
+                    <select id="vista-rol" class="form-select form-select-sm" value="@Vista.Perfil.Clave" @onchange="CambiarVista">
+                        @foreach (var perfil in DatosAcceso.Perfiles)
+                        {
+                            <option value="@perfil.Clave">@perfil.Nombre</option>
+                        }
+                    </select>
+                </div>
+                @if (Vista.Perfil.Clave is "administrador" or "instrumentista")
+                {
+                    <a class="header-bell" href="@($"/notificaciones/{Vista.Perfil.Clave}")" aria-label="Ver notificaciones, 2 sin leer de ejemplo">
+                        <Icono Nombre="campana" /><span class="notification-dot"></span>
+                    </a>
+                }
+                <span class="avatar avatar-sm" aria-label="@Vista.Perfil.Persona">@Vista.Perfil.Iniciales</span>
+            </div>
+        </header>
+        <main id="contenido" class="app-content" tabindex="-1">@Body</main>
     </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
 </div>
-
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    Ocurrió un error al mostrar la página. <a href="." class="reload">Recargar</a>
+    <button type="button" class="dismiss" aria-label="Cerrar mensaje">×</button>
 </div>
+
+@code {
+    protected override void OnInitialized() => Vista.Cambio += Actualizar;
+    private void Actualizar() => _ = InvokeAsync(StateHasChanged);
+    private void CambiarVista(ChangeEventArgs e)
+    {
+        if (DatosAcceso.Perfil(e.Value?.ToString()) is { } perfil)
+        {
+            Vista.Mostrar(perfil);
+            Nav.NavigateTo($"/inicio/{perfil.Clave}");
+        }
+    }
+    public void Dispose() => Vista.Cambio -= Actualizar;
+}
