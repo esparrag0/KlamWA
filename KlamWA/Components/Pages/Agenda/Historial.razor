@@ -1,0 +1,22 @@
+@page "/agenda/historial"
+@using KlamWA.Components.Shared
+
+<PageTitle>Historial de cirugías</PageTitle>
+
+<PageHeader Titulo="Historial de cirugías" Subtitulo="Cirugías culminadas y canceladas del cliente (datos de ejemplo)">
+    <a class="btn btn-outline-secondary" href="/agenda">Volver a la agenda</a>
+</PageHeader>
+
+<div class="mb-3" style="max-width:300px">
+    <label class="form-label">Cliente</label>
+    <select class="form-select">
+        @foreach (var x in DatosAgenda.Clientes) { <option>@x.Value</option> }
+    </select>
+</div>
+
+<TablaCirugias Cirugias="@historial" MostrarMotivo="true" />
+
+@code {
+    private IEnumerable<CirugiaMock> historial =>
+        DatosAgenda.Cirugias.Where(x => x.Estado == "Culminada" || x.Estado == "Cancelada");
+}
