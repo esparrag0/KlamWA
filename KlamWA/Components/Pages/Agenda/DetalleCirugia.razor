@@ -1,0 +1,68 @@
+@page "/agenda/cirugia/{Id:int}"
+@using KlamWA.Components.Shared
+
+<PageTitle>Detalle de cirugía</PageTitle>
+
+@if (c == null)
+{
+    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <a href="/agenda/lista">Volver a la lista</a>
+}
+else
+{
+    <PageHeader Titulo="@("Cirugía #" + c.Id)" Subtitulo="@c.Procedimiento">
+        <EstadoBadge Estado="@c.Estado" />
+        <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a>
+        <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
+    </PageHeader>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Datos de la cirugía</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Procedimiento</dt><dd class="col-sm-8">@c.Procedimiento</dd>
+                        <dt class="col-sm-4">Inicio</dt><dd class="col-sm-8">@c.Inicio.ToString("dd/MM/yyyy HH:mm")</dd>
+                        <dt class="col-sm-4">Fin</dt><dd class="col-sm-8">@c.Fin.ToString("dd/MM/yyyy HH:mm")</dd>
+                        <dt class="col-sm-4">Doctor</dt><dd class="col-sm-8">@c.Doctor</dd>
+                        <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@c.Cliente</dd>
+                        <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@c.Equipo</dd>
+                        <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@c.Bandeja</dd>
+                        @if (c.Estado == "Cancelada")
+                        {
+                            <dt class="col-sm-4">Motivo de cancelación</dt><dd class="col-sm-8">@c.MotivoCancelacion</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">Cotización</div>
+                <div class="card-body">
+                    <div class="fs-4">S/ @c.PrecioCotizacion.ToString("N2")</div>
+                    <span class="badge text-bg-secondary">@c.EstadoCotizacion</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">Relacionado</div>
+                <div class="list-group list-group-flush">
+                    <a class="list-group-item list-group-item-action" href="/solicitudes">Ver solicitud</a>
+                    <a class="list-group-item list-group-item-action" href="/documentos">Ver documentación</a>
+                    <a class="list-group-item list-group-item-action" href="/inventario/consumibles">Ver consumibles</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private CirugiaMock? c;
+
+    protected override void OnParametersSet()
+    {
+        c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
+    }
+}

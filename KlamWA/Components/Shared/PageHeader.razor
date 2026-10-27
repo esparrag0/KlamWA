@@ -1,0 +1,19 @@
+@* Encabezado reutilizable: título, subtítulo y botones de acción (ChildContent) *@
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+    <div>
+        <h3 class="mb-0">@Titulo</h3>
+        @if (!string.IsNullOrEmpty(Subtitulo))
+        {
+            <small class="text-muted">@Subtitulo</small>
+        }
+    </div>
+    <div class="d-flex gap-2">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string? Subtitulo { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

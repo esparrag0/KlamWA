@@ -1,0 +1,46 @@
+@using KlamWA.Components.Shared
+@* Tabla reutilizable de cirugías (lista e historial) *@
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Fecha</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Procedimiento</th>
+                <th>Cliente</th>
+                <th>Doctor</th>
+                @if (MostrarMotivo) { <th>Motivo cancelación</th> }
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Cirugias)
+            {
+                <tr>
+                    <td>@c.Inicio.ToString("dd/MM/yyyy")</td>
+                    <td>@c.Inicio.ToString("HH:mm")</td>
+                    <td>@c.Fin.ToString("HH:mm")</td>
+                    <td>@c.Procedimiento</td>
+                    <td>@c.Cliente</td>
+                    <td>@c.Doctor</td>
+                    @if (MostrarMotivo) { <td>@c.MotivoCancelacion</td> }
+                    <td><EstadoBadge Estado="@c.Estado" /></td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" href="/agenda/cirugia/@c.Id">Detalle</a>
+                    </td>
+                </tr>
+            }
+            @if (!Cirugias.Any())
+            {
+                <tr><td colspan="9" class="text-center text-muted py-4">No hay cirugías para mostrar.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<CirugiaMock> Cirugias { get; set; } = new List<CirugiaMock>();
+    [Parameter] public bool MostrarMotivo { get; set; }
+}

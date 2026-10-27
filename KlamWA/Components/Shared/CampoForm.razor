@@ -1,0 +1,11 @@
+@* Campo de formulario reutilizable: etiqueta + control (ChildContent) en una columna *@
+<div class="@Columnas">
+    <label class="form-label">@Etiqueta</label>
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string Etiqueta { get; set; } = "";
+    [Parameter] public string Columnas { get; set; } = "col-md-6";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
