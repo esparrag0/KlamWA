@@ -1,0 +1,12 @@
+@page "/agenda/lista"
+@using KlamWA.Components.Shared
+
+<PageTitle>Lista de cirugías</PageTitle>
+
+<PageHeader Titulo="Lista de cirugías" Subtitulo="Todas las cirugías registradas (datos de ejemplo)">
+    <a class="btn btn-outline-secondary" href="/agenda">Ver calendario</a>
+    <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a>
+</PageHeader>
+
+<FiltrosCirugia />
+<TablaCirugias Cirugias="DatosAgenda.Cirugias" />

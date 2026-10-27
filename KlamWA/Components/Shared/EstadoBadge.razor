@@ -1,0 +1,6 @@
+@using KlamWA.Components.Shared
+<span class="badge" style="background-color:@DatosAgenda.Color(Estado); color:@DatosAgenda.ColorTexto(Estado);">@Estado</span>
+
+@code {
+    [Parameter] public string Estado { get; set; } = "";
+}

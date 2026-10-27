@@ -1,0 +1,40 @@
+@using KlamWA.Components.Shared
+@* Barra de filtros solo visual (Lab 9: no filtra datos) *@
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Desde</label>
+                <input type="date" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Hasta</label>
+                <input type="date" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Cliente</label>
+                <select class="form-select form-select-sm">
+                    <option>Todos</option>
+                    @foreach (var x in DatosAgenda.Clientes) { <option>@x.Value</option> }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Equipo</label>
+                <select class="form-select form-select-sm">
+                    <option>Todos</option>
+                    @foreach (var x in DatosAgenda.Equipos) { <option>@x.Value</option> }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Estado</label>
+                <select class="form-select form-select-sm">
+                    <option>Todos</option>
+                    @foreach (var e in DatosAgenda.Estados) { <option>@e</option> }
+                </select>
+            </div>
+            <div class="col-md-1 d-grid">
+                <button type="button" class="btn btn-secondary btn-sm">Filtrar</button>
+            </div>
+        </div>
+    </div>
+</div>

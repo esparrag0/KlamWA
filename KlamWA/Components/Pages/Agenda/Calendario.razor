@@ -1,0 +1,51 @@
+@page "/agenda"
+@using KlamWA.Components.Shared
+
+<PageTitle>Agenda de cirugías</PageTitle>
+
+<PageHeader Titulo="Agenda de cirugías" Subtitulo="Calendario mensual (datos de ejemplo)">
+    <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a>
+    <a class="btn btn-outline-secondary" href="/agenda/lista">Ver lista</a>
+    <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a>
+</PageHeader>
+
+<ResumenEstados Cirugias="DatosAgenda.Cirugias" />
+
+<h5 class="mb-2">Octubre 2026</h5>
+<div class="table-responsive">
+    <table class="table table-bordered calendario">
+        <thead class="table-light">
+            <tr><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr>
+        </thead>
+        <tbody>
+            @for (int sem = 0; sem < 5; sem++)
+            {
+                <tr>
+                    @for (int d = 0; d < 7; d++)
+                    {
+                        var dia = inicio.AddDays(sem * 7 + d);
+                        <td class="@(dia.Month == 10 ? "" : "fuera-de-mes")">
+                            <div class="numero @(dia.Date == hoy ? "hoy" : "")">@dia.Day</div>
+                            @if (dia.Month == 10)
+                            {
+                                @foreach (var c in DatosAgenda.Cirugias.Where(x => x.Inicio.Date == dia.Date))
+                                {
+                                    <a href="/agenda/cirugia/@c.Id" class="evento"
+                                       style="background-color:@DatosAgenda.Color(c.Estado); color:@DatosAgenda.ColorTexto(c.Estado)">
+                                        @c.Inicio.ToString("HH:mm") @c.Procedimiento
+                                    </a>
+                                }
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private DateTime hoy = new DateTime(2026, 10, 26);
+    // Lunes de la semana que contiene el 1 de octubre de 2026
+    private DateTime inicio = new DateTime(2026, 10, 1).AddDays(-(((int)new DateTime(2026, 10, 1).DayOfWeek + 6) % 7));
+}

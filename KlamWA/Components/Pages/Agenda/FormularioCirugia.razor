@@ -1,0 +1,134 @@
+@page "/agenda/nueva"
+@page "/agenda/editar/{Id:int}"
+@using KlamWA.Components.Shared
+@using KlamWA.ViewModels
+@inject NavigationManager Nav
+
+<PageTitle>Formulario de cirugía</PageTitle>
+
+<PageHeader Titulo="@(Id == null ? "Registrar cirugía" : "Editar cirugía #" + Id)"
+            Subtitulo="Los datos se validan pero no se guardan en este laboratorio" />
+
+<div class="mb-3" style="max-width:300px">
+    <label class="form-label">Vista según rol</label>
+    <select class="form-select" @bind="rol">
+        <option>Administrador</option>
+        <option>Vendedor</option>
+    </select>
+</div>
+
+@if (MensajeError != null)
+{
+    <div class="alert alert-danger">@MensajeError</div>
+}
+@if (MensajeOk != null)
+{
+    <div class="alert alert-success">@MensajeOk</div>
+}
+
+<EditForm Model="ViewModel" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card" style="max-width:900px">
+        <div class="card-body">
+            <div class="row g-3">
+                <CampoForm Etiqueta="Tipo de procedimiento">
+                    <InputText class="form-control" @bind-Value="ViewModel.TipoProcedimiento" />
+                    <ValidationMessage For="() => ViewModel.TipoProcedimiento" />
+                </CampoForm>
+                <CampoForm Etiqueta="Doctor">
+                    <InputText class="form-control" @bind-Value="ViewModel.Doctor" />
+                    <ValidationMessage For="() => ViewModel.Doctor" />
+                </CampoForm>
+                <CampoForm Etiqueta="Inicio">
+                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraInicio" />
+                    <ValidationMessage For="() => ViewModel.FechaHoraInicio" />
+                </CampoForm>
+                <CampoForm Etiqueta="Fin">
+                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraFin" />
+                    <ValidationMessage For="() => ViewModel.FechaHoraFin" />
+                </CampoForm>
+                <CampoForm Etiqueta="Cliente">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.IdCliente">
+                        <option value="0">-- Seleccione --</option>
+                        @foreach (var x in DatosAgenda.Clientes) { <option value="@x.Key">@x.Value</option> }
+                    </InputSelect>
+                    <ValidationMessage For="() => ViewModel.IdCliente" />
+                </CampoForm>
+                <CampoForm Etiqueta="Estado">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.Estado">
+                        @foreach (var e in DatosAgenda.Estados) { <option value="@e">@e</option> }
+                    </InputSelect>
+                </CampoForm>
+                <CampoForm Etiqueta="Equipo">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.IdEquipo">
+                        <option value="0">-- Ninguno --</option>
+                        @foreach (var x in DatosAgenda.Equipos) { <option value="@x.Key">@x.Value</option> }
+                    </InputSelect>
+                </CampoForm>
+                <CampoForm Etiqueta="Bandeja instrumental">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.IdBandeja">
+                        <option value="0">-- Ninguna --</option>
+                        @foreach (var x in DatosAgenda.Bandejas) { <option value="@x.Key">@x.Value</option> }
+                    </InputSelect>
+                </CampoForm>
+                <CampoForm Etiqueta="Motivo de cancelación (obligatorio si está cancelada)" Columnas="col-12">
+                    <InputText class="form-control" @bind-Value="ViewModel.MotivoCancelacion" />
+                    <ValidationMessage For="() => ViewModel.MotivoCancelacion" />
+                </CampoForm>
+                @if (rol == "Administrador")
+                {
+                    <CampoForm Etiqueta="Vendedor asignado">
+                        <select class="form-select"><option>Vendedor 1</option><option>Vendedor 2</option></select>
+                    </CampoForm>
+                    <CampoForm Etiqueta="Precio pactado (cotización) S/">
+                        <InputNumber class="form-control" @bind-Value="ViewModel.PrecioPactado" />
+                        <ValidationMessage For="() => ViewModel.PrecioPactado" />
+                    </CampoForm>
+                }
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a class="btn btn-outline-secondary" href="/agenda/lista">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private CirugiaViewModel ViewModel { get; set; } = new();
+    private string rol = "Administrador";
+    private string? MensajeError { get; set; }
+    private string? MensajeOk { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        MensajeError = null;
+        MensajeOk = null;
+        if (Id == null)
+        {
+            ViewModel = new CirugiaViewModel();
+            return;
+        }
+        var c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
+        if (c == null)
+        {
+            Nav.NavigateTo("/agenda/lista");
+            return;
+        }
+        ViewModel = new CirugiaViewModel(c);
+    }
+
+    // Solo se ejecuta si el ViewModel es válido (validación de frontend).
+    private void Guardar()
+    {
+        // Lab 9: NO se guarda nada.
+        // Siguiente lab (backend): llamar al servicio web de Java (CirugiaBL.insert/update)
+        // dentro de try/catch y mostrar el mensaje de error de la BL en MensajeError,
+        // igual que GestionarProductosPage con BLException.
+        MensajeOk = "Datos válidos (en este laboratorio no se guarda).";
+    }
+}

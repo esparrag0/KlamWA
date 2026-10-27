@@ -1,6 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">KlamWA</a>
+        <a class="navbar-brand" href=""><img src="img/klam-wordmark-blanco.svg" alt="Klam" /></a>
     </div>
 </div>
 
@@ -8,23 +8,35 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
+        <div class="nav-section">Principal</div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Inicio
             </NavLink>
         </div>
 
+        <div class="nav-section">Agenda y cirugías</div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            <NavLink class="nav-link" href="agenda" Match="NavLinkMatch.All">
+                <span class="bi bi-calendar-nav-menu" aria-hidden="true"></span> Calendario
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="agenda/lista">
+                <span class="bi bi-lista-nav-menu" aria-hidden="true"></span> Lista de cirugías
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="agenda/nueva">
+                <span class="bi bi-nueva-nav-menu" aria-hidden="true"></span> Nueva cirugía
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="agenda/historial">
+                <span class="bi bi-historial-nav-menu" aria-hidden="true"></span> Historial
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+        @* Cada rol agrega aquí su propia sección (Clientes, Inventario, Finanzas, etc.) *@
     </nav>
 </div>
-
