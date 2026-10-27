@@ -1,0 +1,15 @@
+@* Etiqueta de estado de documento/solicitud: Pendiente, Validado, Rechazado
+   (mismos nombres que EstadoValidacionDocumento de Java) *@
+<span class="badge @Clase">@Estado</span>
+
+@code {
+    [Parameter] public string Estado { get; set; } = "";
+
+    private string Clase => Estado switch
+    {
+        "Validado"  => "text-bg-success",
+        "Rechazado" => "text-bg-danger",
+        "Pendiente" => "text-bg-warning",
+        _           => "text-bg-secondary"
+    };
+}
