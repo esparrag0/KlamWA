@@ -1,0 +1,77 @@
+@page "/clientes/{Id:int}"
+@using KlamWA.Components.Shared
+
+<PageTitle>Detalle de cliente</PageTitle>
+
+@if (c == null)
+{
+    <div class="alert alert-warning">Cliente no encontrado.</div>
+    <a href="/clientes">Volver a la lista</a>
+}
+else
+{
+    <PageHeader Titulo="@c.Nombre" Subtitulo="@("Cliente #" + c.Id + " · " + c.Tipo)">
+        <span class="badge @(c.Activo ? "text-bg-success" : "text-bg-secondary") align-self-center">@(c.Activo ? "Activo" : "Inactivo")</span>
+        <a class="btn btn-primary" href="/clientes/editar/@c.Id">Editar</a>
+        <a class="btn btn-outline-dark" href="/clientes">Volver</a>
+    </PageHeader>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header">Datos del cliente</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">@(c.Tipo == DatosClientes.Particular ? "DNI" : "RUC")</dt>
+                        <dd class="col-sm-8">@(c.Tipo == DatosClientes.Particular ? c.Dni : c.Ruc)</dd>
+                        <dt class="col-sm-4">Dirección</dt><dd class="col-sm-8">@c.Direccion</dd>
+                        <dt class="col-sm-4">Correo de contacto</dt><dd class="col-sm-8">@c.Email</dd>
+                        <dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8">@c.Telefono</dd>
+                        @if (c.Tipo == DatosClientes.Particular)
+                        {
+                            <dt class="col-sm-4">Pago confirmado</dt><dd class="col-sm-8">@(c.PagoConfirmado ? "Sí" : "No")</dd>
+                        }
+                        else
+                        {
+                            <dt class="col-sm-4">Consignación</dt><dd class="col-sm-8">@(c.TieneConsignacion ? "Sí" : "No")</dd>
+                            <dt class="col-sm-4">Periodo de crédito</dt><dd class="col-sm-8">@c.PeriodoCredito</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Historial de cirugías</div>
+                <div class="card-body p-0">
+                    <TablaCirugias Cirugias="cirugias" MostrarMotivo="true" />
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">Acciones y enlaces</div>
+                <div class="list-group list-group-flush">
+                    <a class="list-group-item list-group-item-action" href="/mis-solicitudes/nueva">Nueva solicitud de cirugía</a>
+                    <a class="list-group-item list-group-item-action" href="/mis-solicitudes">Ver solicitudes del cliente</a>
+                    <a class="list-group-item list-group-item-action" href="/solicitudes">Ver documentación</a>
+                    <a class="list-group-item list-group-item-action" href="/agenda/lista">Ver cirugías en la agenda</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private ClienteMock? c;
+    private List<CirugiaMock> cirugias = new();
+
+    protected override void OnParametersSet()
+    {
+        c = DatosClientes.Lista.FirstOrDefault(x => x.Id == Id);
+        cirugias = c == null
+            ? new List<CirugiaMock>()
+            : DatosAgenda.Cirugias.Where(x => x.Cliente == c.Nombre).ToList();
+    }
+}
