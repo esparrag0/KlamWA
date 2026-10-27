@@ -33,6 +33,7 @@ public class ClienteViewModel : IValidatableObject
     // Clínica / hospital
     public string Ruc { get; set; } = "";
     public bool TieneConsignacion { get; set; }
+    [StringLength(30, ErrorMessage = "El periodo de crédito no puede exceder 30 caracteres")]
     public string PeriodoCredito { get; set; } = "";
 
     public ClienteViewModel() { }

@@ -15,6 +15,7 @@
                 <th>N.º</th>
                 <th>Fecha solicitada</th>
                 <th>Cliente</th>
+                <th>Clínica</th>
                 <th>Procedimiento</th>
                 <th>Médico</th>
                 <th>Documentos</th>
@@ -29,11 +30,16 @@
                     <td>@s.Id</td>
                     <td>@s.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
                     <td><a href="/clientes/@s.IdCliente">@s.Cliente</a></td>
+                    <td>@s.Clinica</td>
                     <td>@s.Procedimiento</td>
                     <td>@s.Doctor</td>
                     <td>@(s.Documentos.Count(d => d.Estado == "Validado") + " de " + s.Documentos.Count + " validados")</td>
                     <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
+                        @if (s.Estado.StartsWith("Rechazada"))
+                        {
+                            <a class="btn btn-sm btn-warning" href="/mis-solicitudes/corregir/@s.Id">Resubir documento</a>
+                        }
                         <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.Id)">
                             @(abierta == s.Id ? "Ocultar documentos" : "Ver documentos")
                         </button>
@@ -42,9 +48,16 @@
                 @if (abierta == s.Id)
                 {
                     <tr>
-                        <td colspan="8" class="bg-light">
+                        <td colspan="9" class="bg-light">
                             <div class="p-2">
                                 <div class="mb-2"><strong>Diagnóstico:</strong> @s.Diagnostico</div>
+                                @if (s.Estado.StartsWith("Rechazada"))
+                                {
+                                    <div class="alert alert-danger py-2">
+                                        <strong>Mensaje del administrador:</strong> @s.MotivoRechazo
+                                        <a class="alert-link ms-2" href="/mis-solicitudes/corregir/@s.Id">Resubir documento</a>
+                                    </div>
+                                }
                                 <table class="table table-sm mb-2">
                                     <thead>
                                         <tr><th>Documento</th><th>Archivo</th><th>Estado</th></tr>

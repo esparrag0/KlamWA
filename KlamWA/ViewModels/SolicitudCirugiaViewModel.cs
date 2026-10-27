@@ -7,8 +7,10 @@ namespace KlamWA.ViewModels;
 // (Cirugia: tipoProcedimiento, doctorNombre, fechaHoraInicio) en el lab de integración.
 public class SolicitudCirugiaViewModel
 {
-    [Range(1, int.MaxValue, ErrorMessage = "Seleccione el cliente o la clínica")]
-    public int IdCliente { get; set; }
+    // Clínica u hospital donde se realizará la cirugía (RF05). El solicitante es el cliente
+    // que inició sesión, por eso no se pide aquí.
+    [Range(1, int.MaxValue, ErrorMessage = "Seleccione la clínica u hospital")]
+    public int IdClinica { get; set; }
 
     [Required(ErrorMessage = "El diagnóstico es obligatorio")]
     [StringLength(300, ErrorMessage = "Máximo 300 caracteres")]
