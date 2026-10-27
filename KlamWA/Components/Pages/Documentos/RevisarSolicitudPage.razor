@@ -1,0 +1,111 @@
+@page "/solicitudes/revision/{Id:int}"
+@inject NavigationManager Nav;
+
+<PageTitle>Solicitudes de cirugía</PageTitle>
+
+<h3 class="mb-3">Revisión de @Solicitud.Codigo</h3>
+<p class="text-muted">@Solicitud.Cliente · Documentos de la atención</p>
+
+@if (AprobacionBloqueada) {
+    <div class="alert alert-warning">
+        <div class="fw-bold">Aprobación bloqueada</div>
+        Falta un documento obligatorio. La solicitud no puede aprobarse hasta completar su revisión.
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Documentos de ingreso</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Estado</th>
+                            <th>Archivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (DocumentoIngresoViewModel documento in Documentos) {
+                            <tr>
+                                <td>@documento.Documento</td>
+                                <td>@documento.Estado</td>
+                                <td>@(documento.Archivo != "" ? documento.Archivo : "Sin archivo adjunto")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="form-text">El documento requerido depende del canal y las condiciones de atención.</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Decisión administrativa</div>
+            <div class="card-body">
+                <p class="fw-bold mb-0">Paciente @Solicitud.Paciente</p>
+                <p class="fw-bold mb-0">@Solicitud.Procedimiento</p>
+                <p class="fw-bold">@Solicitud.FechaSolicitada.ToString("dd/MM/yyyy HH:mm")</p>
+                <div class="d-flex gap-2">
+                    <button tabindex="1" class="btn btn-success" disabled="@AprobacionBloqueada" @onclick="() => AprobarSolicitud()">
+                        Aprobar solicitud
+                    </button>
+                    <button tabindex="2" class="btn btn-outline-danger" @onclick="() => RechazarSolicitud()">
+                        Rechazar / pedir corrección
+                    </button>
+                </div>
+                <div class="form-text">Revisa los archivos antes de cambiar su estado.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a tabindex="3" class="btn btn-outline-secondary" href="solicitudes">Volver</a>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private SolicitudViewModel Solicitud { get; set; } = new();
+    private List<DocumentoIngresoViewModel> Documentos { get; set; } = [];
+    private bool AprobacionBloqueada { get; set; }
+
+    private List<SolicitudViewModel> Solicitudes { get; } = [
+        new SolicitudViewModel { Id = 41, Cliente = "Particular", Paciente = "P-041", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 27, 8, 0, 0), Estado = "Por revisar" },
+        new SolicitudViewModel { Id = 40, Cliente = "Clínica San Felipe", Paciente = "P-026", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 26, 8, 0, 0), Estado = "Documentación incompleta" },
+        new SolicitudViewModel { Id = 39, Cliente = "Clínica Anglo Americana", Paciente = "P-028", Procedimiento = "Columna L4-L5", FechaSolicitada = new DateTime(2026, 10, 26, 13, 0, 0), Estado = "Rechazada · Resubida habilitada" },
+        new SolicitudViewModel { Id = 38, Cliente = "Hospital Almenara", Paciente = "P-027", Procedimiento = "Neuronavegación", FechaSolicitada = new DateTime(2026, 10, 26, 9, 0, 0), Estado = "Aprobada" },
+        new SolicitudViewModel { Id = 37, Cliente = "Hospital Sabogal", Paciente = "P-025", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 25, 10, 0, 0), Estado = "Aprobada" },
+        new SolicitudViewModel { Id = 36, Cliente = "Particular", Paciente = "P-024", Procedimiento = "Columna L5-S1", FechaSolicitada = new DateTime(2026, 10, 24, 11, 0, 0), Estado = "Aprobada" }
+    ];
+
+    protected override void OnParametersSet() {
+        SolicitudViewModel? solicitud = Solicitudes.Find(s => s.Id == Id);
+        if (solicitud == null) {
+            Nav.NavigateTo("/solicitudes");
+            return;
+        }
+        Solicitud = solicitud;
+
+        string codigo = Id.ToString("000");
+        Documentos = [
+            new DocumentoIngresoViewModel { Documento = "Solicitud institucional", Estado = "Válido", Archivo = "solicitud_clinica.pdf" },
+            new DocumentoIngresoViewModel { Documento = "Cotización", Estado = "Aceptada", Archivo = $"COT-{codigo}" }
+        ];
+        if (Solicitud.Estado == "Documentación incompleta") {
+            Documentos.Add(new DocumentoIngresoViewModel { Documento = "Documento obligatorio", Estado = "Pendiente", Archivo = "" });
+        } else {
+            Documentos.Add(new DocumentoIngresoViewModel { Documento = "Receta médica", Estado = "Válido", Archivo = "receta_firmada.pdf" });
+        }
+        AprobacionBloqueada = Documentos.Exists(d => d.Estado == "Pendiente");
+    }
+
+    private void AprobarSolicitud() {
+        Nav.NavigateTo("/solicitudes");
+    }
+
+    private void RechazarSolicitud() {
+        Nav.NavigateTo($"/solicitudes/rechazo/{Id}");
+    }
+}
