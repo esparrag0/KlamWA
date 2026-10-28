@@ -25,7 +25,7 @@ public class ClienteMock
 
 public class DocumentoMock
 {
-    public string Tipo { get; set; } = "";      // DNI, Receta médica, Orden de compra
+    public string Tipo { get; set; } = "";      // DNI, Receta médica, Comprobante de pago (la OC se adjunta al culminar)
     public string Archivo { get; set; } = "";
     public string Estado { get; set; } = "";    // Pendiente, Validado, Rechazado
 }
@@ -52,7 +52,10 @@ public static class DatosClientes
 
     // El comprobante de pago bancario aplica a clientes particulares (RF08).
     public const string ComprobantePago = "Comprobante de pago bancario";
-    public static string[] TiposDocumento = { "DNI", "Receta médica", "Orden de compra", ComprobantePago };
+    public const string OrdenCompra = "Orden de compra";
+    // La OC no se pide en la solicitud: se habilita al culminar la cirugía (clínica/hospital).
+    public static string[] TiposDocumentoSolicitud = { "DNI", "Receta médica", ComprobantePago };
+    public static string[] TiposDocumento = { "DNI", "Receta médica", OrdenCompra, ComprobantePago };
 
     public static List<ClienteMock> Lista = new()
     {
@@ -73,8 +76,7 @@ public static class DatosClientes
         new() { Id=1, IdCliente=1, Cliente="Clínica San Felipe", Clinica="Clínica San Felipe", Procedimiento="Artroscopia de rodilla", Doctor="Dr. Ramos",
                 Diagnostico="Lesión de menisco medial", Fecha=new DateTime(2026,11,4,8,0,0), Estado="Aprobada",
                 Documentos = new() {
-                    new() { Tipo="Orden de compra", Archivo="oc-0001.pdf", Estado="Validado" },
-                    new() { Tipo="Receta médica",   Archivo="receta-0001.pdf", Estado="Validado" } } },
+                    new() { Tipo="Receta médica", Archivo="receta-0001.pdf", Estado="Validado" } } },
         new() { Id=2, IdCliente=4, Cliente="Luis Rojas (particular)", Clinica="Clínica Anglo", Procedimiento="Artroscopia de hombro", Doctor="Dr. Vega",
                 Diagnostico="Desgarro del manguito rotador", Fecha=new DateTime(2026,11,10,14,0,0), Estado="Por revisar",
                 Documentos = new() {
@@ -83,8 +85,8 @@ public static class DatosClientes
                     new() { Tipo=ComprobantePago, Archivo="pago-luis.pdf", Estado="Pendiente" } } },
         new() { Id=3, IdCliente=3, Cliente="Clínica Anglo", Clinica="Clínica Anglo", Procedimiento="Cirugía de columna", Doctor="Dra. Lima",
                 Diagnostico="Hernia discal L4-L5", Fecha=new DateTime(2026,11,18,11,0,0), Estado="Rechazada · Resubida habilitada",
-                MotivoRechazo="La orden de compra no se puede leer. Suba una copia más nítida.",
+                MotivoRechazo="La receta médica no se puede leer. Suba una copia más nítida.",
                 Documentos = new() {
-                    new() { Tipo="Orden de compra", Archivo="oc-0003.pdf", Estado="Rechazado" } } },
+                    new() { Tipo="Receta médica", Archivo="receta-0003.pdf", Estado="Rechazado" } } },
     };
 }

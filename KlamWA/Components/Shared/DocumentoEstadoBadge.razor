@@ -8,9 +8,9 @@
 
     private string Clase => Estado switch
     {
-        "Validado" or "Aprobada"                   => "text-bg-success",
+        "Validado" or "Aprobada" or "Completo"     => "text-bg-success",
         "Rechazado"                                => "text-bg-danger",
-        "Pendiente" or "Documentación incompleta"  => "text-bg-warning",
+        "Pendiente" or "Documentación incompleta" or "Por adjuntar" or "Por registrar" => "text-bg-warning",
         "Por revisar"                              => "text-bg-info",
         _ when Estado.StartsWith("Rechazada")      => "text-bg-danger",
         _                                          => "text-bg-secondary"
