@@ -1,0 +1,53 @@
+@page "/bitacora-cirugias/detalle/{Id:int}"
+@inject NavigationManager Nav;
+
+<PageTitle>Bitácora de cirugías</PageTitle>
+
+<h3 class="mb-3">Detalle del cambio</h3>
+<p class="text-muted">
+    @Registro.Cirugia · @Registro.Accion del @Registro.FechaHora.ToString("dd/MM/yyyy") a las @Registro.FechaHora.ToString("HH:mm")
+</p>
+
+<div class="alert alert-success">
+    <div class="fw-bold">Responsable: @Registro.Responsable</div>
+    Acción: @Registro.Accion de cirugía · Registro de auditoría
+</div>
+
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>Campo modificado</th>
+            <th>Valor anterior</th>
+            <th>Valor posterior</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (CambioCampoViewModel cambio in Cambios) {
+            <tr>
+                <td>@cambio.Campo</td>
+                <td>@cambio.ValorAnterior</td>
+                <td>@cambio.ValorPosterior</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a tabindex="1" class="btn btn-outline-secondary" href="/bitacora-cirugias">Volver a bitácora</a>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private RegistroBitacoraViewModel Registro { get; set; } = new();
+    private List<CambioCampoViewModel> Cambios { get; set; } = [];
+
+    protected override void OnParametersSet() {
+        var registro = DatosBitacora.Registros.FirstOrDefault(r => r.Id == Id);
+        if (registro == null) {
+            Nav.NavigateTo("/bitacora-cirugias");
+            return;
+        }
+        Registro = registro;
+        Cambios = DatosBitacora.Cambios(Id).ToList();
+    }
+}

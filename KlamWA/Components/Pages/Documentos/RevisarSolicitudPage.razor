@@ -1,0 +1,103 @@
+@page "/solicitudes/revision/{Id:int}"
+@inject NavigationManager Nav;
+
+<PageTitle>Solicitudes de cirugía</PageTitle>
+
+<h3 class="mb-3">Revisión de @Solicitud.Codigo</h3>
+<p class="text-muted">@Solicitud.Cliente · Documentos de la atención</p>
+
+@if (AprobacionBloqueada) {
+    <div class="alert alert-warning">
+        <div class="fw-bold">Aprobación bloqueada</div>
+        Falta un documento obligatorio o está pendiente de validación. La solicitud no puede aprobarse hasta completar su revisión.
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Documentos de ingreso</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Estado</th>
+                            <th>Archivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (DocumentoIngresoViewModel documento in Documentos) {
+                            <tr>
+                                <td>@documento.Documento</td>
+                                <td>@documento.Estado</td>
+                                <td>@(documento.Archivo != "" ? documento.Archivo : "Sin archivo adjunto")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="form-text">El documento requerido depende del canal y las condiciones de atención.</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header fw-bold">Decisión administrativa</div>
+            <div class="card-body">
+                <p class="fw-bold mb-0">Paciente @Solicitud.Paciente</p>
+                <p class="fw-bold mb-0">@Solicitud.Procedimiento</p>
+                <p class="fw-bold">@Solicitud.FechaSolicitada.ToString("dd/MM/yyyy HH:mm")</p>
+                <div class="d-flex gap-2">
+                    <button tabindex="1" class="btn btn-success" disabled="@AprobacionBloqueada" @onclick="() => AprobarSolicitud()">
+                        Aprobar solicitud
+                    </button>
+                    <button tabindex="2" class="btn btn-outline-danger" @onclick="() => RechazarSolicitud()">
+                        Rechazar / pedir corrección
+                    </button>
+                </div>
+                <div class="form-text">Revisa los archivos antes de cambiar su estado.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (mensaje is not null) { <div class="alert alert-info mt-3" role="status">@mensaje</div> }
+<a tabindex="3" class="btn btn-outline-secondary" href="/solicitudes">Volver</a>
+<AvisoDemostracion />
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private SolicitudViewModel Solicitud { get; set; } = new();
+    private List<DocumentoIngresoViewModel> Documentos { get; set; } = [];
+    private bool AprobacionBloqueada { get; set; }
+
+    private string? mensaje;
+
+    protected override void OnParametersSet() {
+        SolicitudMock? solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == Id);
+        if (solicitud == null) {
+            Nav.NavigateTo("/solicitudes");
+            return;
+        }
+        Solicitud = DatosClientes.ParaRevision(solicitud);
+        Documentos = solicitud.Documentos.Select(d => new DocumentoIngresoViewModel
+        {
+            Documento = d.Tipo, Estado = d.Estado, Archivo = d.Archivo
+        }).ToList();
+
+        string[] obligatorios = solicitud.IdCliente == 4
+            ? ["DNI", "Receta médica", DatosClientes.ComprobantePago]
+            : ["Receta médica"];
+        AprobacionBloqueada = obligatorios.Any(tipo =>
+            !Documentos.Any(d => d.Documento == tipo && d.Estado == "Validado"));
+    }
+
+    private void AprobarSolicitud() =>
+        mensaje = "Aprobación de demostración. El estado de la solicitud no cambió.";
+
+    private void RechazarSolicitud() {
+        Nav.NavigateTo($"/solicitudes/rechazo/{Id}");
+    }
+}

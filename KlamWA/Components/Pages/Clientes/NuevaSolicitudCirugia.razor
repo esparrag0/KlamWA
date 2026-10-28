@@ -1,0 +1,114 @@
+@page "/mis-solicitudes/nueva"
+@inject VistaPreviaRol Vista
+
+<PageTitle>Nueva solicitud de cirugía</PageTitle>
+<PageHeader Titulo="Solicitar cirugía" Subtitulo="Cliente o vendedor · formulario de ejemplo" />
+
+@if (mensaje is not null)
+{
+    <div class="alert alert-info" role="status">@mensaje</div>
+}
+
+<EditForm Model="ViewModel" OnValidSubmit="ValidarSolicitud">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card mb-3" style="max-width:900px">
+        <div class="card-header">Datos de la cirugía</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <CampoForm Etiqueta="Tipo de cliente" Columnas="col-12" Para="tipo-cliente">
+                    <InputSelect id="tipo-cliente" class="form-select" @bind-Value="ViewModel.TipoCliente">
+                        <option value="@DatosClientes.Clinica">Clínica / hospital</option>
+                        <option value="@DatosClientes.Particular">Paciente particular</option>
+                    </InputSelect>
+                </CampoForm>
+                @if (ViewModel.TipoCliente == DatosClientes.Particular)
+                {
+                    <CampoForm Etiqueta="DNI del paciente *" Para="dni-paciente">
+                        <InputText id="dni-paciente" class="form-control" maxlength="8" @bind-Value="ViewModel.Dni" />
+                        <ValidationMessage For="() => ViewModel.Dni" />
+                    </CampoForm>
+                }
+                <CampoForm Etiqueta="Clínica u hospital donde se realizará *" Para="clinica">
+                    <InputSelect id="clinica" class="form-select" @bind-Value="ViewModel.IdClinica">
+                        <option value="0">-- Seleccione --</option>
+                        @foreach (var x in DatosClientes.Clinicas) { <option value="@x.Key">@x.Value</option> }
+                    </InputSelect>
+                    <ValidationMessage For="() => ViewModel.IdClinica" />
+                </CampoForm>
+                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
+                    <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
+                    <ValidationMessage For="() => ViewModel.Diagnostico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Procedimiento *" Para="procedimiento">
+                    <InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" />
+                    <ValidationMessage For="() => ViewModel.Procedimiento" />
+                </CampoForm>
+                <CampoForm Etiqueta="Médico *" Para="medico">
+                    <InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" />
+                    <ValidationMessage For="() => ViewModel.Medico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Fecha *" Para="fecha">
+                    <InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" />
+                    <ValidationMessage For="() => ViewModel.Fecha" />
+                </CampoForm>
+                <CampoForm Etiqueta="Hora *" Para="hora">
+                    <InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" />
+                    <ValidationMessage For="() => ViewModel.Hora" />
+                </CampoForm>
+                <CampoForm Etiqueta="Observaciones (opcional)" Columnas="col-12" Para="observaciones">
+                    <InputTextArea id="observaciones" class="form-control" rows="2" @bind-Value="ViewModel.Observaciones" />
+                </CampoForm>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3" style="max-width:900px">
+        <div class="card-header">Documentos adjuntos</div>
+        <div class="card-body">
+            <p class="text-muted small">Los archivos se seleccionan solo para mostrar el formulario; no se suben en esta entrega.</p>
+            <div class="mb-3">
+                <label for="receta" class="form-label">Receta médica</label>
+                <InputFile id="receta" class="form-control" OnChange="SeleccionarReceta" />
+                @if (receta is not null) { <div class="form-text">Seleccionado: @receta</div> }
+            </div>
+            @if (ViewModel.TipoCliente == DatosClientes.Particular)
+            {
+                <div class="mb-3">
+                    <label for="comprobante" class="form-label">Comprobante de pago bancario *</label>
+                    <InputFile id="comprobante" class="form-control" OnChange="SeleccionarComprobante" />
+                    <ValidationMessage For="() => ViewModel.ComprobanteSeleccionado" />
+                    @if (comprobante is not null) { <div class="form-text">Seleccionado: @comprobante</div> }
+                </div>
+            }
+        </div>
+        <div class="card-footer d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Revisar solicitud</button>
+            <a class="btn btn-outline-secondary" href="/mis-solicitudes">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+<AvisoDemostracion Texto="La validación solo ocurre en la pantalla. No se crea ni envía una solicitud." />
+
+@code {
+    private SolicitudCirugiaViewModel ViewModel { get; set; } = new();
+    private string? receta;
+    private string? comprobante;
+    private string? mensaje;
+
+    protected override void OnInitialized()
+    {
+        if (Vista.Perfil.Clave == "vendedor")
+            ViewModel.TipoCliente = DatosClientes.Particular;
+    }
+
+    private void SeleccionarReceta(InputFileChangeEventArgs e) => receta = e.File.Name;
+    private void SeleccionarComprobante(InputFileChangeEventArgs e)
+    {
+        comprobante = e.File.Name;
+        ViewModel.ComprobanteSeleccionado = true;
+    }
+    private void ValidarSolicitud() =>
+        mensaje = "Formulario válido. La solicitud no se envió porque esta entrega es solo visual.";
+}

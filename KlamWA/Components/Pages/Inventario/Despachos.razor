@@ -1,0 +1,64 @@
+@page "/inventario/despachos"
+
+<PageTitle>Despachos y retornos</PageTitle>
+<PageHeader Titulo="Despachos y retornos" Subtitulo="Control visual de equipos y kits enviados">
+    <a class="btn btn-primary" href="/inventario/despachos/nuevo">Registrar despacho</a>
+</PageHeader>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-8">
+        <label for="buscar-despacho" class="form-label">Búsqueda</label>
+        <input id="buscar-despacho" class="form-control" placeholder="Despacho, cirugía, cliente o equipo" @bind="busqueda" @bind:event="oninput" />
+    </div>
+    <div class="col-md-4">
+        <label for="retorno-despacho" class="form-label">Retorno</label>
+        <select id="retorno-despacho" class="form-select" @bind="estado">
+            <option value="pendiente">Pendientes de retorno</option>
+            <option value="registrado">Retornos registrados</option>
+            <option value="todos">Todos</option>
+        </select>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr><th>Despacho</th><th>Cirugía / destino</th><th>Equipo / kit</th><th>Salida</th><th>Retorno</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var despacho in Filas)
+            {
+                var cirugia = DatosAgenda.Cirugias.First(c => c.Id == despacho.IdCirugia);
+                <tr>
+                    <td>@despacho.Codigo</td>
+                    <td>CIR-@cirugia.Id.ToString("000") · @cirugia.Clinica</td>
+                    <td>@despacho.Equipo · @despacho.Kit</td>
+                    <td>@despacho.Salida.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@(despacho.Retorno?.ToString("dd/MM/yyyy HH:mm") ?? "Pendiente")</td>
+                    <td><a class="btn btn-sm btn-outline-primary" href="/inventario/despachos/@despacho.Codigo">Ver detalle</a></td>
+                </tr>
+            }
+            @if (!Filas.Any())
+            {
+                <tr><td colspan="6" class="text-center text-muted">No hay despachos para este filtro.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+<AvisoDemostracion />
+
+@code {
+    private string busqueda = "";
+    private string estado = "pendiente";
+    private IEnumerable<DespachoVista> Filas =>
+        DatosDespachos.Lista.Where(d =>
+        {
+            var c = DatosAgenda.Cirugias.First(x => x.Id == d.IdCirugia);
+            var coincide = string.IsNullOrWhiteSpace(busqueda)
+                || d.Codigo.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || $"CIR-{c.Id:000}".Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || c.Cliente.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || d.Equipo.Contains(busqueda, StringComparison.OrdinalIgnoreCase);
+            return coincide && (estado == "todos" || (estado == "pendiente" ? d.Retorno is null : d.Retorno is not null));
+        });
+}

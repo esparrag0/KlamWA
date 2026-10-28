@@ -24,7 +24,7 @@ else
             </section>
             <section class="card"><div class="section-heading"><h2><Icono Nombre="escudo" Tamano="18" /> Acceso y responsabilidades</h2><span>02</span></div>
                 <div class="card-body p-4"><div class="row g-3">
-                    <CampoForm Etiqueta="Rol del personal" Para="usuario-rol"><select id="usuario-rol" class="form-select" @bind="rol"><option value="Administrador">Administrador</option><option value="Vendedor">Vendedor</option><option value="Instrumentista">Instrumentista</option></select></CampoForm>
+                    <CampoForm Etiqueta="Rol del personal" Para="usuario-rol"><select id="usuario-rol" class="form-select" @bind="rol"><option value="Administrador">Administrador</option><option value="Vendedor">Vendedor</option><option value="Instrumentista">Instrumentista</option><option value="Cliente">Cliente</option></select></CampoForm>
                     <CampoForm Etiqueta="Estado de la cuenta" Para="usuario-estado"><select id="usuario-estado" class="form-select" value="@(usuario?.Activo == false ? "Inactivo" : "Activo")"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select></CampoForm>
                     @if (rol == "Instrumentista")
                     {
@@ -48,6 +48,7 @@ else
     private string DescripcionRol => rol switch {
         "Administrador" => "Gestión de usuarios, revisión de solicitudes y coordinación de la agenda.",
         "Instrumentista" => "Consulta del calendario y recepción de avisos sobre nuevas cirugías.",
+        "Cliente" => "Consulta de sus cirugías, solicitudes, documentos y cotizaciones.",
         _ => "Registro de solicitudes y seguimiento de la programación de clientes."
     };
     protected override void OnParametersSet() { usuario = Id.HasValue ? DatosAcceso.Usuario(Id.Value) : null; rol = usuario?.Rol ?? "Vendedor"; }

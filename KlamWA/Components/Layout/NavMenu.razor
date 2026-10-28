@@ -12,17 +12,56 @@
         }
         <div class="nav-section">Agenda y cirugías</div>
         <NavLink class="nav-link" href="/agenda" Match="NavLinkMatch.All"><Icono Nombre="calendario" /> Calendario</NavLink>
-        <NavLink class="nav-link" href="/agenda/lista"><Icono Nombre="lista" /> Lista de cirugías</NavLink>
-        @if (Perfil.Clave is "administrador" or "vendedor")
+        <NavLink class="nav-link" href="/agenda/lista"><Icono Nombre="lista" /> @(Perfil.Clave == "vendedor" ? "Cirugías que coordino" : Perfil.Clave == "instrumentista" ? "Mis cirugías" : "Lista de cirugías")</NavLink>
+        @if (Perfil.Clave == "administrador")
         {
             <NavLink class="nav-link" href="/agenda/nueva"><Icono Nombre="mas" /> Nueva cirugía</NavLink>
         }
-        <NavLink class="nav-link" href="/agenda/historial"><Icono Nombre="reloj" /> Historial</NavLink>
+        @if (Perfil.Clave is "administrador" or "cliente") { <NavLink class="nav-link" href="/agenda/historial"><Icono Nombre="reloj" /> @(Perfil.Clave == "cliente" ? "Mis cirugías anteriores" : "Historial")</NavLink> }
         @if (Perfil.Clave == "administrador")
         {
             <div class="nav-section">Administración</div>
             <NavLink class="nav-link" href="/usuarios"><Icono Nombre="usuarios" /> Usuarios</NavLink>
             <NavLink class="nav-link" href="/roles"><Icono Nombre="escudo" /> Roles y responsabilidades</NavLink>
+        }
+        @if (Perfil.Clave == "administrador")
+        {
+            <div class="nav-section">Cotizaciones</div>
+            <NavLink class="nav-link" href="/cotizaciones" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Cotizaciones</NavLink>
+            <div class="nav-section">Reportes</div>
+            <NavLink class="nav-link" href="/reportes/consumo"><Icono Nombre="lista" /> Uso de insumos</NavLink>
+            <NavLink class="nav-link" href="/reportes/comparativo"><Icono Nombre="flecha" /> Despacho y consumo</NavLink>
+        }
+        @if (Perfil.Clave == "cliente")
+        {
+            <div class="nav-section">Cotizaciones</div>
+            <NavLink class="nav-link" href="/cotizaciones/cliente"><Icono Nombre="lista" /> Mis cotizaciones</NavLink>
+        }
+        @if (Perfil.Clave == "administrador")
+        {
+            <div class="nav-section">Documentación</div>
+            <NavLink class="nav-link" href="/solicitudes"><Icono Nombre="lista" /> Revisar solicitudes</NavLink>
+            <NavLink class="nav-link" href="/historial-documental"><Icono Nombre="reloj" /> Historial documental</NavLink>
+        }
+        @if (Perfil.Clave == "administrador") { <NavLink class="nav-link" href="/bitacora-cirugias"><Icono Nombre="reloj" /> Bitácora de cirugías</NavLink> }
+        @if (Perfil.Clave == "administrador")
+        {
+            <div class="nav-section">Inventario y logística</div>
+            <NavLink class="nav-link" href="/inventario/despachos"><Icono Nombre="flecha" /> Despachos y retornos</NavLink>
+            <NavLink class="nav-link" href="/inventario/bandejas"><Icono Nombre="lista" /> Plantillas de bandejas</NavLink>
+            <NavLink class="nav-link" href="/inventario/consumos"><Icono Nombre="lista" /> Consumos</NavLink>
+        }
+        @if (Perfil.Clave == "administrador")
+        {
+            <div class="nav-section">Clientes</div>
+            <NavLink class="nav-link" href="/clientes" Match="NavLinkMatch.All"><Icono Nombre="usuarios" /> Lista de clientes</NavLink>
+            <NavLink class="nav-link" href="/clientes/nuevo"><Icono Nombre="mas" /> Nuevo cliente</NavLink>
+        }
+        @if (Perfil.Clave is "cliente" or "vendedor")
+        {
+            <div class="nav-section">Solicitudes de cirugía</div>
+            <NavLink class="nav-link" href="/mis-solicitudes" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Mis solicitudes</NavLink>
+            <NavLink class="nav-link" href="/mis-solicitudes/nueva"><Icono Nombre="mas" /> Nueva solicitud</NavLink>
         }
     </nav>
     <div class="sidebar-bottom"><a class="exit-link" href="/login"><Icono Nombre="salir" Tamano="18" /> Volver al acceso</a></div>
