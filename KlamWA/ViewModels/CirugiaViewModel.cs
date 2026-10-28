@@ -18,6 +18,17 @@ public class CirugiaViewModel : IValidatableObject
     [StringLength(100, ErrorMessage = "Máximo 100 caracteres")]
     public string Doctor { get; set; } = "";
 
+    [Required(ErrorMessage = "El nombre del paciente es obligatorio")]
+    [StringLength(100, ErrorMessage = "Máximo 100 caracteres")]
+    public string Paciente { get; set; } = "";
+
+    [Required(ErrorMessage = "El diagnóstico es obligatorio")]
+    [StringLength(300, ErrorMessage = "Máximo 300 caracteres")]
+    public string Diagnostico { get; set; } = "";
+
+    [Required(ErrorMessage = "La clínica u hospital es obligatorio")]
+    public string Clinica { get; set; } = "";
+
     [Required(ErrorMessage = "La fecha y hora de inicio es obligatoria")]
     public DateTime? FechaHoraInicio { get; set; }
 
@@ -44,6 +55,9 @@ public class CirugiaViewModel : IValidatableObject
         Id = c.Id;
         TipoProcedimiento = c.Procedimiento;
         Doctor = c.Doctor;
+        Paciente = c.Paciente;
+        Diagnostico = c.Diagnostico;
+        Clinica = c.Clinica;
         FechaHoraInicio = c.Inicio;
         FechaHoraFin = c.Fin;
         IdCliente = DatosAgenda.Clientes.FirstOrDefault(x => x.Value == c.Cliente).Key;

@@ -7,29 +7,34 @@
 <PageHeader Titulo="Agenda de cirugías" Subtitulo="Calendario mensual (datos de ejemplo)">
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
     <a class="btn btn-outline-secondary" href="/agenda/lista">Ver lista</a>
-    @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a> }
+    @if (Vista.Perfil.Clave is "administrador" or "cliente") { <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a> }
 </PageHeader>
 
-<ResumenEstados Cirugias="DatosAgenda.ParaPerfil(Vista.Perfil.Clave)" />
+<FiltrosCirugia OnFiltrar="AplicarFiltros" />
+<ResumenEstados Cirugias="CirugiasDelMes" />
 
-<h5 class="mb-2">Octubre 2026</h5>
+<div class="d-flex align-items-center gap-2 mb-2">
+    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="MesAnterior" aria-label="Mes anterior">‹</button>
+    <h5 class="mb-0">@mes.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))</h5>
+    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="MesSiguiente" aria-label="Mes siguiente">›</button>
+</div>
 <div class="table-responsive">
     <table class="table table-bordered calendario">
         <thead class="table-light">
             <tr><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr>
         </thead>
         <tbody>
-            @for (int sem = 0; sem < 5; sem++)
+            @for (int sem = 0; sem < 6; sem++)
             {
                 <tr>
                     @for (int d = 0; d < 7; d++)
                     {
-                        var dia = inicio.AddDays(sem * 7 + d);
-                        <td class="@(dia.Month == 10 ? "" : "fuera-de-mes")">
-                            <div class="numero @(dia.Date == hoy ? "hoy" : "")">@dia.Day</div>
-                            @if (dia.Month == 10)
+                        var dia = InicioCuadricula.AddDays(sem * 7 + d);
+                        <td class="@(dia.Month == mes.Month ? "" : "fuera-de-mes")">
+                            <div class="numero @(dia.Date == DateTime.Today ? "hoy" : "")">@dia.Day</div>
+                            @if (dia.Month == mes.Month)
                             {
-                                @foreach (var c in DatosAgenda.ParaPerfil(Vista.Perfil.Clave).Where(x => x.Inicio.Date == dia.Date))
+                                @foreach (var c in CirugiasDelMes.Where(x => x.Inicio.Date == dia.Date))
                                 {
                                     <a href="/agenda/cirugia/@c.Id" class="evento"
                                        style="background-color:@DatosAgenda.Color(c.Estado); color:@DatosAgenda.ColorTexto(c.Estado)">
@@ -46,7 +51,14 @@
 </div>
 
 @code {
-    private DateTime hoy = new DateTime(2026, 10, 26);
-    // Lunes de la semana que contiene el 1 de octubre de 2026
-    private DateTime inicio = new DateTime(2026, 10, 1).AddDays(-(((int)new DateTime(2026, 10, 1).DayOfWeek + 6) % 7));
+    private DateTime mes = new(2026, 10, 1);
+    private FiltroCirugiaVista filtro = new();
+    private DateTime InicioCuadricula => mes.AddDays(-(((int)mes.DayOfWeek + 6) % 7));
+    private IEnumerable<CirugiaMock> CirugiasFiltradas =>
+        FiltrosAgenda.Aplicar(DatosAgenda.ParaPerfil(Vista.Perfil.Clave), filtro);
+    private IEnumerable<CirugiaMock> CirugiasDelMes =>
+        CirugiasFiltradas.Where(c => c.Inicio.Year == mes.Year && c.Inicio.Month == mes.Month);
+    private void AplicarFiltros(FiltroCirugiaVista nuevo) => filtro = nuevo;
+    private void MesAnterior() => mes = mes.AddMonths(-1);
+    private void MesSiguiente() => mes = mes.AddMonths(1);
 }

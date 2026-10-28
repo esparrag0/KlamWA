@@ -1,0 +1,38 @@
+@page "/inventario/despachos/nuevo"
+
+<PageTitle>Registrar despacho</PageTitle>
+<PageHeader Titulo="Registrar despacho" Subtitulo="Salida de equipo y kit para una cirugía" />
+
+<div class="card" style="max-width:850px">
+    <div class="card-body">
+        <div class="row g-3">
+            <CampoForm Etiqueta="Cirugía" Para="despacho-cirugia">
+                <select id="despacho-cirugia" class="form-select">
+                    @foreach (var c in DatosAgenda.Cirugias.Where(c => c.Estado is "Programada" or "En curso"))
+                    {
+                        <option>CIR-@c.Id.ToString("000") · @c.Procedimiento · @c.Clinica</option>
+                    }
+                </select>
+            </CampoForm>
+            <CampoForm Etiqueta="Fecha y hora de salida" Para="despacho-salida">
+                <input id="despacho-salida" type="datetime-local" class="form-control" />
+            </CampoForm>
+            <CampoForm Etiqueta="Equipo" Para="despacho-equipo">
+                <select id="despacho-equipo" class="form-select">
+                    @foreach (var equipo in DatosAgenda.Equipos.Values) { <option>@equipo</option> }
+                </select>
+            </CampoForm>
+            <CampoForm Etiqueta="Kit / bandeja" Para="despacho-kit">
+                <select id="despacho-kit" class="form-select">
+                    @foreach (var bandeja in DatosAgenda.Bandejas.Values) { <option>@bandeja</option> }
+                </select>
+            </CampoForm>
+            <div class="col-12"><a href="/inventario/bandejas">Consultar plantilla de consumibles</a></div>
+        </div>
+    </div>
+    <div class="card-footer d-flex gap-2">
+        <BotonDemo Mensaje="Formulario de muestra: no se registró ningún despacho.">Registrar salida</BotonDemo>
+        <a class="btn btn-outline-secondary" href="/inventario/despachos">Cancelar</a>
+    </div>
+</div>
+<AvisoDemostracion />

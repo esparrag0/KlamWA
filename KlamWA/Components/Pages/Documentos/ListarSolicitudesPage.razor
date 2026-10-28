@@ -63,20 +63,8 @@ else {
         "Aprobada"
     ];
 
-    protected override void OnInitialized() {
-        Solicitudes = new List<SolicitudViewModel> {
-            new SolicitudViewModel { Id = 41, Cliente = "Particular", Paciente = "P-041", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 27, 8, 0, 0), Estado = "Por revisar" },
-            new SolicitudViewModel { Id = 40, Cliente = "Clínica San Felipe", Paciente = "P-026", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 26, 8, 0, 0), Estado = "Documentación incompleta" },
-            new SolicitudViewModel { Id = 39, Cliente = "Clínica Anglo Americana", Paciente = "P-028", Procedimiento = "Columna L4-L5", FechaSolicitada = new DateTime(2026, 10, 26, 13, 0, 0), Estado = "Rechazada · Resubida habilitada" },
-            new SolicitudViewModel { Id = 38, Cliente = "Hospital Almenara", Paciente = "P-027", Procedimiento = "Neuronavegación", FechaSolicitada = new DateTime(2026, 10, 26, 9, 0, 0), Estado = "Aprobada" },
-            new SolicitudViewModel { Id = 37, Cliente = "Hospital Sabogal", Paciente = "P-025", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 25, 10, 0, 0), Estado = "Aprobada" },
-            new SolicitudViewModel { Id = 36, Cliente = "Particular", Paciente = "P-024", Procedimiento = "Columna L5-S1", FechaSolicitada = new DateTime(2026, 10, 24, 11, 0, 0), Estado = "Aprobada" }
-        }.AsQueryable();
-    }
-
-    private void RegistrarSolicitud() {
-        Nav.NavigateTo("/solicitudes/nueva");
-    }
+    protected override void OnInitialized() =>
+        Solicitudes = DatosClientes.Solicitudes.Select(DatosClientes.ParaRevision).AsQueryable();
 
     private void RevisarSolicitud(int id) {
         Nav.NavigateTo($"/solicitudes/revision/{id}");

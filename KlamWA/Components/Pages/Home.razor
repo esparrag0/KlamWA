@@ -23,7 +23,7 @@ else
             <div class="col-md-4"><a class="stat-card" href="/agenda/lista"><span class="stat-icon"><Icono Nombre="lista" /></span><div><span>@(Vista.Perfil.Clave == "vendedor" ? "Cirugías que coordino" : "Mis cirugías")</span><strong>@KlamWA.Components.Shared.DatosAgenda.ParaPerfil(Vista.Perfil.Clave).Count()</strong><small>Procedimientos en agenda</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
             <div class="col-md-4"><a class="stat-card" href="@(Vista.Perfil.Clave == "instrumentista" ? "/notificaciones/instrumentista" : "/mis-solicitudes")"><span class="stat-icon warm"><Icono Nombre="reloj" /></span><div><span>@(Vista.Perfil.Clave == "instrumentista" ? "Avisos sin leer" : "Solicitudes disponibles")</span><strong>@(Vista.Perfil.Clave == "instrumentista" ? "02" : "05")</strong><small>Datos de demostración</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
         }
-        @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <div class="col-md-4"><a class="stat-card" href="/agenda"><span class="stat-icon blue"><Icono Nombre="calendario" /></span><div><span>Cirugías programadas</span><strong>02</strong><small>Próximas en octubre</small></div><Icono Nombre="flecha" Tamano="18" /></a></div> }
+        <div class="col-md-4"><a class="stat-card" href="/agenda"><span class="stat-icon blue"><Icono Nombre="calendario" /></span><div><span>Cirugías programadas</span><strong>02</strong><small>Próximas en octubre</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
     </div>
     <div class="row g-4">
         <div class="col-xl-7">
@@ -37,7 +37,7 @@ else
                 {
                     <a href="/mis-solicitudes/nueva"><span class="quick-icon"><Icono Nombre="mas" /></span><div><strong>Nueva solicitud de cirugía</strong><small>Abre el formulario visual del equipo</small></div><Icono Nombre="flecha" Tamano="18" /></a>
                 }
-                @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <a href="/agenda"><span class="quick-icon"><Icono Nombre="calendario" /></span><div><strong>Consultar el calendario</strong><small>Fechas, procedimientos y estados</small></div><Icono Nombre="flecha" Tamano="18" /></a> }
+                <a href="/agenda"><span class="quick-icon"><Icono Nombre="calendario" /></span><div><strong>Consultar el calendario</strong><small>Fechas, procedimientos y estados</small></div><Icono Nombre="flecha" Tamano="18" /></a>
                 @if (Vista.Perfil.Clave == "cliente")
                 {
                     <a href="/mis-solicitudes"><span class="quick-icon"><Icono Nombre="reloj" /></span><div><strong>Mis solicitudes</strong><small>Consulta tus documentos y solicitudes</small></div><Icono Nombre="flecha" Tamano="18" /></a>

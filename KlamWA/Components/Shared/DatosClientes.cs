@@ -38,6 +38,7 @@ public class SolicitudMock
     public string Clinica { get; set; } = "";          // clínica u hospital donde se realizará
     public string Procedimiento { get; set; } = "";
     public string Doctor { get; set; } = "";
+    public string Paciente { get; set; } = "";
     public string Diagnostico { get; set; } = "";
     public DateTime Fecha { get; set; }
     public string Estado { get; set; } = "";    // Por revisar, Documentación incompleta, Rechazada · Resubida habilitada, Aprobada (mismos nombres que usa el Rol 4)
@@ -71,22 +72,32 @@ public static class DatosClientes
     public static Dictionary<int, string> Clinicas =>
         Lista.Where(c => c.Activo && c.Tipo == Clinica).ToDictionary(c => c.Id, c => c.Nombre);
 
-    public static List<SolicitudMock> Solicitudes = new()
-    {
-        new() { Id=1, IdCliente=1, Cliente="Clínica San Felipe", Clinica="Clínica San Felipe", Procedimiento="Artroscopia de rodilla", Doctor="Dr. Ramos",
-                Diagnostico="Lesión de menisco medial", Fecha=new DateTime(2026,11,4,8,0,0), Estado="Aprobada",
-                Documentos = new() {
-                    new() { Tipo="Receta médica", Archivo="receta-0001.pdf", Estado="Validado" } } },
-        new() { Id=2, IdCliente=4, Cliente="Luis Rojas (particular)", Clinica="Clínica Anglo", Procedimiento="Artroscopia de hombro", Doctor="Dr. Vega",
-                Diagnostico="Desgarro del manguito rotador", Fecha=new DateTime(2026,11,10,14,0,0), Estado="Por revisar",
-                Documentos = new() {
-                    new() { Tipo="DNI",           Archivo="dni-luis.jpg", Estado="Validado" },
-                    new() { Tipo="Receta médica", Archivo="receta-luis.pdf", Estado="Pendiente" },
-                    new() { Tipo=ComprobantePago, Archivo="pago-luis.pdf", Estado="Pendiente" } } },
-        new() { Id=3, IdCliente=3, Cliente="Clínica Anglo", Clinica="Clínica Anglo", Procedimiento="Cirugía de columna", Doctor="Dra. Lima",
-                Diagnostico="Hernia discal L4-L5", Fecha=new DateTime(2026,11,18,11,0,0), Estado="Rechazada · Resubida habilitada",
+    // Mismo catálogo para la vista del cliente y la revisión del administrador.
+    public static IReadOnlyList<SolicitudMock> Solicitudes { get; } = Array.AsReadOnly<SolicitudMock>([
+        new() { Id=1, IdCliente=1, Cliente="Clínica San Felipe", Paciente="Ana Medina", Clinica="Clínica San Felipe", Procedimiento="Artroscopia de rodilla", Doctor="Dr. Ramos",
+                Diagnostico="Lesión de menisco medial", Fecha=new DateTime(2026,10,5,8,0,0), Estado="Aprobada",
+                Documentos=[new() { Tipo="Receta médica", Archivo="receta-0001.pdf", Estado="Validado" }] },
+        new() { Id=2, IdCliente=4, Cliente="Luis Rojas (particular)", Paciente="Luis Rojas", Clinica="Clínica Anglo", Procedimiento="Artroscopia de hombro", Doctor="Dr. Vega",
+                Diagnostico="Lesión de hombro", Fecha=new DateTime(2026,10,28,14,0,0), Estado="Aprobada",
+                Documentos=[new() { Tipo="DNI", Archivo="dni-luis.jpg", Estado="Validado" }, new() { Tipo="Receta médica", Archivo="receta-luis.pdf", Estado="Validado" }, new() { Tipo=ComprobantePago, Archivo="pago-luis.pdf", Estado="Validado" }] },
+        new() { Id=3, IdCliente=3, Cliente="Clínica Anglo", Paciente="María Vega", Clinica="Clínica Anglo", Procedimiento="Cirugía de columna", Doctor="Dra. Lima",
+                Diagnostico="Hernia discal L4-L5", Fecha=new DateTime(2026,10,30,11,0,0), Estado="Aprobada",
+                Documentos=[new() { Tipo="Receta médica", Archivo="receta-0003.pdf", Estado="Validado" }] },
+        new() { Id=4, IdCliente=4, Cliente="Luis Rojas (particular)", Paciente="Luis Rojas", Clinica="Clínica Anglo", Procedimiento="Craneotomía", Doctor="Dr. Salazar",
+                Diagnostico="Evaluación neurológica", Fecha=new DateTime(2026,10,31,8,0,0), Estado="Por revisar",
+                Documentos=[new() { Tipo="DNI", Archivo="dni-luis.jpg", Estado="Validado" }, new() { Tipo="Receta médica", Archivo="receta-craneo.pdf", Estado="Pendiente" }, new() { Tipo=ComprobantePago, Archivo="pago-craneo.pdf", Estado="Pendiente" }] },
+        new() { Id=5, IdCliente=1, Cliente="Clínica San Felipe", Paciente="Pedro Díaz", Clinica="Clínica San Felipe", Procedimiento="Cirugía de columna", Doctor="Dra. Lima",
+                Diagnostico="Hernia discal", Fecha=new DateTime(2026,11,2,9,0,0), Estado="Rechazada · Resubida habilitada",
                 MotivoRechazo="La receta médica no se puede leer. Suba una copia más nítida.",
-                Documentos = new() {
-                    new() { Tipo="Receta médica", Archivo="receta-0003.pdf", Estado="Rechazado" } } },
+                Documentos=[new() { Tipo="Receta médica", Archivo="receta-0005.pdf", Estado="Rechazado" }] },
+        new() { Id=6, IdCliente=1, Cliente="Clínica San Felipe", Paciente="Lucía Paredes", Clinica="Clínica San Felipe", Procedimiento="Craneotomía", Doctor="Dr. Salazar",
+                Diagnostico="Evaluación neurológica", Fecha=new DateTime(2026,11,4,10,0,0), Estado="Documentación incompleta",
+                Documentos=[new() { Tipo="Receta médica", Archivo="", Estado="Pendiente" }] }
+    ]);
+
+    public static KlamWA.ViewModels.SolicitudViewModel ParaRevision(SolicitudMock s) => new()
+    {
+        Id = s.Id, Cliente = s.Cliente, Paciente = s.Paciente,
+        Procedimiento = s.Procedimiento, FechaSolicitada = s.Fecha, Estado = s.Estado
     };
 }

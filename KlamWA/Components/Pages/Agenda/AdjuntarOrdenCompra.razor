@@ -42,6 +42,7 @@ else
         </div>
     }
 
+    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
     <div class="row g-3">
         <div class="col-lg-7">
             <div class="card">
@@ -82,6 +83,7 @@ else
     private CirugiaMock? c;
     private CierreCirugiaMock? cierre;
     private string nombreArchivo = "";
+    private string? mensaje;
 
     protected override void OnParametersSet()
     {
@@ -98,7 +100,6 @@ else
 
     private void Enviar()
     {
-        DatosCierre.RegistrarEnvioOc(Id, nombreArchivo);
-        Nav.NavigateTo($"/agenda/cirugia/{Id}");
+        mensaje = "Archivo seleccionado. La orden de compra no se envió ni cambió de estado.";
     }
 }

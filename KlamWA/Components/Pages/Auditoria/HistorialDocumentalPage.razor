@@ -10,11 +10,11 @@
 <div class="d-flex align-items-center gap-2 mb-3">
     <label class="text-nowrap">Operación:</label>
     <select tabindex="1" class="form-select" @bind="IdOperacion">
-        @foreach (SolicitudViewModel operacion in Operaciones) {
-            <option value="@operacion.Id">@operacion.Codigo · @operacion.Cliente</option>
+        @foreach (var operacion in DatosClientes.Solicitudes) {
+            <option value="@operacion.Id">SOL-@operacion.Id.ToString("000") · @operacion.Cliente</option>
         }
     </select>
-    <button tabindex="2" class="btn btn-primary">Consultar</button>
+    <button tabindex="2" type="button" class="btn btn-primary" @onclick="Actualizar">Consultar</button>
 </div>
 
 @if (!Registros.Any()) {
@@ -36,28 +36,48 @@ else {
     [SupplyParameterFromQuery(Name = "solicitud")]
     public int? IdSolicitud { get; set; }
 
-    private IQueryable<RegistroHistorialViewModel> Registros { get; set; } = Enumerable.Empty<RegistroHistorialViewModel>().AsQueryable();
-    private List<SolicitudViewModel> Operaciones { get; set; } = [];
-    private int IdOperacion { get; set; }
+    private IQueryable<RegistroHistorialViewModel> Registros { get; set; } =
+        Enumerable.Empty<RegistroHistorialViewModel>().AsQueryable();
+    private int IdOperacion { get; set; } = 1;
     private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
 
-    protected override void OnInitialized() {
-        Operaciones = [
-            new SolicitudViewModel { Id = 41, Cliente = "Particular" },
-            new SolicitudViewModel { Id = 40, Cliente = "Clínica San Felipe" },
-            new SolicitudViewModel { Id = 39, Cliente = "Clínica Anglo Americana" },
-            new SolicitudViewModel { Id = 38, Cliente = "Hospital Almenara" },
-            new SolicitudViewModel { Id = 37, Cliente = "Hospital Sabogal" },
-            new SolicitudViewModel { Id = 36, Cliente = "Particular" }
-        ];
-        IdOperacion = IdSolicitud ?? 40;
+    protected override void OnParametersSet()
+    {
+        IdOperacion = DatosClientes.Solicitudes.Any(s => s.Id == IdSolicitud) ? IdSolicitud!.Value : 1;
+        Actualizar();
+    }
 
-        Registros = new List<RegistroHistorialViewModel> {
-            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 8, 12, 0), Documento = "Solicitud", Responsable = "Clínica San Felipe", Estado = "Recibida", Referencia = "SOL-040" },
-            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 8, 30, 0), Documento = "Cotización", Responsable = "Patricia Torres", Estado = "Emitida", Referencia = "COT-040" },
-            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 9, 10, 0), Documento = "Receta médica", Responsable = "Andrea Salas", Estado = "Válida", Referencia = "REC-040" },
-            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 25, 9, 30, 0), Documento = "Orden de venta", Responsable = "Patricia Torres", Estado = "Registrada", Referencia = "OV-040" },
-            new RegistroHistorialViewModel { FechaHora = new DateTime(2026, 10, 26, 10, 45, 0), Documento = "Orden de compra", Responsable = "Clínica San Felipe", Estado = "Recibida", Referencia = "OC-040" }
-        }.AsQueryable();
+    private void Actualizar()
+    {
+        var solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == IdOperacion);
+        if (solicitud is null)
+        {
+            Registros = Enumerable.Empty<RegistroHistorialViewModel>().AsQueryable();
+            return;
+        }
+        var registros = new List<RegistroHistorialViewModel>
+        {
+            new() { FechaHora = solicitud.Fecha.AddDays(-2), Documento = "Solicitud",
+                    Responsable = solicitud.Cliente, Estado = "Recibida", Referencia = $"SOL-{solicitud.Id:000}" }
+        };
+        foreach (var documento in solicitud.Documentos)
+            registros.Add(new RegistroHistorialViewModel {
+                FechaHora = solicitud.Fecha.AddDays(-1), Documento = documento.Tipo,
+                Responsable = solicitud.Cliente, Estado = documento.Estado,
+                Referencia = string.IsNullOrEmpty(documento.Archivo) ? "Sin archivo" : documento.Archivo
+            });
+        if (solicitud.Estado == "Aprobada")
+            registros.Add(new RegistroHistorialViewModel {
+                FechaHora = solicitud.Fecha.AddHours(-12), Documento = "Cotización",
+                Responsable = "Administración", Estado = "Aceptada", Referencia = $"COT-{solicitud.Id:000}"
+            });
+        var cirugia = DatosAgenda.Cirugias.FirstOrDefault(c => c.SolicitudId == solicitud.Id);
+        if (cirugia?.Estado == "Culminada" && DatosCierre.EsClinica(cirugia.Cliente))
+            registros.Add(new RegistroHistorialViewModel {
+                FechaHora = cirugia.Fin.AddHours(2), Documento = "Orden de compra",
+                Responsable = cirugia.Cliente, Estado = DatosCierre.De(cirugia.Id).EstadoOc,
+                Referencia = DatosCierre.De(cirugia.Id).ArchivoOc
+            });
+        Registros = registros.OrderBy(r => r.FechaHora).AsQueryable();
     }
 }

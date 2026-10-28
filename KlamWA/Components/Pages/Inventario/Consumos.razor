@@ -10,6 +10,12 @@
     </div>
 </div>
 
+<div class="row g-2 mb-3">
+    <div class="col-md-4"><label for="consumo-buscar" class="form-label">Cirugía o cliente</label><input id="consumo-buscar" class="form-control" placeholder="CIR-001 o nombre" @bind="busqueda" @bind:event="oninput" /></div>
+    <div class="col-md-3"><label for="consumo-desde" class="form-label">Desde</label><input id="consumo-desde" type="date" class="form-control" @bind="desde" /></div>
+    <div class="col-md-3"><label for="consumo-hasta" class="form-label">Hasta</label><input id="consumo-hasta" type="date" class="form-control" @bind="hasta" /></div>
+</div>
+
 <div class="table-responsive mb-4">
     <table class="table table-hover align-middle">
         <thead class="table-light">
@@ -58,12 +64,17 @@
 </div>
 
 @code {
+    private string busqueda = "";
+    private DateTime? desde;
+    private DateTime? hasta;
     private IEnumerable<(CirugiaMock Cirugia, CierreCirugiaMock Cierre)> Filas =>
         DatosAgenda.Cirugias
             .Where(c => c.Estado == "Culminada" && DatosCierre.EsClinica(c.Cliente))
+            .Where(c => string.IsNullOrWhiteSpace(busqueda) || $"CIR-{c.Id:000}".Contains(busqueda, StringComparison.OrdinalIgnoreCase) || c.Cliente.Contains(busqueda, StringComparison.OrdinalIgnoreCase))
+            .Where(c => desde is null || c.Inicio.Date >= desde.Value.Date)
+            .Where(c => hasta is null || c.Inicio.Date <= hasta.Value.Date)
             .Select(c =>
             {
-                DatosCierre.AlCulminar(c);
                 return (c, DatosCierre.De(c.Id));
             });
 }

@@ -25,8 +25,9 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var s in DatosClientes.Solicitudes.Where(s => Vista.Perfil.Clave == "cliente" ? s.IdCliente == 1 : s.Id == 2))
+            @foreach (var s in DatosClientes.Solicitudes.Where(s => Vista.Perfil.Clave == "cliente" ? s.IdCliente == 1 : s.IdCliente == 4))
             {
+                var cirugia = DatosAgenda.Cirugias.FirstOrDefault(c => c.SolicitudId == s.Id);
                 <tr>
                     <td>@s.Id</td>
                     <td>@s.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
@@ -74,8 +75,10 @@
                                         }
                                     </tbody>
                                 </table>
-                                <a class="btn btn-sm btn-outline-secondary" href="/solicitudes">Revisión documental</a>
-                                <a class="btn btn-sm btn-outline-secondary" href="/agenda/lista">Ver en agenda</a>
+                                @if (cirugia is not null)
+                                {
+                                    <a class="btn btn-sm btn-outline-secondary" href="/agenda/cirugia/@cirugia.Id">Ver cirugía en agenda</a>
+                                }
                             </div>
                         </td>
                     </tr>

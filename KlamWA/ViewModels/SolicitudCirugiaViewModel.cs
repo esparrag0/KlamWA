@@ -5,7 +5,7 @@ namespace KlamWA.ViewModels;
 // Solicitud de cirugía enviada por el cliente. Solo validación visual (UX):
 // los campos obligatorios y longitudes se confirmarán contra la BL de Java
 // (Cirugia: tipoProcedimiento, doctorNombre, fechaHoraInicio) en el lab de integración.
-public class SolicitudCirugiaViewModel
+public class SolicitudCirugiaViewModel : IValidatableObject
 {
     // Clínica u hospital donde se realizará la cirugía (RF05). El solicitante es el cliente
     // que inició sesión, por eso no se pide aquí.
@@ -32,4 +32,16 @@ public class SolicitudCirugiaViewModel
 
     [StringLength(300, ErrorMessage = "Máximo 300 caracteres")]
     public string Observaciones { get; set; } = "";
+
+    public string TipoCliente { get; set; } = "Clínica/Hospital";
+    public string Dni { get; set; } = "";
+    public bool ComprobanteSeleccionado { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext context)
+    {
+        if (TipoCliente == "Particular" && (Dni.Length != 8 || !Dni.All(char.IsDigit)))
+            yield return new ValidationResult("Ingrese un DNI de 8 dígitos para el paciente particular", [nameof(Dni)]);
+        if (TipoCliente == "Particular" && !ComprobanteSeleccionado)
+            yield return new ValidationResult("Seleccione el comprobante de pago bancario", [nameof(ComprobanteSeleccionado)]);
+    }
 }

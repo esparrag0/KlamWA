@@ -1,22 +1,31 @@
 @page "/agenda/historial"
-@using KlamWA.Components.Shared
+@inject VistaPreviaRol Vista
 
 <PageTitle>Historial de cirugías</PageTitle>
 
-<PageHeader Titulo="Historial de cirugías" Subtitulo="Cirugías culminadas y canceladas del cliente (datos de ejemplo)">
+<PageHeader Titulo="@(Vista.Perfil.Clave == "cliente" ? "Mis cirugías anteriores" : "Historial de cirugías")"
+            Subtitulo="Cirugías culminadas y canceladas (datos de ejemplo)">
     <a class="btn btn-outline-secondary" href="/agenda">Volver a la agenda</a>
 </PageHeader>
 
-<div class="mb-3" style="max-width:300px">
-    <label class="form-label">Cliente</label>
-    <select class="form-select">
-        @foreach (var x in DatosAgenda.Clientes) { <option>@x.Value</option> }
-    </select>
-</div>
+@if (Vista.Perfil.Clave == "administrador")
+{
+    <div class="mb-3" style="max-width:320px">
+        <label for="historial-cliente" class="form-label">Cliente</label>
+        <select id="historial-cliente" class="form-select" @bind="clienteSeleccionado">
+            <option value="">Todos</option>
+            @foreach (var x in DatosAgenda.Clientes.Values) { <option value="@x">@x</option> }
+        </select>
+    </div>
+}
 
-<TablaCirugias Cirugias="@historial" MostrarMotivo="true" />
+<TablaCirugias Cirugias="CirugiasHistorial" MostrarMotivo="true" />
+<AvisoDemostracion />
 
 @code {
-    private IEnumerable<CirugiaMock> historial =>
-        DatosAgenda.Cirugias.Where(x => x.Estado == "Culminada" || x.Estado == "Cancelada");
+    private string clienteSeleccionado = "";
+    private IEnumerable<CirugiaMock> CirugiasHistorial =>
+        DatosAgenda.ParaPerfil(Vista.Perfil.Clave)
+            .Where(c => c.Estado is "Culminada" or "Cancelada")
+            .Where(c => clienteSeleccionado == "" || c.Cliente == clienteSeleccionado);
 }

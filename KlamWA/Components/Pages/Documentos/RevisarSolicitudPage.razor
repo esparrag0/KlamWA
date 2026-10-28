@@ -9,7 +9,7 @@
 @if (AprobacionBloqueada) {
     <div class="alert alert-warning">
         <div class="fw-bold">Aprobación bloqueada</div>
-        Falta un documento obligatorio. La solicitud no puede aprobarse hasta completar su revisión.
+        Falta un documento obligatorio o está pendiente de validación. La solicitud no puede aprobarse hasta completar su revisión.
     </div>
 }
 
@@ -61,7 +61,9 @@
     </div>
 </div>
 
-<a tabindex="3" class="btn btn-outline-secondary" href="solicitudes">Volver</a>
+@if (mensaje is not null) { <div class="alert alert-info mt-3" role="status">@mensaje</div> }
+<a tabindex="3" class="btn btn-outline-secondary" href="/solicitudes">Volver</a>
+<AvisoDemostracion />
 
 @code {
     [Parameter]
@@ -71,39 +73,29 @@
     private List<DocumentoIngresoViewModel> Documentos { get; set; } = [];
     private bool AprobacionBloqueada { get; set; }
 
-    private List<SolicitudViewModel> Solicitudes { get; } = [
-        new SolicitudViewModel { Id = 41, Cliente = "Particular", Paciente = "P-041", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 27, 8, 0, 0), Estado = "Por revisar" },
-        new SolicitudViewModel { Id = 40, Cliente = "Clínica San Felipe", Paciente = "P-026", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 26, 8, 0, 0), Estado = "Documentación incompleta" },
-        new SolicitudViewModel { Id = 39, Cliente = "Clínica Anglo Americana", Paciente = "P-028", Procedimiento = "Columna L4-L5", FechaSolicitada = new DateTime(2026, 10, 26, 13, 0, 0), Estado = "Rechazada · Resubida habilitada" },
-        new SolicitudViewModel { Id = 38, Cliente = "Hospital Almenara", Paciente = "P-027", Procedimiento = "Neuronavegación", FechaSolicitada = new DateTime(2026, 10, 26, 9, 0, 0), Estado = "Aprobada" },
-        new SolicitudViewModel { Id = 37, Cliente = "Hospital Sabogal", Paciente = "P-025", Procedimiento = "Craneotomía", FechaSolicitada = new DateTime(2026, 10, 25, 10, 0, 0), Estado = "Aprobada" },
-        new SolicitudViewModel { Id = 36, Cliente = "Particular", Paciente = "P-024", Procedimiento = "Columna L5-S1", FechaSolicitada = new DateTime(2026, 10, 24, 11, 0, 0), Estado = "Aprobada" }
-    ];
+    private string? mensaje;
 
     protected override void OnParametersSet() {
-        SolicitudViewModel? solicitud = Solicitudes.Find(s => s.Id == Id);
+        SolicitudMock? solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == Id);
         if (solicitud == null) {
             Nav.NavigateTo("/solicitudes");
             return;
         }
-        Solicitud = solicitud;
+        Solicitud = DatosClientes.ParaRevision(solicitud);
+        Documentos = solicitud.Documentos.Select(d => new DocumentoIngresoViewModel
+        {
+            Documento = d.Tipo, Estado = d.Estado, Archivo = d.Archivo
+        }).ToList();
 
-        string codigo = Id.ToString("000");
-        Documentos = [
-            new DocumentoIngresoViewModel { Documento = "Solicitud institucional", Estado = "Válido", Archivo = "solicitud_clinica.pdf" },
-            new DocumentoIngresoViewModel { Documento = "Cotización", Estado = "Aceptada", Archivo = $"COT-{codigo}" }
-        ];
-        if (Solicitud.Estado == "Documentación incompleta") {
-            Documentos.Add(new DocumentoIngresoViewModel { Documento = "Documento obligatorio", Estado = "Pendiente", Archivo = "" });
-        } else {
-            Documentos.Add(new DocumentoIngresoViewModel { Documento = "Receta médica", Estado = "Válido", Archivo = "receta_firmada.pdf" });
-        }
-        AprobacionBloqueada = Documentos.Exists(d => d.Estado == "Pendiente");
+        string[] obligatorios = solicitud.IdCliente == 4
+            ? ["DNI", "Receta médica", DatosClientes.ComprobantePago]
+            : ["Receta médica"];
+        AprobacionBloqueada = obligatorios.Any(tipo =>
+            !Documentos.Any(d => d.Documento == tipo && d.Estado == "Validado"));
     }
 
-    private void AprobarSolicitud() {
-        Nav.NavigateTo("/solicitudes");
-    }
+    private void AprobarSolicitud() =>
+        mensaje = "Aprobación de demostración. El estado de la solicitud no cambió.";
 
     private void RechazarSolicitud() {
         Nav.NavigateTo($"/solicitudes/rechazo/{Id}");

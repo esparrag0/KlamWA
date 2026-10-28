@@ -50,20 +50,14 @@ else
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>Fresa cortante</td>
-                <td>70 mm</td>
-                <td>4</td>
-                <td>2</td>
-                <td>2</td>
-            </tr>
-            <tr>
-                <td>Cuchilla corta</td>
-                <td>70 mm</td>
-                <td>2</td>
-                <td>1</td>
-                <td>1</td>
-            </tr>
+            @foreach (var insumo in DatosInsumos.DeCirugia(Id))
+            {
+                <tr>
+                    <td>@insumo.Nombre</td><td>@insumo.Medida</td><td>@insumo.Despachado</td>
+                    <td>@(insumo.Consumido?.ToString() ?? "Pendiente")</td>
+                    <td>@(insumo.Diferencia?.ToString() ?? "—")</td>
+                </tr>
+            }
         </tbody>
     </table>
 
@@ -75,22 +69,25 @@ else
                 <div class="col-md-8">
                     <label class="form-label">Consumible</label>
                     <select class="form-select">
-                        <option>Fresa cortante · 70 mm</option>
-                        <option>Cuchilla corta · 70 mm</option>
+                        @foreach (var insumo in DatosInsumos.DeCirugia(Id))
+                        {
+                            <option>@insumo.Nombre · @insumo.Medida</option>
+                        }
                     </select>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Cantidad consumida *</label>
-                    <input type="number" class="form-control" value="2" />
+                    <input type="number" class="form-control" min="0" placeholder="Cantidad" />
                 </div>
             </div>
             <div class="mb-3">
                 <label class="form-label">Observación</label>
-                <input type="text" class="form-control" value="Consumo cotejado con la hoja firmada en sala y la OC." />
+                <input type="text" class="form-control" placeholder="Observación de la hoja de sala" />
             </div>
         </div>
     </div>
 
+    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
     <div class="d-flex gap-2">
         @if (cierre.PuedeRegistrarConsumo)
         {
@@ -112,6 +109,7 @@ else
     [Parameter] public int Id { get; set; }
     private CirugiaMock? c;
     private CierreCirugiaMock? cierre;
+    private string? mensaje;
 
     protected override void OnParametersSet()
     {
@@ -121,7 +119,6 @@ else
 
     private void Guardar()
     {
-        DatosCierre.CompletarConsumo(Id);
-        Nav.NavigateTo($"/reportes/comparativo/{Id}");
+        mensaje = "Cantidades de ejemplo revisadas. El consumo no se guardó.";
     }
 }

@@ -6,6 +6,7 @@
 <h3 class="mb-3">Rechazar o solicitar corrección</h3>
 <p class="text-muted">SOL-@Id.ToString("000") · Comunica el motivo al solicitante</p>
 
+@if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
 <EditForm Model="ViewModel" OnValidSubmit="ConfirmarRechazo">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -38,7 +39,7 @@
     <button tabindex="4" type="submit" class="btn btn-primary">
         @(ViewModel.HabilitarResubida ? "Confirmar rechazo y habilitar resubida" : "Confirmar rechazo")
     </button>
-    <a tabindex="5" class="btn btn-outline-secondary" href="solicitudes/revision/@Id">Cancelar</a>
+    <a tabindex="5" class="btn btn-outline-secondary" href="/solicitudes/revision/@Id">Cancelar</a>
 </EditForm>
 
 @code {
@@ -47,17 +48,20 @@
 
     private RechazoViewModel ViewModel { get; set; } = new();
 
-    private string[] Documentos { get; } = [
-        "Receta médica",
-        "DNI del paciente",
-        "Comprobante bancario"
-    ];
+    private string[] Documentos { get; set; } = [];
+    private string? mensaje;
 
     protected override void OnParametersSet() {
-        ViewModel = new RechazoViewModel { DocumentoObservado = Documentos[0] };
+        var solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == Id);
+        if (solicitud is null) { Nav.NavigateTo("/solicitudes"); return; }
+        Documentos = solicitud.Documentos.Select(d => d.Tipo).ToArray();
+        ViewModel = new RechazoViewModel {
+            DocumentoObservado = solicitud.Documentos.FirstOrDefault(d => d.Estado != "Validado")?.Tipo
+                ?? Documentos.FirstOrDefault() ?? "Receta médica"
+        };
     }
 
     private void ConfirmarRechazo() {
-        Nav.NavigateTo("/solicitudes");
+        mensaje = "Rechazo de demostración. El estado de la solicitud no cambió.";
     }
 }

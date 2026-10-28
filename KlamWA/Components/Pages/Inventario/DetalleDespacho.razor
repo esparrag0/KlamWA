@@ -1,0 +1,69 @@
+@page "/inventario/despachos/{Codigo}"
+
+<PageTitle>Detalle de despacho</PageTitle>
+
+@if (despacho is null || cirugia is null)
+{
+    <EstadoVacio Titulo="Despacho no encontrado" Enlace="/inventario/despachos" TextoEnlace="Volver a despachos" />
+}
+else
+{
+    <PageHeader Titulo="@despacho.Codigo" Subtitulo="@($"CIR-{cirugia.Id:000} · {cirugia.Clinica}")">
+        <a class="btn btn-outline-secondary" href="/inventario/despachos">Volver</a>
+    </PageHeader>
+    <div class="card mb-3">
+        <div class="card-header">Equipo y kit despachados</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@despacho.Equipo</dd>
+                <dt class="col-sm-4">Kit / bandeja</dt><dd class="col-sm-8">@despacho.Kit</dd>
+                <dt class="col-sm-4">Salida</dt><dd class="col-sm-8">@despacho.Salida.ToString("dd/MM/yyyy HH:mm")</dd>
+                <dt class="col-sm-4">Retorno</dt><dd class="col-sm-8">@(despacho.Retorno?.ToString("dd/MM/yyyy HH:mm") ?? "Pendiente")</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="card mb-3">
+        <div class="card-header">Consumibles del kit</div>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Consumible</th><th>Medida</th><th>Despachado</th></tr></thead>
+                <tbody>
+                    @foreach (var item in DatosInsumos.DeCirugia(cirugia.Id))
+                    {
+                        <tr><td>@item.Nombre</td><td>@item.Medida</td><td>@item.Despachado</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @if (despacho.Retorno is null)
+    {
+        <div class="card" style="max-width:850px">
+            <div class="card-header">Registrar retorno del equipo</div>
+            <div class="card-body row g-3">
+                <CampoForm Etiqueta="Fecha y hora de retorno" Para="retorno-fecha">
+                    <input id="retorno-fecha" type="datetime-local" class="form-control" />
+                </CampoForm>
+                <CampoForm Etiqueta="Estado del equipo" Para="retorno-estado">
+                    <select id="retorno-estado" class="form-select"><option>Completo</option><option>Con observaciones</option></select>
+                </CampoForm>
+                <CampoForm Etiqueta="Observación" Columnas="col-12" Para="retorno-observacion">
+                    <textarea id="retorno-observacion" class="form-control" rows="2"></textarea>
+                </CampoForm>
+            </div>
+            <div class="card-footer"><BotonDemo Mensaje="Formulario de muestra: el retorno no se registró.">Registrar retorno</BotonDemo></div>
+        </div>
+    }
+    <AvisoDemostracion />
+}
+
+@code {
+    [Parameter] public string Codigo { get; set; } = "";
+    private DespachoVista? despacho;
+    private CirugiaMock? cirugia;
+    protected override void OnParametersSet()
+    {
+        despacho = DatosDespachos.De(Codigo);
+        cirugia = despacho is null ? null : DatosAgenda.Cirugias.FirstOrDefault(c => c.Id == despacho.IdCirugia);
+    }
+}

@@ -4,7 +4,7 @@
 <div class="breadcrumb-line">Administración <span>/</span> Roles y responsabilidades</div>
 <PageHeader Titulo="Roles y responsabilidades" Subtitulo="Una referencia visual para organizar los accesos del equipo."><a class="btn btn-outline-secondary" href="/usuarios"><Icono Nombre="usuarios" Tamano="17" /> Ver usuarios</a></PageHeader>
 <div class="row g-4 mb-4">
-    @foreach(var perfil in DatosAcceso.Perfiles.Take(3))
+    @foreach(var perfil in DatosAcceso.Perfiles)
     {
         <div class="col-lg-4"><section class="card role-card h-100"><span class="stat-icon"><Icono Nombre="@(perfil.Clave == "administrador" ? "escudo" : perfil.Clave == "vendedor" ? "usuarios" : "calendario")" Tamano="23" /></span><h2>@perfil.Nombre</h2><p>@perfil.Descripcion</p><a href="@($"/inicio/{perfil.Clave}")">Explorar esta vista <Icono Nombre="flecha" Tamano="16" /></a></section></div>
     }
@@ -13,13 +13,17 @@
     <TablaBase Descripcion="Responsabilidades de referencia por rol, no permisos implementados">
         <Cabecera><th scope="col">Actividad</th><th scope="col">Administrador</th><th scope="col">Vendedor</th><th scope="col">Instrumentista</th><th scope="col">Cliente</th></Cabecera>
         <ChildContent>
-            <tr><th scope="row">Gestión de cuentas · RF03</th><td>Gestiona</td><td>—</td><td>—</td><td>—</td></tr>
-            <tr><th scope="row">Registro de solicitudes · RF05, 08, 09</th><td>Registra</td><td>Registra</td><td>—</td><td>Solicita</td></tr>
-            <tr><th scope="row">Consulta del calendario · RF06</th><td>Consulta</td><td>Consulta</td><td>Consulta</td><td>Consulta</td></tr>
-            <tr><th scope="row">Avisos de solicitudes · RF11</th><td>Recibe</td><td>—</td><td>—</td><td>—</td></tr>
-            <tr><th scope="row">Avisos de cirugías · RF12</th><td>—</td><td>—</td><td>Recibe</td><td>—</td></tr>
+            <tr><th scope="row">Gestión de cuentas · RF03</th><td>A/R</td><td>I</td><td>I</td><td>—</td></tr>
+            <tr><th scope="row">Solicitud de cirugía · RF05, RF08</th><td>A</td><td>R</td><td>I</td><td>R</td></tr>
+            <tr><th scope="row">Registro de cirugía · RF09</th><td>A/R</td><td>C</td><td>I</td><td>I</td></tr>
+            <tr><th scope="row">Revisión documental · RF07</th><td>A/R</td><td>C</td><td>—</td><td>I</td></tr>
+            <tr><th scope="row">Programación y calendario · RF02, RF06</th><td>A/R</td><td>C</td><td>I</td><td>I</td></tr>
+            <tr><th scope="row">Despacho y retorno · RF14</th><td>A/R</td><td>I</td><td>C</td><td>—</td></tr>
+            <tr><th scope="row">Consumo y reportes · RF15, RF18, RF19</th><td>A/R</td><td>I</td><td>C</td><td>—</td></tr>
+            <tr><th scope="row">Avisos de solicitudes · RF11</th><td>A</td><td>I</td><td>—</td><td>R</td></tr>
+            <tr><th scope="row">Avisos de cirugías · RF12</th><td>A</td><td>I</td><td>R</td><td>—</td></tr>
         </ChildContent>
     </TablaBase>
 </section>
-<section class="card p-4"><h2 class="h6">Esquema RACI</h2><p class="text-muted small">RF03 contempla niveles de responsabilidad. Esta leyenda sirve de referencia; la asignación definitiva por operación debe acordarse con el equipo.</p><div class="raci-legend"><span><b>R</b> Responsable de ejecutar</span><span><b>A</b> Responsable final</span><span><b>C</b> Consultado</span><span><b>I</b> Informado</span></div></section>
+<section class="card p-4"><h2 class="h6">Esquema RACI</h2><p class="text-muted small">RF03 contempla niveles de responsabilidad. La tabla muestra una propuesta visual de responsables por operación; el equipo puede ajustarla antes de integrar permisos reales.</p><div class="raci-legend"><span><b>R</b> Responsable de ejecutar</span><span><b>A</b> Responsable final</span><span><b>C</b> Consultado</span><span><b>I</b> Informado</span></div></section>
 <AvisoDemostracion Texto="Los menús por rol son representativos. No constituyen autorización ni control de acceso real." />

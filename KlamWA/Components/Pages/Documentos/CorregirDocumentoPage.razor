@@ -11,6 +11,8 @@
     @Motivo Adjunta una copia legible.
 </div>
 
+@if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
+
 <div class="row g-3">
     <div class="col-lg-7">
         <div class="card h-100">
@@ -18,14 +20,11 @@
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label">@DocumentoObservado corregida</label>
-                    <input class="form-control" value="@Archivo" disabled />
-                    <div class="form-text">PDF · 1.2 MB · Adjunto</div>
+                    <InputFile class="form-control" accept=".pdf,.jpg,.jpeg,.png" OnChange="SeleccionarArchivo" />
+                    <div class="form-text">@(archivoSeleccionado is null ? "Seleccione un archivo para la demostración." : $"Seleccionado: {archivoSeleccionado}")</div>
                 </div>
                 <div class="d-flex gap-2">
-                    <button tabindex="1" type="button" class="btn btn-outline-primary">
-                        Seleccionar otro archivo
-                    </button>
-                    <button tabindex="2" class="btn btn-primary" @onclick="() => EnviarDocumento()">
+                    <button tabindex="2" type="button" class="btn btn-primary" disabled="@string.IsNullOrWhiteSpace(archivoSeleccionado)" @onclick="EnviarDocumento">
                         Enviar documento corregido
                     </button>
                 </div>
@@ -49,10 +48,20 @@
     public int Id { get; set; }
 
     private string DocumentoObservado { get; set; } = "Receta médica";
-    private string Motivo { get; set; } = "No se distingue la medida del consumible prescrito.";
-    private string Archivo { get; set; } = "receta_corregida.pdf";
+    private string Motivo { get; set; } = "";
+    private string? archivoSeleccionado;
+    private string? mensaje;
+    private void SeleccionarArchivo(InputFileChangeEventArgs e) => archivoSeleccionado = e.File.Name;
+
+    protected override void OnParametersSet()
+    {
+        var solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == Id);
+        if (solicitud is null) { Nav.NavigateTo("/mis-solicitudes"); return; }
+        DocumentoObservado = solicitud.Documentos.FirstOrDefault(d => d.Estado == "Rechazado")?.Tipo ?? "Receta médica";
+        Motivo = solicitud.MotivoRechazo;
+    }
 
     private void EnviarDocumento() {
-        Nav.NavigateTo("/mis-solicitudes");
+        mensaje = "Archivo seleccionado. No se envió ni reemplazó el documento en esta entrega.";
     }
 }

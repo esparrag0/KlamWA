@@ -52,7 +52,6 @@
     private (string Texto, string Href)? BotonCierre(CirugiaMock cirugia)
     {
         if (cirugia.Estado != "Culminada" || !DatosCierre.EsClinica(cirugia.Cliente)) return null;
-        DatosCierre.AlCulminar(cirugia);
         var cierre = DatosCierre.De(cirugia.Id);
         var perfil = Vista.Perfil.Clave;
         if (perfil == "cliente" && cierre.PuedeAdjuntarOc)

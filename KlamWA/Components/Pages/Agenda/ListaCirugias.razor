@@ -9,5 +9,11 @@
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
 </PageHeader>
 
-<FiltrosCirugia />
-<TablaCirugias Cirugias="DatosAgenda.ParaPerfil(Vista.Perfil.Clave)" />
+<FiltrosCirugia OnFiltrar="AplicarFiltros" />
+<TablaCirugias Cirugias="Filas" />
+
+@code {
+    private FiltroCirugiaVista filtro = new();
+    private IEnumerable<CirugiaMock> Filas => FiltrosAgenda.Aplicar(DatosAgenda.ParaPerfil(Vista.Perfil.Clave), filtro);
+    private void AplicarFiltros(FiltroCirugiaVista nuevo) => filtro = nuevo;
+}

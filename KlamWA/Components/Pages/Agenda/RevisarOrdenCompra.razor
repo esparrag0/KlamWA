@@ -24,6 +24,7 @@ else
     </PageHeader>
 
     <p class="text-muted">Revisa el archivo antes de cambiar su estado. El consumo real se habilita solo si la OC queda validada.</p>
+    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
 
     <div class="row g-3 mb-3">
         <div class="col-lg-7">
@@ -66,6 +67,7 @@ else
     [Parameter] public int Id { get; set; }
     private CirugiaMock? c;
     private CierreCirugiaMock? cierre;
+    private string? mensaje;
 
     protected override void OnParametersSet()
     {
@@ -75,7 +77,6 @@ else
 
     private void Validar()
     {
-        DatosCierre.ValidarOc(Id);
-        Nav.NavigateTo($"/inventario/consumos/registrar/{Id}");
+        mensaje = "Validación de ejemplo. La orden de compra no cambió de estado.";
     }
 }

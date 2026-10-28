@@ -13,7 +13,7 @@ else
 {
     <PageHeader Titulo="@("Cirugía #" + c.Id)" Subtitulo="@c.Procedimiento">
         <EstadoBadge Estado="@c.Estado" />
-        @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a> }
+        @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a><a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a> }
         <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
     </PageHeader>
 
@@ -27,6 +27,9 @@ else
                         <dt class="col-sm-4">Inicio</dt><dd class="col-sm-8">@c.Inicio.ToString("dd/MM/yyyy HH:mm")</dd>
                         <dt class="col-sm-4">Fin</dt><dd class="col-sm-8">@c.Fin.ToString("dd/MM/yyyy HH:mm")</dd>
                         <dt class="col-sm-4">Doctor</dt><dd class="col-sm-8">@c.Doctor</dd>
+                        <dt class="col-sm-4">Paciente</dt><dd class="col-sm-8">@c.Paciente</dd>
+                        <dt class="col-sm-4">Diagnóstico</dt><dd class="col-sm-8">@c.Diagnostico</dd>
+                        <dt class="col-sm-4">Clínica u hospital</dt><dd class="col-sm-8">@c.Clinica</dd>
                         <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@c.Cliente</dd>
                         <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@c.Equipo</dd>
                         <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@c.Bandeja</dd>
@@ -37,6 +40,24 @@ else
                     </dl>
                 </div>
             </div>
+            @if (c.Estado == "Culminada")
+            {
+                <div class="card mt-3">
+                    <div class="card-header">Consumibles despachados y consumidos</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Consumible</th><th>Medida</th><th>Despachado</th><th>Consumido</th><th>Diferencia</th></tr></thead>
+                            <tbody>
+                                @foreach (var insumo in DatosInsumos.DeCirugia(c.Id))
+                                {
+                                    <tr><td>@insumo.Nombre</td><td>@insumo.Medida</td><td>@insumo.Despachado</td><td>@(insumo.Consumido?.ToString() ?? "Pendiente")</td><td>@(insumo.Diferencia?.ToString() ?? "—")</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer small text-muted">Las cantidades son de ejemplo y no se registran en este laboratorio.</div>
+                </div>
+            }
         </div>
         @if (Vista.Perfil.Clave is "administrador" or "cliente") {
         <div class="col-lg-4">
@@ -107,13 +128,16 @@ else
                     </div>
                 }
             </div>
-            <div class="card">
-                <div class="card-header">Relacionado</div>
-                <div class="list-group list-group-flush">
-                    <span class="list-group-item text-muted">Ver solicitud <small class="d-block">Próximamente</small></span>
-                    <span class="list-group-item text-muted">Ver documentación <small class="d-block">Próximamente</small></span>
+            @if (Vista.Perfil.Clave == "administrador" && c.SolicitudId is int solicitudId)
+            {
+                <div class="card">
+                    <div class="card-header">Relacionado</div>
+                    <div class="list-group list-group-flush">
+                        <a class="list-group-item list-group-item-action" href="/solicitudes/revision/@solicitudId">Ver solicitud</a>
+                        <a class="list-group-item list-group-item-action" href="/historial-documental?solicitud=@solicitudId">Ver documentación</a>
+                    </div>
                 </div>
-            </div>
+            }
         </div>
     }
     </div>
@@ -136,6 +160,5 @@ else
         }
         esClinica = DatosCierre.EsClinica(c.Cliente);
         cierre = DatosCierre.De(c.Id);
-        DatosCierre.AlCulminar(c);
     }
 }

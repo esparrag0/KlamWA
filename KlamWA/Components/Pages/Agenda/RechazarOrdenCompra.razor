@@ -12,6 +12,7 @@ else
 {
     <PageHeader Titulo="Rechazar o solicitar corrección" Subtitulo="@($"CIR-{Id:000} · Comunica el motivo a {c.Cliente}")" />
 
+    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
     <EditForm Model="ViewModel" OnValidSubmit="Confirmar">
         <DataAnnotationsValidator />
         <ValidationSummary />
@@ -43,6 +44,7 @@ else
 @code {
     [Parameter] public int Id { get; set; }
     private CirugiaMock? c;
+    private string? mensaje;
     private RechazoViewModel ViewModel { get; set; } = new()
     {
         DocumentoObservado = DatosClientes.OrdenCompra,
@@ -57,7 +59,6 @@ else
 
     private void Confirmar()
     {
-        DatosCierre.RechazarOc(Id, ViewModel.Motivo);
-        Nav.NavigateTo($"/agenda/cirugia/{Id}");
+        mensaje = "Rechazo de ejemplo. La orden de compra no cambió de estado.";
     }
 }

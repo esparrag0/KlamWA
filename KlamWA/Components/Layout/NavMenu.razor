@@ -11,13 +11,13 @@
             <NavLink class="nav-link" href="/notificaciones"><Icono Nombre="campana" /> Notificaciones <span class="nav-count">2</span></NavLink>
         }
         <div class="nav-section">Agenda y cirugías</div>
-        @if (Perfil.Clave is "administrador" or "instrumentista") { <NavLink class="nav-link" href="/agenda" Match="NavLinkMatch.All"><Icono Nombre="calendario" /> Calendario</NavLink> }
+        <NavLink class="nav-link" href="/agenda" Match="NavLinkMatch.All"><Icono Nombre="calendario" /> Calendario</NavLink>
         <NavLink class="nav-link" href="/agenda/lista"><Icono Nombre="lista" /> @(Perfil.Clave == "vendedor" ? "Cirugías que coordino" : Perfil.Clave == "instrumentista" ? "Mis cirugías" : "Lista de cirugías")</NavLink>
         @if (Perfil.Clave == "administrador")
         {
             <NavLink class="nav-link" href="/agenda/nueva"><Icono Nombre="mas" /> Nueva cirugía</NavLink>
         }
-        @if (Perfil.Clave == "administrador") { <NavLink class="nav-link" href="/agenda/historial"><Icono Nombre="reloj" /> Historial</NavLink> }
+        @if (Perfil.Clave is "administrador" or "cliente") { <NavLink class="nav-link" href="/agenda/historial"><Icono Nombre="reloj" /> @(Perfil.Clave == "cliente" ? "Mis cirugías anteriores" : "Historial")</NavLink> }
         @if (Perfil.Clave == "administrador")
         {
             <div class="nav-section">Administración</div>
@@ -48,6 +48,7 @@
         {
             <div class="nav-section">Inventario y logística</div>
             <NavLink class="nav-link" href="/inventario/despachos"><Icono Nombre="flecha" /> Despachos y retornos</NavLink>
+            <NavLink class="nav-link" href="/inventario/bandejas"><Icono Nombre="lista" /> Plantillas de bandejas</NavLink>
             <NavLink class="nav-link" href="/inventario/consumos"><Icono Nombre="lista" /> Consumos</NavLink>
         }
         @if (Perfil.Clave == "administrador")

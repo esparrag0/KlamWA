@@ -9,14 +9,6 @@
 <PageHeader Titulo="@(Id == null ? "Registrar cirugía" : "Editar cirugía #" + Id)"
             Subtitulo="Los datos se validan pero no se guardan en este laboratorio" />
 
-<div class="mb-3" style="max-width:300px">
-    <label class="form-label">Vista según rol</label>
-    <select class="form-select" @bind="rol">
-        <option>Administrador</option>
-        <option>Vendedor</option>
-    </select>
-</div>
-
 @if (MensajeError != null)
 {
     <div class="alert alert-danger">@MensajeError</div>
@@ -40,6 +32,21 @@
                 <CampoForm Etiqueta="Doctor">
                     <InputText class="form-control" @bind-Value="ViewModel.Doctor" />
                     <ValidationMessage For="() => ViewModel.Doctor" />
+                </CampoForm>
+                <CampoForm Etiqueta="Paciente">
+                    <InputText class="form-control" @bind-Value="ViewModel.Paciente" />
+                    <ValidationMessage For="() => ViewModel.Paciente" />
+                </CampoForm>
+                <CampoForm Etiqueta="Clínica u hospital">
+                    <InputSelect class="form-select" @bind-Value="ViewModel.Clinica">
+                        <option value="">-- Seleccione --</option>
+                        @foreach (var clinica in DatosClientes.Clinicas.Values) { <option value="@clinica">@clinica</option> }
+                    </InputSelect>
+                    <ValidationMessage For="() => ViewModel.Clinica" />
+                </CampoForm>
+                <CampoForm Etiqueta="Diagnóstico" Columnas="col-12">
+                    <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
+                    <ValidationMessage For="() => ViewModel.Diagnostico" />
                 </CampoForm>
                 <CampoForm Etiqueta="Inicio">
                     <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraInicio" />
@@ -76,21 +83,34 @@
                         <option value="0">-- Ninguna --</option>
                         @foreach (var x in DatosAgenda.Bandejas) { <option value="@x.Key">@x.Value</option> }
                     </InputSelect>
+                    <div class="form-text"><a href="/inventario/bandejas">Ver plantillas y consumibles</a></div>
                 </CampoForm>
+                @if (ViewModel.IdBandeja is 4 or 5)
+                {
+                    var plantilla = DatosInsumos.Plantillas.First(p => p.Nombre == DatosAgenda.Bandejas[ViewModel.IdBandeja]);
+                    <div class="col-12">
+                        <div class="alert alert-light border mb-0">
+                            <strong>Plantilla asociada: @plantilla.Nombre</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach (var insumo in plantilla.Insumos)
+                                {
+                                    <li>@insumo.Nombre · @insumo.Medida · @insumo.Despachado previstos</li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
                 <CampoForm Etiqueta="Motivo de cancelación (obligatorio si está cancelada)" Columnas="col-12">
                     <InputText class="form-control" @bind-Value="ViewModel.MotivoCancelacion" />
                     <ValidationMessage For="() => ViewModel.MotivoCancelacion" />
                 </CampoForm>
-                @if (rol == "Administrador")
-                {
-                    <CampoForm Etiqueta="Vendedor asignado">
-                        <select class="form-select"><option>Vendedor 1</option><option>Vendedor 2</option></select>
-                    </CampoForm>
-                    <CampoForm Etiqueta="Precio pactado (cotización) S/">
-                        <InputNumber class="form-control" @bind-Value="ViewModel.PrecioPactado" />
-                        <ValidationMessage For="() => ViewModel.PrecioPactado" />
-                    </CampoForm>
-                }
+                <CampoForm Etiqueta="Vendedor asignado">
+                    <select class="form-select"><option>Vendedor 1</option><option>Vendedor 2</option></select>
+                </CampoForm>
+                <CampoForm Etiqueta="Precio pactado (cotización) S/">
+                    <InputNumber class="form-control" @bind-Value="ViewModel.PrecioPactado" />
+                    <ValidationMessage For="() => ViewModel.PrecioPactado" />
+                </CampoForm>
             </div>
         </div>
         <div class="card-footer">
@@ -104,7 +124,6 @@
     [Parameter] public int? Id { get; set; }
 
     private CirugiaViewModel ViewModel { get; set; } = new();
-    private string rol = "Administrador";
     private string? MensajeError { get; set; }
     private string? MensajeOk { get; set; }
 
@@ -126,42 +145,11 @@
         ViewModel = new CirugiaViewModel(c);
     }
 
-    // Solo se ejecuta si el ViewModel es válido (validación de frontend).
+    // Solo confirma la validación en pantalla; no cambia los datos de ejemplo.
     private void Guardar()
     {
-        if (Id == null)
-        {
-            MensajeOk = "Datos válidos (el alta nueva no se persiste en este laboratorio).";
-            return;
-        }
-
-        var existente = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
-        if (existente == null)
-        {
-            MensajeError = "No se encontró la cirugía.";
-            return;
-        }
-
-        existente.Procedimiento = ViewModel.TipoProcedimiento;
-        existente.Doctor = ViewModel.Doctor;
-        existente.Inicio = ViewModel.FechaHoraInicio ?? existente.Inicio;
-        existente.Fin = ViewModel.FechaHoraFin ?? existente.Fin;
-        existente.Estado = ViewModel.Estado;
-        existente.MotivoCancelacion = ViewModel.MotivoCancelacion;
-        existente.PrecioCotizacion = ViewModel.PrecioPactado;
-        if (DatosAgenda.Clientes.TryGetValue(ViewModel.IdCliente, out var cliente))
-            existente.Cliente = cliente;
-        if (DatosAgenda.Equipos.TryGetValue(ViewModel.IdEquipo, out var equipo))
-            existente.Equipo = equipo;
-        if (DatosAgenda.Bandejas.TryGetValue(ViewModel.IdBandeja, out var bandeja))
-            existente.Bandeja = bandeja;
-
-        DatosCierre.AlCulminar(existente);
-        if (existente.Estado == "Culminada")
-        {
-            Nav.NavigateTo($"/agenda/cirugia/{existente.Id}");
-            return;
-        }
-        MensajeOk = "Cambios guardados en esta sesión de demostración.";
+        MensajeOk = Id is null
+            ? "Formulario válido. La cirugía no se registró porque esta entrega es solo visual."
+            : "Formulario válido. Los cambios no se guardaron porque esta entrega es solo visual.";
     }
 }

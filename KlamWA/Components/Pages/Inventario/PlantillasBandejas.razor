@@ -1,0 +1,50 @@
+@page "/inventario/bandejas"
+@page "/inventario/bandejas/{Id:int}"
+
+<PageTitle>Plantillas de bandejas</PageTitle>
+<PageHeader Titulo="Plantillas de bandejas" Subtitulo="Consumibles previstos según el procedimiento (datos de ejemplo)" />
+
+<div class="row g-3 mb-3">
+    @for (var indice = 0; indice < DatosInsumos.Plantillas.Count; indice++)
+    {
+        var plantilla = DatosInsumos.Plantillas[indice];
+        <div class="col-md-6">
+            <a class="card card-body text-decoration-none" href="/inventario/bandejas/@(indice + 1)">
+                <strong>@plantilla.Nombre</strong>
+                <span class="text-muted">@plantilla.Procedimiento · @plantilla.Insumos.Count consumibles</span>
+            </a>
+        </div>
+    }
+</div>
+
+@if (plantillaSeleccionada is not null)
+{
+    <div class="card">
+        <div class="card-header">@plantillaSeleccionada.Nombre · @plantillaSeleccionada.Procedimiento</div>
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead><tr><th>Consumible</th><th>Medida</th><th>Cantidad prevista</th></tr></thead>
+                <tbody>
+                    @foreach (var insumo in plantillaSeleccionada.Insumos)
+                    {
+                        <tr><td>@insumo.Nombre</td><td>@insumo.Medida</td><td>@insumo.Despachado</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Selecciona una bandeja para ver su plantilla de consumibles.</div>
+}
+<AvisoDemostracion />
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private PlantillaBandejaVista? plantillaSeleccionada;
+    protected override void OnParametersSet() =>
+        plantillaSeleccionada = Id is int id && id > 0 && id <= DatosInsumos.Plantillas.Count
+            ? DatosInsumos.Plantillas[id - 1]
+            : null;
+}

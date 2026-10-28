@@ -58,7 +58,11 @@ else {
 }
 
 @code {
-    private IQueryable<RegistroBitacoraViewModel> Registros { get; set; } = Enumerable.Empty<RegistroBitacoraViewModel>().AsQueryable();
+    private IQueryable<RegistroBitacoraViewModel> Registros =>
+        DatosBitacora.Registros.Where(r =>
+            r.FechaHora.Date >= Desde.Date && r.FechaHora.Date <= Hasta.Date &&
+            (FiltroResponsable == "" || r.Responsable == FiltroResponsable) &&
+            (FiltroAccion == "" || r.Accion == FiltroAccion)).AsQueryable();
     private DateTime Desde { get; set; } = new DateTime(2026, 10, 1);
     private DateTime Hasta { get; set; } = new DateTime(2026, 10, 31);
     private string FiltroResponsable { get; set; } = string.Empty;
@@ -66,8 +70,8 @@ else {
     private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
 
     private string[] Responsables { get; } = [
-        "Patricia Torres",
-        "Andrea Salas"
+        "Valeria Torres",
+        "Lucía Salazar"
     ];
 
     private string[] Acciones { get; } = [
@@ -75,16 +79,6 @@ else {
         "Modificación",
         "Cancelación"
     ];
-
-    protected override void OnInitialized() {
-        Registros = new List<RegistroBitacoraViewModel> {
-            new RegistroBitacoraViewModel { Id = 1, FechaHora = new DateTime(2026, 10, 25, 9, 20, 0), Cirugia = "CIR-026", Accion = "Creación", Responsable = "Patricia Torres", Detalle = "Alta de programación" },
-            new RegistroBitacoraViewModel { Id = 2, FechaHora = new DateTime(2026, 10, 25, 10, 10, 0), Cirugia = "CIR-026", Accion = "Modificación", Responsable = "Patricia Torres", Detalle = "Horario y equipo modificados" },
-            new RegistroBitacoraViewModel { Id = 3, FechaHora = new DateTime(2026, 10, 25, 11, 40, 0), Cirugia = "CIR-031", Accion = "Cancelación", Responsable = "Patricia Torres", Detalle = "Motivo registrado" },
-            new RegistroBitacoraViewModel { Id = 4, FechaHora = new DateTime(2026, 10, 26, 8, 5, 0), Cirugia = "CIR-027", Accion = "Creación", Responsable = "Andrea Salas", Detalle = "Alta de programación" },
-            new RegistroBitacoraViewModel { Id = 5, FechaHora = new DateTime(2026, 10, 26, 9, 15, 0), Cirugia = "CIR-028", Accion = "Modificación", Responsable = "Andrea Salas", Detalle = "Bandeja modificada" }
-        }.AsQueryable();
-    }
 
     private void VerCambios(int id) {
         Nav.NavigateTo($"/bitacora-cirugias/detalle/{id}");

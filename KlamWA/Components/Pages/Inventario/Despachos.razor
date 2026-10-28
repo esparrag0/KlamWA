@@ -1,24 +1,21 @@
-﻿@page "/inventario/despachos"
+@page "/inventario/despachos"
 
 <PageTitle>Despachos y retornos</PageTitle>
+<PageHeader Titulo="Despachos y retornos" Subtitulo="Control visual de equipos y kits enviados">
+    <a class="btn btn-primary" href="/inventario/despachos/nuevo">Registrar despacho</a>
+</PageHeader>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <span class="text-muted">Operaciones / Despachos y retornos</span>
-        <h2 class="mt-2">Despachos y retornos</h2>
-        <p class="text-muted">Control del equipo y kit enviados al establecimiento</p>
-    </div>
-</div>
-
-<div class="row mb-4 align-items-end">
+<div class="row g-2 mb-3">
     <div class="col-md-8">
-        <label class="form-label">Búsqueda</label>
-        <input type="text" class="form-control" placeholder="Cirugía, cliente o equipo" />
+        <label for="buscar-despacho" class="form-label">Búsqueda</label>
+        <input id="buscar-despacho" class="form-control" placeholder="Despacho, cirugía, cliente o equipo" @bind="busqueda" @bind:event="oninput" />
     </div>
     <div class="col-md-4">
-        <label class="form-label">Retorno</label>
-        <select class="form-select">
-            <option>Pendientes de retorno</option>
+        <label for="retorno-despacho" class="form-label">Retorno</label>
+        <select id="retorno-despacho" class="form-select" @bind="estado">
+            <option value="pendiente">Pendientes de retorno</option>
+            <option value="registrado">Retornos registrados</option>
+            <option value="todos">Todos</option>
         </select>
     </div>
 </div>
@@ -26,36 +23,42 @@
 <div class="table-responsive">
     <table class="table table-hover align-middle">
         <thead class="table-light">
-            <tr>
-                <th>DESPACHO</th>
-                <th>CIRUGÍA / DESTINO</th>
-                <th>EQUIPO</th>
-                <th>SALIDA</th>
-                <th>RETORNO</th>
-            </tr>
+            <tr><th>Despacho</th><th>Cirugía / destino</th><th>Equipo / kit</th><th>Salida</th><th>Retorno</th><th></th></tr>
         </thead>
         <tbody>
-            <tr style="cursor: pointer;" onclick="window.location.href='inventario/despachos/detalle/DSP-026'">
-                <td>DSP-026</td>
-                <td>CIR-026 · San Felipe</td>
-                <td>CR-02 · BI-026</td>
-                <td>26 oct · 06:30</td>
-                <td><span class="text-warning">Pendiente</span></td>
-            </tr>
-            <tr>
-                <td>DSP-027</td>
-                <td>CIR-027 · Almenara</td>
-                <td>NN-01 · BI-027</td>
-                <td>26 oct · 07:00</td>
-                <td><span class="text-warning">Pendiente</span></td>
-            </tr>
-            <tr>
-                <td>DSP-024</td>
-                <td>CIR-024 · San Felipe</td>
-                <td>CR-03 · BI-024</td>
-                <td>22 oct · 12:00</td>
-                <td><span class="text-success">Registrado</span></td>
-            </tr>
+            @foreach (var despacho in Filas)
+            {
+                var cirugia = DatosAgenda.Cirugias.First(c => c.Id == despacho.IdCirugia);
+                <tr>
+                    <td>@despacho.Codigo</td>
+                    <td>CIR-@cirugia.Id.ToString("000") · @cirugia.Clinica</td>
+                    <td>@despacho.Equipo · @despacho.Kit</td>
+                    <td>@despacho.Salida.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@(despacho.Retorno?.ToString("dd/MM/yyyy HH:mm") ?? "Pendiente")</td>
+                    <td><a class="btn btn-sm btn-outline-primary" href="/inventario/despachos/@despacho.Codigo">Ver detalle</a></td>
+                </tr>
+            }
+            @if (!Filas.Any())
+            {
+                <tr><td colspan="6" class="text-center text-muted">No hay despachos para este filtro.</td></tr>
+            }
         </tbody>
     </table>
 </div>
+<AvisoDemostracion />
+
+@code {
+    private string busqueda = "";
+    private string estado = "pendiente";
+    private IEnumerable<DespachoVista> Filas =>
+        DatosDespachos.Lista.Where(d =>
+        {
+            var c = DatosAgenda.Cirugias.First(x => x.Id == d.IdCirugia);
+            var coincide = string.IsNullOrWhiteSpace(busqueda)
+                || d.Codigo.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || $"CIR-{c.Id:000}".Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || c.Cliente.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+                || d.Equipo.Contains(busqueda, StringComparison.OrdinalIgnoreCase);
+            return coincide && (estado == "todos" || (estado == "pendiente" ? d.Retorno is null : d.Retorno is not null));
+        });
+}
