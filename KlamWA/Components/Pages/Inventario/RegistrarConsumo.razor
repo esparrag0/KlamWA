@@ -1,73 +1,127 @@
-﻿@page "/inventario/consumos/registrar/{IdCirugia}"
+﻿@page "/inventario/consumos/registrar/{Id:int}"
+@inject NavigationManager Nav
 
 <PageTitle>Registrar consumo real</PageTitle>
 
-<div class="mb-4">
-    <span class="text-muted">Operaciones / Consumos</span>
-    <h2 class="mt-2">Registrar consumo real</h2>
-    <p class="text-muted">@IdCirugia · Cirugía culminada · Registro por administración</p>
-    <span class="badge bg-light text-dark border">Culminada</span>
-</div>
+@if (c == null)
+{
+    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <a class="btn btn-outline-secondary" href="/inventario/consumos">Volver a consumos</a>
+}
+else if (cierre == null || !cierre.PuedeRegistrarConsumo && !cierre.PuedeVerComparativo)
+{
+    <PageHeader Titulo="Registrar consumo real" Subtitulo="@($"CIR-{Id:000} · {c.Cliente}")">
+        <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver al detalle</a>
+    </PageHeader>
+    <EstadoVacio Titulo="Aún no se puede registrar el consumo"
+                 Descripcion="Primero la clínica debe adjuntar la orden de compra y administración debe validarla." />
+    @if (cierre?.PuedeRevisarOc == true)
+    {
+        <a class="btn btn-primary" href="/agenda/cirugia/@Id/revisar-oc">Revisar orden de compra</a>
+    }
+    else
+    {
+        <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Ver detalle de la cirugía</a>
+    }
+}
+else
+{
+    <div class="mb-4">
+        <span class="text-muted">Operaciones / Consumos</span>
+        <h2 class="mt-2">Registrar consumo real</h2>
+        <p class="text-muted">CIR-@Id.ToString("000") · Cirugía culminada · OC validada · Registro por administración</p>
+        <EstadoBadge Estado="@c.Estado" />
+        <DocumentoEstadoBadge Estado="@cierre.EstadoOc" />
+    </div>
 
-<table class="table table-borderless table-striped mb-5">
-    <thead class="table-light">
-        <tr>
-            <th>CONSUMIBLE</th>
-            <th>MEDIDA</th>
-            <th>DESPACHADO</th>
-            <th>CONSUMIDO</th>
-            <th>DIFERENCIA</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Fresa cortante</td>
-            <td>70 mm</td>
-            <td>4</td>
-            <td>2</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>Cuchilla corta</td>
-            <td>70 mm</td>
-            <td>2</td>
-            <td>1</td>
-            <td>1</td>
-        </tr>
-    </tbody>
-</table>
+    @if (cierre.PuedeVerComparativo)
+    {
+        <div class="alert alert-success">El consumo de esta cirugía ya está completo.</div>
+    }
 
-<div class="card mb-4 p-3 shadow-sm">
-    <div class="card-body">
-        <h5 class="card-title mb-4">Ajustar consumo</h5>
-        <div class="row mb-3">
-            <div class="col-md-8">
-                <label class="form-label">Consumible</label>
+    <table class="table table-borderless table-striped mb-5">
+        <thead class="table-light">
+            <tr>
+                <th>CONSUMIBLE</th>
+                <th>MEDIDA</th>
+                <th>DESPACHADO</th>
+                <th>CONSUMIDO</th>
+                <th>DIFERENCIA</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Fresa cortante</td>
+                <td>70 mm</td>
+                <td>4</td>
+                <td>2</td>
+                <td>2</td>
+            </tr>
+            <tr>
+                <td>Cuchilla corta</td>
+                <td>70 mm</td>
+                <td>2</td>
+                <td>1</td>
+                <td>1</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="card mb-4 p-3 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-4">Ajustar consumo</h5>
+            <p class="text-muted small">Use la orden de compra validada (@cierre.ArchivoOc) y la hoja de sala. El despacho ya viene del kit enviado.</p>
+            <div class="row mb-3">
                 <div class="col-md-8">
-    <select class="form-select">
-        <option>Fresa cortante · 70 mm</option>
-        <option>Cuchilla corta · 70 mm</option>
-    </select>
-</div>
+                    <label class="form-label">Consumible</label>
+                    <select class="form-select">
+                        <option>Fresa cortante · 70 mm</option>
+                        <option>Cuchilla corta · 70 mm</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cantidad consumida *</label>
+                    <input type="number" class="form-control" value="2" />
+                </div>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Cantidad consumida *</label>
-                <input type="number" class="form-control" value="2" />
+            <div class="mb-3">
+                <label class="form-label">Observación</label>
+                <input type="text" class="form-control" value="Consumo cotejado con la hoja firmada en sala y la OC." />
             </div>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Observación</label>
-            <input type="text" class="form-control" value="Consumo cotejado con la hoja firmada en sala." />
         </div>
     </div>
-</div>
 
-<div class="d-flex gap-2">
-    <button class="btn text-white" style="background-color: #0f766e;">Guardar cantidades reales</button>
-    <button class="btn btn-light border">Ver reporte comparativo</button>
-</div>
+    <div class="d-flex gap-2">
+        @if (cierre.PuedeRegistrarConsumo)
+        {
+            <button type="button" class="btn text-white" style="background-color: #0f766e;" @onclick="Guardar">Guardar cantidades reales</button>
+        }
+        @if (cierre.PuedeVerComparativo)
+        {
+            <a class="btn btn-primary" href="/reportes/comparativo/@Id">Ver despachado vs. consumido</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-light border" disabled>Ver reporte comparativo</button>
+        }
+        <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Volver al detalle</a>
+    </div>
+}
 
 @code {
-    [Parameter]
-    public string? IdCirugia { get; set; }
+    [Parameter] public int Id { get; set; }
+    private CirugiaMock? c;
+    private CierreCirugiaMock? cierre;
+
+    protected override void OnParametersSet()
+    {
+        c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
+        cierre = c == null ? null : DatosCierre.De(Id);
+    }
+
+    private void Guardar()
+    {
+        DatosCierre.CompletarConsumo(Id);
+        Nav.NavigateTo($"/reportes/comparativo/{Id}");
+    }
 }

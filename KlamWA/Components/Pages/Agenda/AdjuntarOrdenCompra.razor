@@ -1,0 +1,104 @@
+@page "/agenda/cirugia/{Id:int}/orden-compra"
+@inject VistaPreviaRol Vista
+@inject NavigationManager Nav
+
+<PageTitle>Adjuntar orden de compra</PageTitle>
+
+@if (c == null || cierre == null)
+{
+    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <a class="btn btn-outline-secondary" href="/agenda/lista">Volver a la lista</a>
+}
+else if (!DatosCierre.EsClinica(c.Cliente) || c.Estado != "Culminada")
+{
+    <EstadoVacio Titulo="La orden de compra aún no está habilitada"
+                 Descripcion="Solo las clínicas u hospitales pueden adjuntarla, y únicamente cuando el administrador marca la cirugía como culminada." />
+    <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Volver al detalle</a>
+}
+else if (!cierre.PuedeAdjuntarOc && cierre.EstadoOc != DatosCierre.OcPendiente)
+{
+    <PageHeader Titulo="Orden de compra" Subtitulo="@($"{c.Procedimiento} · {c.Cliente}")">
+        <DocumentoEstadoBadge Estado="@cierre.EstadoOc" />
+        <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver</a>
+    </PageHeader>
+    <div class="alert alert-info">Esta orden ya fue enviada. Estado actual: @cierre.EstadoOc.</div>
+    @if (!string.IsNullOrWhiteSpace(cierre.ArchivoOc))
+    {
+        <p class="text-muted">Archivo: @cierre.ArchivoOc</p>
+    }
+}
+else
+{
+    <PageHeader Titulo="Adjuntar orden de compra" Subtitulo="@($"CIR-{Id:000} · Cirugía culminada · {c.Cliente}")">
+        <EstadoBadge Estado="@c.Estado" />
+        <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver</a>
+    </PageHeader>
+
+    @if (cierre.EstadoOc == DatosCierre.OcRechazado)
+    {
+        <div class="alert alert-warning">
+            <div class="fw-bold">Orden de compra rechazada</div>
+            @(string.IsNullOrWhiteSpace(cierre.MotivoRechazo) ? "Suba una copia más nítida." : cierre.MotivoRechazo)
+        </div>
+    }
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header">PDF de la orden de compra</div>
+                <div class="card-body">
+                    <p class="text-muted small">El archivo se registra de forma ilustrativa en este laboratorio.</p>
+                    <div class="mb-3">
+                        <label class="form-label" for="oc">Archivo (PDF)</label>
+                        <InputFile id="oc" class="form-control" accept=".pdf,application/pdf" OnChange="Seleccionar" />
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(nombreArchivo))
+                    {
+                        <p class="small mb-0">Seleccionado: <strong>@nombreArchivo</strong></p>
+                    }
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button type="button" class="btn btn-primary" disabled="@string.IsNullOrWhiteSpace(nombreArchivo)" @onclick="Enviar">
+                        Enviar orden de compra
+                    </button>
+                    <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Cancelar</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">Qué ocurre después</div>
+                <div class="card-body">
+                    <p class="mb-2">Al enviar, el documento queda en <strong>Pendiente</strong>.</p>
+                    <p class="mb-0 text-muted">Administración lo valida o pide una copia más nítida. Recién con la OC validada se registra el consumo real.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private CirugiaMock? c;
+    private CierreCirugiaMock? cierre;
+    private string nombreArchivo = "";
+
+    protected override void OnParametersSet()
+    {
+        c = DatosAgenda.ParaPerfil(Vista.Perfil.Clave).FirstOrDefault(x => x.Id == Id);
+        cierre = c == null ? null : DatosCierre.De(Id);
+        if (Vista.Perfil.Clave is not "cliente" and not "administrador")
+            Nav.NavigateTo($"/agenda/cirugia/{Id}");
+    }
+
+    private void Seleccionar(InputFileChangeEventArgs e)
+    {
+        nombreArchivo = e.File.Name;
+    }
+
+    private void Enviar()
+    {
+        DatosCierre.RegistrarEnvioOc(Id, nombreArchivo);
+        Nav.NavigateTo($"/agenda/cirugia/{Id}");
+    }
+}

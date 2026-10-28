@@ -1,3 +1,4 @@
+@inject VistaPreviaRol Vista
 @using KlamWA.Components.Shared
 @* Tabla reutilizable de cirugías (lista e historial) *@
 <div class="table-responsive">
@@ -27,8 +28,12 @@
                     <td>@c.Doctor</td>
                     @if (MostrarMotivo) { <td>@c.MotivoCancelacion</td> }
                     <td><EstadoBadge Estado="@c.Estado" /></td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
                         <a class="btn btn-sm btn-outline-primary" href="/agenda/cirugia/@c.Id">Detalle</a>
+                        @if (BotonCierre(c) is { } accion)
+                        {
+                            <a class="btn btn-sm btn-primary ms-1" href="@accion.Href">@accion.Texto</a>
+                        }
                     </td>
                 </tr>
             }
@@ -43,4 +48,21 @@
 @code {
     [Parameter] public IEnumerable<CirugiaMock> Cirugias { get; set; } = new List<CirugiaMock>();
     [Parameter] public bool MostrarMotivo { get; set; }
+
+    private (string Texto, string Href)? BotonCierre(CirugiaMock cirugia)
+    {
+        if (cirugia.Estado != "Culminada" || !DatosCierre.EsClinica(cirugia.Cliente)) return null;
+        DatosCierre.AlCulminar(cirugia);
+        var cierre = DatosCierre.De(cirugia.Id);
+        var perfil = Vista.Perfil.Clave;
+        if (perfil == "cliente" && cierre.PuedeAdjuntarOc)
+            return ("Adjuntar orden de compra", $"/agenda/cirugia/{cirugia.Id}/orden-compra");
+        if (perfil == "administrador" && cierre.PuedeRevisarOc)
+            return ("Revisar OC", $"/agenda/cirugia/{cirugia.Id}/revisar-oc");
+        if (perfil == "administrador" && cierre.PuedeRegistrarConsumo)
+            return ("Registrar consumo", $"/inventario/consumos/registrar/{cirugia.Id}");
+        if (perfil == "administrador" && cierre.PuedeVerComparativo)
+            return ("Comparativo", $"/reportes/comparativo/{cirugia.Id}");
+        return null;
+    }
 }

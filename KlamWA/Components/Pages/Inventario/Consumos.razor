@@ -6,26 +6,7 @@
     <div>
         <span class="text-muted">Operaciones / Consumos</span>
         <h2 class="mt-2">Consumo por cirugía</h2>
-        <p class="text-muted">Consulta y registra cantidades reales de intervenciones culminadas</p>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-3">
-        <label class="form-label">Cirugía</label>
-        <select class="form-select"><option>Todas</option></select>
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Cliente</label>
-        <select class="form-select"><option>Todos</option></select>
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Desde</label>
-        <input type="date" class="form-control" value="2026-10-01" />
-    </div>
-    <div class="col-md-3">
-        <label class="form-label">Hasta</label>
-        <input type="date" class="form-control" value="2026-10-31" />
+        <p class="text-muted">Se habilita después de validar la orden de compra de una cirugía culminada</p>
     </div>
 </div>
 
@@ -37,26 +18,52 @@
                 <th>CLIENTE</th>
                 <th>FECHA</th>
                 <th>ESTADO</th>
+                <th>ORDEN DE COMPRA</th>
                 <th>REGISTRO DE CONSUMO</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>CIR-024</td>
-                <td>San Felipe</td>
-                <td>22 oct</td>
-                <td>Culminada</td>
-                <td>Completo</td>
-            </tr>
-            <tr class="table-active">
-                <td>CIR-026</td>
-                <td>San Felipe</td>
-                <td>26 oct</td>
-                <td>Culminada</td>
-                <td>Por registrar</td>
-            </tr>
+            @foreach (var fila in Filas)
+            {
+                <tr class="@(fila.Cierre.PuedeRegistrarConsumo ? "table-active" : null)">
+                    <td>CIR-@fila.Cirugia.Id.ToString("000")</td>
+                    <td>@fila.Cirugia.Cliente</td>
+                    <td>@fila.Cirugia.Inicio.ToString("dd MMM")</td>
+                    <td>@fila.Cirugia.Estado</td>
+                    <td><DocumentoEstadoBadge Estado="@fila.Cierre.EstadoOc" /></td>
+                    <td><DocumentoEstadoBadge Estado="@fila.Cierre.EstadoConsumo" /></td>
+                    <td class="text-end text-nowrap">
+                        @if (fila.Cierre.PuedeRegistrarConsumo)
+                        {
+                            <a href="/inventario/consumos/registrar/@fila.Cirugia.Id" class="btn btn-sm text-white" style="background-color: #0f766e;">Registrar consumo</a>
+                        }
+                        else if (fila.Cierre.PuedeVerComparativo)
+                        {
+                            <a href="/reportes/comparativo/@fila.Cirugia.Id" class="btn btn-sm btn-outline-primary">Ver comparativo</a>
+                        }
+                        else if (fila.Cierre.PuedeRevisarOc)
+                        {
+                            <a href="/agenda/cirugia/@fila.Cirugia.Id/revisar-oc" class="btn btn-sm btn-outline-primary">Revisar OC</a>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (!Filas.Any())
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay cirugías culminadas de clínicas en esta sesión.</td></tr>
+            }
         </tbody>
     </table>
 </div>
 
-<a href="inventario/consumos/registrar/CIR-026" class="btn text-white" style="background-color: #0f766e;">Registrar consumo de CIR-026</a>
+@code {
+    private IEnumerable<(CirugiaMock Cirugia, CierreCirugiaMock Cierre)> Filas =>
+        DatosAgenda.Cirugias
+            .Where(c => c.Estado == "Culminada" && DatosCierre.EsClinica(c.Cliente))
+            .Select(c =>
+            {
+                DatosCierre.AlCulminar(c);
+                return (c, DatosCierre.De(c.Id));
+            });
+}

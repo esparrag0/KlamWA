@@ -47,12 +47,71 @@ else
                     <span class="badge text-bg-secondary">@c.EstadoCotizacion</span>
                 </div>
             </div>
+            <div class="card mb-3">
+                <div class="card-header">Cierre de insumos</div>
+                @if (c.Estado != "Culminada")
+                {
+                    <div class="card-body">
+                        <p class="text-muted mb-0">La orden de compra y el comparativo se habilitan cuando el administrador marca la cirugía como culminada.</p>
+                    </div>
+                }
+                else if (!esClinica)
+                {
+                    <div class="card-body">
+                        <p class="text-muted mb-0">Este cliente es particular: no adjunta orden de compra al cierre.</p>
+                    </div>
+                }
+                else if (cierre != null)
+                {
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Orden de compra</span>
+                            <DocumentoEstadoBadge Estado="@cierre.EstadoOc" />
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Consumo real</span>
+                            <DocumentoEstadoBadge Estado="@cierre.EstadoConsumo" />
+                        </div>
+                        @if (cierre.EstadoOc == DatosCierre.OcRechazado && !string.IsNullOrWhiteSpace(cierre.MotivoRechazo))
+                        {
+                            <div class="list-group-item small text-danger">@cierre.MotivoRechazo</div>
+                        }
+                        @if (Vista.Perfil.Clave == "cliente" && cierre.PuedeAdjuntarOc)
+                        {
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.Id/orden-compra">
+                                Adjuntar orden de compra
+                            </a>
+                        }
+                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeRevisarOc)
+                        {
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.Id/revisar-oc">
+                                Revisar orden de compra
+                            </a>
+                        }
+                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeRegistrarConsumo)
+                        {
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/inventario/consumos/registrar/@c.Id">
+                                Registrar consumo real
+                            </a>
+                        }
+                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeVerComparativo)
+                        {
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/reportes/comparativo/@c.Id">
+                                Ver despachado vs. consumido
+                            </a>
+                        }
+                        @if (Vista.Perfil.Clave == "administrador" && cierre.EstadoOc == DatosCierre.OcPorAdjuntar)
+                        {
+                            <div class="list-group-item text-muted small">Esperando a que la clínica adjunte la orden de compra.</div>
+                        }
+                    </div>
+                }
+            </div>
             <div class="card">
                 <div class="card-header">Relacionado</div>
                 <div class="list-group list-group-flush">
                     <span class="list-group-item text-muted">Ver solicitud <small class="d-block">Próximamente</small></span>
                     <span class="list-group-item text-muted">Ver documentación <small class="d-block">Próximamente</small></span>
-                    <span class="list-group-item text-muted">Ver consumibles <small class="d-block">Próximamente</small></span>
                 </div>
             </div>
         </div>
@@ -63,9 +122,20 @@ else
 @code {
     [Parameter] public int Id { get; set; }
     private CirugiaMock? c;
+    private CierreCirugiaMock? cierre;
+    private bool esClinica;
 
     protected override void OnParametersSet()
     {
         c = DatosAgenda.ParaPerfil(Vista.Perfil.Clave).FirstOrDefault(x => x.Id == Id);
+        if (c == null)
+        {
+            cierre = null;
+            esClinica = false;
+            return;
+        }
+        esClinica = DatosCierre.EsClinica(c.Cliente);
+        cierre = DatosCierre.De(c.Id);
+        DatosCierre.AlCulminar(c);
     }
 }

@@ -52,6 +52,10 @@
             var ruta = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
             bool Es(string prefijo) => ruta == prefijo || ruta.StartsWith(prefijo + "/", StringComparison.OrdinalIgnoreCase);
             if (ruta.Equals("/agenda", StringComparison.OrdinalIgnoreCase) && (Vista.Perfil.Clave is "cliente" or "vendedor")) return false;
+            if (ruta.Contains("/orden-compra", StringComparison.OrdinalIgnoreCase))
+                return Vista.Perfil.Clave is "cliente" or "administrador";
+            if (ruta.Contains("/revisar-oc", StringComparison.OrdinalIgnoreCase) || ruta.Contains("/rechazar-oc", StringComparison.OrdinalIgnoreCase))
+                return Vista.Perfil.Clave == "administrador";
             if (Es("/agenda/nueva") || Es("/agenda/editar") || Es("/agenda/historial")
                 || Es("/bitacora-cirugias") || Es("/historial-documental") || Es("/usuarios")
                 || Es("/roles") || Es("/clientes") || Es("/solicitudes")

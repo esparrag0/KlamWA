@@ -60,6 +60,10 @@
                     <InputSelect class="form-select" @bind-Value="ViewModel.Estado">
                         @foreach (var e in DatosAgenda.Estados) { <option value="@e">@e</option> }
                     </InputSelect>
+                    @if (ViewModel.Estado == "Culminada")
+                    {
+                        <div class="form-text">Si el cliente es clínica u hospital, al guardar se habilita adjuntar la orden de compra. Se exige fecha y hora de fin.</div>
+                    }
                 </CampoForm>
                 <CampoForm Etiqueta="Equipo">
                     <InputSelect class="form-select" @bind-Value="ViewModel.IdEquipo">
@@ -125,10 +129,39 @@
     // Solo se ejecuta si el ViewModel es válido (validación de frontend).
     private void Guardar()
     {
-        // Lab 9: NO se guarda nada.
-        // Siguiente lab (backend): llamar al servicio web de Java (CirugiaBL.insert/update)
-        // dentro de try/catch y mostrar el mensaje de error de la BL en MensajeError,
-        // igual que GestionarProductosPage con BLException.
-        MensajeOk = "Datos válidos (en este laboratorio no se guarda).";
+        if (Id == null)
+        {
+            MensajeOk = "Datos válidos (el alta nueva no se persiste en este laboratorio).";
+            return;
+        }
+
+        var existente = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
+        if (existente == null)
+        {
+            MensajeError = "No se encontró la cirugía.";
+            return;
+        }
+
+        existente.Procedimiento = ViewModel.TipoProcedimiento;
+        existente.Doctor = ViewModel.Doctor;
+        existente.Inicio = ViewModel.FechaHoraInicio ?? existente.Inicio;
+        existente.Fin = ViewModel.FechaHoraFin ?? existente.Fin;
+        existente.Estado = ViewModel.Estado;
+        existente.MotivoCancelacion = ViewModel.MotivoCancelacion;
+        existente.PrecioCotizacion = ViewModel.PrecioPactado;
+        if (DatosAgenda.Clientes.TryGetValue(ViewModel.IdCliente, out var cliente))
+            existente.Cliente = cliente;
+        if (DatosAgenda.Equipos.TryGetValue(ViewModel.IdEquipo, out var equipo))
+            existente.Equipo = equipo;
+        if (DatosAgenda.Bandejas.TryGetValue(ViewModel.IdBandeja, out var bandeja))
+            existente.Bandeja = bandeja;
+
+        DatosCierre.AlCulminar(existente);
+        if (existente.Estado == "Culminada")
+        {
+            Nav.NavigateTo($"/agenda/cirugia/{existente.Id}");
+            return;
+        }
+        MensajeOk = "Cambios guardados en esta sesión de demostración.";
     }
 }
