@@ -31,7 +31,6 @@ else
                 @if (Vista.Perfil.Clave == "administrador")
                 {
                     <a href="/usuarios/nuevo"><span class="quick-icon"><Icono Nombre="mas" /></span><div><strong>Registrar un usuario</strong><small>Datos personales, rol y estado de acceso</small></div><Icono Nombre="flecha" Tamano="18" /></a>
-                    <a href="/roles"><span class="quick-icon"><Icono Nombre="escudo" /></span><div><strong>Roles y responsabilidades</strong><small>Consulta la organización de los accesos</small></div><Icono Nombre="flecha" Tamano="18" /></a>
                 }
                 else if (Vista.Perfil.Clave is "vendedor" or "cliente")
                 {

@@ -83,7 +83,6 @@
                         <option value="0">-- Ninguna --</option>
                         @foreach (var x in DatosAgenda.Bandejas) { <option value="@x.Key">@x.Value</option> }
                     </InputSelect>
-                    <div class="form-text"><a href="/inventario/bandejas">Ver plantillas y consumibles</a></div>
                 </CampoForm>
                 @if (ViewModel.IdBandeja is 4 or 5)
                 {

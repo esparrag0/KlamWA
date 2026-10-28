@@ -22,7 +22,6 @@
         {
             <div class="nav-section">Administración</div>
             <NavLink class="nav-link" href="/usuarios"><Icono Nombre="usuarios" /> Usuarios</NavLink>
-            <NavLink class="nav-link" href="/roles"><Icono Nombre="escudo" /> Roles y responsabilidades</NavLink>
         }
         @if (Perfil.Clave == "administrador")
         {
@@ -48,7 +47,6 @@
         {
             <div class="nav-section">Inventario y logística</div>
             <NavLink class="nav-link" href="/inventario/despachos"><Icono Nombre="flecha" /> Despachos y retornos</NavLink>
-            <NavLink class="nav-link" href="/inventario/bandejas"><Icono Nombre="lista" /> Plantillas de bandejas</NavLink>
             <NavLink class="nav-link" href="/inventario/consumos"><Icono Nombre="lista" /> Consumos</NavLink>
         }
         @if (Perfil.Clave == "administrador")

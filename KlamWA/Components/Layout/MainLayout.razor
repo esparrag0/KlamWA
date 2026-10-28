@@ -58,7 +58,7 @@
             if (Es("/agenda/historial")) return Vista.Perfil.Clave is "administrador" or "cliente";
             if (Es("/agenda/nueva") || Es("/agenda/editar") || Es("/agenda/eliminar")
                 || Es("/bitacora-cirugias") || Es("/historial-documental") || Es("/usuarios")
-                || Es("/roles") || Es("/clientes") || Es("/solicitudes")
+                || Es("/clientes") || Es("/solicitudes")
                 || Es("/reportes") || Es("/inventario"))
                 return Vista.Perfil.Clave == "administrador";
             if (Es("/mis-solicitudes")) return Vista.Perfil.Clave is "cliente" or "vendedor";
