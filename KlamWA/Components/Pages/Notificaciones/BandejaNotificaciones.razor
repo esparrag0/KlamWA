@@ -7,7 +7,7 @@
 <PageHeader Titulo="Notificaciones" Subtitulo="Mantente al tanto de las solicitudes y la programación quirúrgica.">
     <BotonDemo Clase="btn-outline-secondary" Mensaje="Acción visual. Los avisos de ejemplo mantienen su estado de lectura."><Icono Nombre="check" Tamano="17" /> Marcar todas como leídas</BotonDemo>
 </PageHeader>
-<nav class="view-tabs" aria-label="Bandejas de demostración"><a href="/notificaciones/administrador" class="@(perfil == "administrador" ? "active" : "")" aria-current="@(perfil == "administrador" ? "page" : null)"><Icono Nombre="escudo" Tamano="17" /> Administrador</a><a href="/notificaciones/instrumentista" class="@(perfil == "instrumentista" ? "active" : "")" aria-current="@(perfil == "instrumentista" ? "page" : null)"><Icono Nombre="usuarios" Tamano="17" /> Instrumentista</a><a href="/notificaciones/sin-avisos" class="@(vacia ? "active" : "")">Ejemplo sin avisos</a></nav>
+<nav class="view-tabs" aria-label="Bandeja de notificaciones"><a href="/notificaciones" class="active" aria-current="page"><Icono Nombre="campana" Tamano="17" /> Mi bandeja</a></nav>
 @if (desconocido)
 {
     <EstadoVacio Titulo="Bandeja no disponible" Descripcion="Selecciona la bandeja de administrador o instrumentista." Enlace="/notificaciones/administrador" TextoEnlace="Ir a notificaciones" />
@@ -40,6 +40,6 @@ else
         desconocido = Rol is not null and not "administrador" and not "instrumentista" and not "sin-avisos";
         perfil = Rol is "administrador" or "instrumentista" ? Rol : Vista.Perfil.Clave == "instrumentista" ? "instrumentista" : "administrador";
         avisos = perfil == "instrumentista" ? DatosAcceso.AvisosInstrumentista : DatosAcceso.AvisosAdministrador;
-        if (!vacia && !desconocido) Vista.Mostrar(DatosAcceso.Perfil(perfil)!);
+
     }
 }

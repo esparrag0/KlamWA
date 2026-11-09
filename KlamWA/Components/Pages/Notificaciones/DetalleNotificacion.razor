@@ -23,5 +23,5 @@ else
 @code {
     [Parameter] public int Id { get; set; }
     private NotificacionVista? aviso;
-    protected override void OnParametersSet() { aviso = DatosAcceso.Aviso(Id); if(aviso is not null) Vista.Mostrar(DatosAcceso.Perfil(aviso.Perfil)!); }
+    protected override void OnParametersSet() { aviso = DatosAcceso.Aviso(Id) is { } encontrado && encontrado.Perfil == Vista.Perfil.Clave ? encontrado : null; }
 }

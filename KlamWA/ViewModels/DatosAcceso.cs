@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace KlamWA.ViewModels;
 
 // Datos inmutables del Lab. 9, basados en UsuarioPlataforma y Notificacion de Java.
@@ -49,15 +51,26 @@ public static class DatosAcceso
     public static NotificacionVista? Aviso(int id) => AvisosAdministrador.Concat(AvisosInstrumentista).FirstOrDefault(n => n.Id == id);
 }
 
-// Estado de presentación por circuito, sin cookies, tokens ni almacenamiento.
+// El perfil visual se deriva exclusivamente de las claims de la sesión.
 public sealed class VistaPreviaRol
 {
     public PerfilVista Perfil { get; private set; } = DatosAcceso.Perfiles[0];
     public event Action? Cambio;
-    public void Mostrar(PerfilVista perfil)
+
+    public void Establecer(ClaimsPrincipal usuario)
     {
-        if (Perfil.Clave == perfil.Clave) return;
-        Perfil = perfil;
+        var clave = usuario.FindFirst(ClaimTypes.Role)?.Value switch
+        {
+            "ADMINISTRADOR" => "administrador",
+            "VENDEDOR" => "vendedor",
+            "TECNICO_INSTRUMENTISTA" => "instrumentista",
+            _ => null
+        };
+        if (DatosAcceso.Perfil(clave) is not { } perfil) return;
+
+        var nombre = usuario.Identity?.Name ?? perfil.Nombre;
+        var iniciales = nombre.Length >= 2 ? nombre[..2].ToUpperInvariant() : nombre.ToUpperInvariant();
+        Perfil = perfil with { Persona = nombre, Iniciales = iniciales };
         Cambio?.Invoke();
     }
 }
