@@ -1,3 +1,8 @@
+@using KlamWA.Servicios
+@inject IClienteService ClienteSvc
+@inject IEquipoService EquipoSvc
+
+@* Filtros de cirugías (RF17): fechas, maquinaria, tipo de cliente, cliente y estado. Los catálogos vienen del backend. *@
 <div class="card mb-3">
     <div class="card-body">
         <div class="row g-2 align-items-end">
@@ -11,31 +16,31 @@
             </div>
             <div class="col-md-2">
                 <label for="filtro-tipo-cliente" class="form-label small mb-1">Tipo de cliente</label>
-                <select id="filtro-tipo-cliente" class="form-select form-select-sm" @bind="tipoCliente">
+                <select id="filtro-tipo-cliente" class="form-select form-select-sm" @bind="TipoCliente" @bind:after="AlCambiarTipo">
                     <option value="">Todos</option>
-                    <option value="@DatosClientes.Clinica">Clínica / hospital</option>
-                    <option value="@DatosClientes.Particular">Particular</option>
+                    <option value="@Clinica">Clínica / hospital</option>
+                    <option value="@Particular">Particular</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <label for="filtro-cliente" class="form-label small mb-1">Cliente</label>
                 <select id="filtro-cliente" class="form-select form-select-sm" @bind="cliente">
                     <option value="">Todos</option>
-                    @foreach (var x in DatosAgenda.Clientes) { <option value="@x.Value">@x.Value</option> }
+                    @foreach (var x in ClientesVisibles) { <option value="@Clave(x)">@x.Nombre</option> }
                 </select>
             </div>
             <div class="col-md-2">
                 <label for="filtro-equipo" class="form-label small mb-1">Equipo</label>
                 <select id="filtro-equipo" class="form-select form-select-sm" @bind="equipo">
                     <option value="">Todos</option>
-                    @foreach (var x in DatosAgenda.Equipos) { <option value="@x.Value">@x.Value</option> }
+                    @foreach (var x in equipos) { <option value="@x.Id">@x.Nombre</option> }
                 </select>
             </div>
             <div class="col-md-2">
                 <label for="filtro-estado" class="form-label small mb-1">Estado</label>
                 <select id="filtro-estado" class="form-select form-select-sm" @bind="estado">
                     <option value="">Todos</option>
-                    @foreach (var x in DatosAgenda.Estados) { <option value="@x">@x</option> }
+                    @foreach (var x in Estados) { <option value="@x">@x</option> }
                 </select>
             </div>
             <div class="col-12 d-flex gap-2 mt-2">
@@ -43,25 +48,74 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="Limpiar">Limpiar</button>
             </div>
         </div>
+        @if (errorCatalogos != null)
+        {
+            <div class="alert alert-warning py-2 mt-2 mb-0 small" role="alert">
+                No se pudieron cargar los clientes y equipos: @errorCatalogos
+            </div>
+        }
     </div>
 </div>
 
 @code {
-    [Parameter] public EventCallback<FiltroCirugiaVista> OnFiltrar { get; set; }
+    private const string Clinica = "CLINICA_HOSPITAL";
+    private const string Particular = "PACIENTE_PARTICULAR";
+    private static readonly string[] Estados = { "Programada", "En curso", "Culminada", "Cancelada" };
+
+    [Parameter] public EventCallback<FiltroCirugia> OnFiltrar { get; set; }
+
     private DateTime? desde;
     private DateTime? hasta;
-    private string tipoCliente = "";
-    private string cliente = "";
+    private string TipoCliente { get; set; } = "";
+    private string cliente = "";      // "TIPO|id": los ids de clínicas y pacientes se solapan
     private string equipo = "";
     private string estado = "";
+    private List<ClienteOpcionViewModel> clientes = new();
+    private List<EquipoOpcionViewModel> equipos = new();
+    private string? errorCatalogos;
 
-    private Task Aplicar() =>
-        OnFiltrar.InvokeAsync(new FiltroCirugiaVista(desde, hasta, cliente, tipoCliente, equipo, estado));
+    private IEnumerable<ClienteOpcionViewModel> ClientesVisibles =>
+        TipoCliente == "" ? clientes : clientes.Where(c => c.Tipo == TipoCliente);
+
+    private static string Clave(ClienteOpcionViewModel c) => $"{c.Tipo}|{c.Id}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            clientes = await ClienteSvc.Listar();
+            equipos = await EquipoSvc.Listar();
+        }
+        catch (ServicioException ex)
+        {
+            errorCatalogos = ex.Message;
+        }
+    }
+
+    private void AlCambiarTipo()
+    {
+        // Si el cliente elegido ya no pertenece al tipo, se limpia.
+        if (cliente != "" && TipoCliente != "" && !cliente.StartsWith(TipoCliente + "|")) cliente = "";
+    }
+
+    private Task Aplicar()
+    {
+        string? tipo = TipoCliente == "" ? null : TipoCliente;
+        int? idCliente = null;
+        if (cliente != "")
+        {
+            var partes = cliente.Split('|');
+            tipo = partes[0];
+            idCliente = int.Parse(partes[1]);
+        }
+        int? idEquipo = int.TryParse(equipo, out var e) ? e : null;
+        return OnFiltrar.InvokeAsync(new FiltroCirugia(desde, hasta, tipo, idCliente, idEquipo, estado == "" ? null : estado));
+    }
 
     private Task Limpiar()
     {
         desde = hasta = null;
-        tipoCliente = cliente = equipo = estado = "";
+        TipoCliente = cliente = equipo = estado = "";
         return Aplicar();
     }
 }

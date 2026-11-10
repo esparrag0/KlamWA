@@ -43,7 +43,7 @@ else
             <div class="card">
                 <div class="card-header">Historial de cirugías</div>
                 <div class="card-body p-0">
-                    <TablaCirugias Cirugias="cirugias" MostrarMotivo="true" />
+                    <TablaCirugias Cirugias="cirugias.Select(x => x.ADetalleVista())" MostrarMotivo="true" />
                 </div>
             </div>
         </div>

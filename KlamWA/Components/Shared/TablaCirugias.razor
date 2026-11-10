@@ -22,7 +22,7 @@
                 <tr>
                     <td>@c.Inicio.ToString("dd/MM/yyyy")</td>
                     <td>@c.Inicio.ToString("HH:mm")</td>
-                    <td>@c.Fin.ToString("HH:mm")</td>
+                    <td>@(c.Fin?.ToString("HH:mm") ?? "—")</td>
                     <td>@c.Procedimiento</td>
                     <td>@c.Cliente</td>
                     <td>@c.Doctor</td>
@@ -46,10 +46,10 @@
 </div>
 
 @code {
-    [Parameter] public IEnumerable<CirugiaMock> Cirugias { get; set; } = new List<CirugiaMock>();
+    [Parameter] public IEnumerable<CirugiaResumenViewModel> Cirugias { get; set; } = new List<CirugiaResumenViewModel>();
     [Parameter] public bool MostrarMotivo { get; set; }
 
-    private (string Texto, string Href)? BotonCierre(CirugiaMock cirugia)
+    private (string Texto, string Href)? BotonCierre(CirugiaResumenViewModel cirugia)
     {
         if (cirugia.Estado != "Culminada" || !DatosCierre.EsClinica(cirugia.Cliente)) return null;
         var cierre = DatosCierre.De(cirugia.Id);

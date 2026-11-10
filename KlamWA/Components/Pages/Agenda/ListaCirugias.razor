@@ -1,19 +1,64 @@
 @inject VistaPreviaRol Vista
+@inject ICirugiaService CirugiaSvc
 @page "/agenda/lista"
 @using KlamWA.Components.Shared
+@using KlamWA.Servicios
 
 <PageTitle>Lista de cirugías</PageTitle>
 
-<PageHeader Titulo="Lista de cirugías" Subtitulo="Cirugías asociadas a tu perfil (datos de ejemplo)">
+<PageHeader Titulo="Lista de cirugías" Subtitulo="Cirugías registradas, con filtros por fecha, equipo y cliente">
     @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <a class="btn btn-outline-secondary" href="/agenda">Ver calendario</a> }
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
 </PageHeader>
 
 <FiltrosCirugia OnFiltrar="AplicarFiltros" />
-<TablaCirugias Cirugias="Filas" />
+
+@if (error != null)
+{
+    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+        <span>@error</span>
+        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Cargar">Reintentar</button>
+    </div>
+}
+else if (cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Cargando cirugías…</p>
+}
+else
+{
+    <TablaCirugias Cirugias="filas" />
+}
 
 @code {
-    private FiltroCirugiaVista filtro = new();
-    private IEnumerable<CirugiaMock> Filas => FiltrosAgenda.Aplicar(DatosAgenda.ParaPerfil(Vista.Perfil.Clave), filtro);
-    private void AplicarFiltros(FiltroCirugiaVista nuevo) => filtro = nuevo;
+    private FiltroCirugia filtro = new();
+    private List<CirugiaResumenViewModel> filas = new();
+    private bool cargando;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => Cargar();
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        error = null;
+        try
+        {
+            filas = await CirugiaSvc.Buscar(filtro);
+        }
+        catch (ServicioException ex)
+        {
+            error = ex.Message;
+            filas = new();
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private Task AplicarFiltros(FiltroCirugia nuevo)
+    {
+        filtro = nuevo;
+        return Cargar();
+    }
 }

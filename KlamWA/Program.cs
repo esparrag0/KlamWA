@@ -1,6 +1,12 @@
 using KlamWA.Components;
+using KlamWA.Servicios;
+using KlamWA.Servicios.Rest;
+// ...
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<ICirugiaService, CirugiaService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IEquipoService, EquipoService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

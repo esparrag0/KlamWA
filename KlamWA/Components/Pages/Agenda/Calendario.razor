@@ -1,22 +1,33 @@
 @inject VistaPreviaRol Vista
+@inject ICirugiaService CirugiaSvc
 @page "/agenda"
 @using KlamWA.Components.Shared
+@using KlamWA.Servicios
 
 <PageTitle>Agenda de cirugías</PageTitle>
 
-<PageHeader Titulo="Agenda de cirugías" Subtitulo="Calendario mensual (datos de ejemplo)">
+<PageHeader Titulo="Agenda de cirugías" Subtitulo="Calendario mensual">
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
     <a class="btn btn-outline-secondary" href="/agenda/lista">Ver lista</a>
     @if (Vista.Perfil.Clave is "administrador" or "cliente") { <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a> }
 </PageHeader>
 
 <FiltrosCirugia OnFiltrar="AplicarFiltros" />
-<ResumenEstados Cirugias="CirugiasDelMes" />
+<ResumenEstados Cirugias="cirugiasDelMes" />
+
+@if (error != null)
+{
+    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+        <span>@error</span>
+        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Cargar">Reintentar</button>
+    </div>
+}
 
 <div class="d-flex align-items-center gap-2 mb-2">
     <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="MesAnterior" aria-label="Mes anterior">‹</button>
     <h5 class="mb-0">@mes.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))</h5>
     <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="MesSiguiente" aria-label="Mes siguiente">›</button>
+    @if (cargando) { <span class="spinner-border spinner-border-sm text-secondary" role="status" aria-label="Cargando"></span> }
 </div>
 <div class="table-responsive">
     <table class="table table-bordered calendario">
@@ -34,9 +45,10 @@
                             <div class="numero @(dia.Date == DateTime.Today ? "hoy" : "")">@dia.Day</div>
                             @if (dia.Month == mes.Month)
                             {
-                                @foreach (var c in CirugiasDelMes.Where(x => x.Inicio.Date == dia.Date))
+                                @foreach (var c in porDia[dia.Date])
                                 {
                                     <a href="/agenda/cirugia/@c.Id" class="evento"
+                                       title="@c.Cliente · @c.Doctor · @c.Equipo"
                                        style="background-color:@DatosAgenda.Color(c.Estado); color:@DatosAgenda.ColorTexto(c.Estado)">
                                         @c.Inicio.ToString("HH:mm") @c.Procedimiento
                                     </a>
@@ -49,16 +61,57 @@
         </tbody>
     </table>
 </div>
+@if (!cargando && error == null && !cirugiasDelMes.Any())
+{
+    <p class="text-muted text-center">No hay cirugías en este mes con los filtros elegidos.</p>
+}
 
 @code {
-    private DateTime mes = new(2026, 10, 1);
-    private FiltroCirugiaVista filtro = new();
+    private DateTime mes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private FiltroCirugia filtro = new();
+    private List<CirugiaResumenViewModel> cirugiasDelMes = new();
+    private ILookup<DateTime, CirugiaResumenViewModel> porDia =
+        Enumerable.Empty<CirugiaResumenViewModel>().ToLookup(c => c.Inicio.Date);
+    private bool cargando;
+    private string? error;
+
     private DateTime InicioCuadricula => mes.AddDays(-(((int)mes.DayOfWeek + 6) % 7));
-    private IEnumerable<CirugiaMock> CirugiasFiltradas =>
-        FiltrosAgenda.Aplicar(DatosAgenda.ParaPerfil(Vista.Perfil.Clave), filtro);
-    private IEnumerable<CirugiaMock> CirugiasDelMes =>
-        CirugiasFiltradas.Where(c => c.Inicio.Year == mes.Year && c.Inicio.Month == mes.Month);
-    private void AplicarFiltros(FiltroCirugiaVista nuevo) => filtro = nuevo;
-    private void MesAnterior() => mes = mes.AddMonths(-1);
-    private void MesSiguiente() => mes = mes.AddMonths(1);
+
+    protected override Task OnInitializedAsync() => Cargar();
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        error = null;
+        try
+        {
+            // El rango del mes se cruza con el rango (opcional) de los filtros.
+            var primero = mes;
+            var ultimo = mes.AddMonths(1).AddDays(-1);
+            var desde = filtro.Desde is { } d && d.Date > primero ? d.Date : primero;
+            var hasta = filtro.Hasta is { } h && h.Date < ultimo ? h.Date : ultimo;
+            cirugiasDelMes = desde <= hasta
+                ? await CirugiaSvc.Buscar(filtro with { Desde = desde, Hasta = hasta })
+                : new();
+        }
+        catch (ServicioException ex)
+        {
+            error = ex.Message;
+            cirugiasDelMes = new();
+        }
+        finally
+        {
+            porDia = cirugiasDelMes.ToLookup(c => c.Inicio.Date);
+            cargando = false;
+        }
+    }
+
+    private Task AplicarFiltros(FiltroCirugia nuevo)
+    {
+        filtro = nuevo;
+        return Cargar();
+    }
+
+    private Task MesAnterior() { mes = mes.AddMonths(-1); return Cargar(); }
+    private Task MesSiguiente() { mes = mes.AddMonths(1); return Cargar(); }
 }

@@ -19,7 +19,7 @@
     </div>
 }
 
-<TablaCirugias Cirugias="CirugiasHistorial" MostrarMotivo="true" />
+<TablaCirugias Cirugias="CirugiasHistorial.Select(x => x.ADetalleVista())" MostrarMotivo="true" />
 <AvisoDemostracion />
 
 @code {

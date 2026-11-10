@@ -1,10 +1,24 @@
 @inject VistaPreviaRol Vista
+@inject ICirugiaService CirugiaSvc
 @page "/agenda/cirugia/{Id:int}"
 @using KlamWA.Components.Shared
+@using KlamWA.Servicios
 
 <PageTitle>Detalle de cirugía</PageTitle>
 
-@if (c == null)
+@if (cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Cargando cirugía…</p>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+        <span>@error</span>
+        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Cargar">Reintentar</button>
+    </div>
+    <a href="/agenda/lista">Volver a la lista</a>
+}
+else if (c == null)
 {
     <div class="alert alert-warning">Cirugía no encontrada.</div>
     <a href="/agenda/lista">Volver a la lista</a>
@@ -25,14 +39,18 @@ else
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Procedimiento</dt><dd class="col-sm-8">@c.Procedimiento</dd>
                         <dt class="col-sm-4">Inicio</dt><dd class="col-sm-8">@c.Inicio.ToString("dd/MM/yyyy HH:mm")</dd>
-                        <dt class="col-sm-4">Fin</dt><dd class="col-sm-8">@c.Fin.ToString("dd/MM/yyyy HH:mm")</dd>
+                        <dt class="col-sm-4">Fin</dt><dd class="col-sm-8">@(c.Fin?.ToString("dd/MM/yyyy HH:mm") ?? "Sin definir")</dd>
                         <dt class="col-sm-4">Doctor</dt><dd class="col-sm-8">@c.Doctor</dd>
                         <dt class="col-sm-4">Paciente</dt><dd class="col-sm-8">@c.Paciente</dd>
                         <dt class="col-sm-4">Diagnóstico</dt><dd class="col-sm-8">@c.Diagnostico</dd>
                         <dt class="col-sm-4">Clínica u hospital</dt><dd class="col-sm-8">@c.Clinica</dd>
                         <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@c.Cliente</dd>
-                        <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@c.Equipo</dd>
-                        <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@c.Bandeja</dd>
+                        <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@(c.Equipo == "" ? "Sin equipo asignado" : c.Equipo)</dd>
+                        @if (c.Equipo != "")
+                        {
+                            <dt class="col-sm-4">Marca del equipo</dt><dd class="col-sm-8">@(c.EquipoMarca == "" ? "No registrada" : c.EquipoMarca)</dd>
+                        }
+                        <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@(c.Bandeja == "" ? "Sin bandeja asignada" : c.Bandeja)</dd>
                         @if (c.Estado == "Cancelada")
                         {
                             <dt class="col-sm-4">Motivo de cancelación</dt><dd class="col-sm-8">@c.MotivoCancelacion</dd>
@@ -40,32 +58,42 @@ else
                     </dl>
                 </div>
             </div>
-            @if (c.Estado == "Culminada")
-            {
-                <div class="card mt-3">
-                    <div class="card-header">Consumibles despachados y consumidos</div>
+            <div class="card mt-3">
+                <div class="card-header">Consumibles de la cirugía</div>
+                @if (c.Consumibles.Count == 0)
+                {
+                    <div class="card-body text-muted">Esta cirugía no tiene consumibles asignados.</div>
+                }
+                else
+                {
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
-                            <thead><tr><th>Consumible</th><th>Medida</th><th>Despachado</th><th>Consumido</th><th>Diferencia</th></tr></thead>
+                            <thead><tr><th>Consumible</th><th>Marca</th><th>Medida</th><th>Despachado</th><th>Consumido</th><th>Diferencia</th></tr></thead>
                             <tbody>
-                                @foreach (var insumo in DatosInsumos.DeCirugia(c.Id))
+                                @foreach (var insumo in c.Consumibles)
                                 {
-                                    <tr><td>@insumo.Nombre</td><td>@insumo.Medida</td><td>@insumo.Despachado</td><td>@(insumo.Consumido?.ToString() ?? "Pendiente")</td><td>@(insumo.Diferencia?.ToString() ?? "—")</td></tr>
+                                    <tr><td>@insumo.Nombre</td><td>@insumo.Marca</td><td>@insumo.Medida</td><td>@insumo.Despachada</td><td>@(insumo.Consumida?.ToString() ?? "Pendiente")</td><td>@(insumo.Diferencia?.ToString() ?? "—")</td></tr>
                                 }
                             </tbody>
                         </table>
                     </div>
-                    <div class="card-footer small text-muted">Las cantidades son de ejemplo y no se registran en este laboratorio.</div>
-                </div>
-            }
+                }
+            </div>
         </div>
         @if (Vista.Perfil.Clave is "administrador" or "cliente") {
         <div class="col-lg-4">
             <div class="card mb-3">
                 <div class="card-header">Cotización</div>
                 <div class="card-body">
-                    <div class="fs-4">S/ @c.PrecioCotizacion.ToString("N2")</div>
-                    <span class="badge text-bg-secondary">@c.EstadoCotizacion</span>
+                    @if (c.PrecioCotizacion is double precio)
+                    {
+                        <div class="fs-4">S/ @precio.ToString("N2")</div>
+                        <span class="badge text-bg-secondary">@c.EstadoCotizacion</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Sin cotización</span>
+                    }
                 </div>
             </div>
             <div class="card mb-3">
@@ -145,20 +173,38 @@ else
 
 @code {
     [Parameter] public int Id { get; set; }
-    private CirugiaMock? c;
+    private CirugiaDetalleViewModel? c;
     private CierreCirugiaMock? cierre;
     private bool esClinica;
+    private bool cargando;
+    private string? error;
 
-    protected override void OnParametersSet()
+    protected override Task OnParametersSetAsync() => Cargar();
+
+    private async Task Cargar()
     {
-        c = DatosAgenda.ParaPerfil(Vista.Perfil.Clave).FirstOrDefault(x => x.Id == Id);
-        if (c == null)
+        cargando = true;
+        error = null;
+        c = null;
+        cierre = null;
+        esClinica = false;
+        try
         {
-            cierre = null;
-            esClinica = false;
-            return;
+            c = await CirugiaSvc.FindById(Id);
+            if (c != null)
+            {
+                // El cierre (orden de compra / consumo real) aún usa los datos de ejemplo de otro módulo.
+                esClinica = c.TipoCliente == "CLINICA_HOSPITAL";
+                cierre = DatosCierre.De(c.Id);
+            }
         }
-        esClinica = DatosCierre.EsClinica(c.Cliente);
-        cierre = DatosCierre.De(c.Id);
+        catch (ServicioException ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
     }
 }
