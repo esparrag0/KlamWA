@@ -1,0 +1,185 @@
+@inject VistaPreviaRol Vista
+@inject KlamWA.Services.SesionUsuario Sesion
+@inject KlamWA.Services.SolicitudesApiService Api
+@page "/mis-solicitudes"
+@using KlamWA.Components.Shared
+@using KlamWA.Dtos
+
+<PageTitle>Solicitudes de cirugía</PageTitle>
+
+<PageHeader Titulo="Solicitudes de cirugía" Subtitulo="@(Sesion.EsCliente ? "Tus solicitudes de cirugía y su estado" : "Solicitudes enviadas por clientes y estado de su documentación (datos de ejemplo)")">
+
+    <a class="btn btn-primary" href="/mis-solicitudes/nueva">Nueva solicitud</a>
+</PageHeader>
+
+@if (Sesion.EsCliente)
+{
+    @if (error is not null)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
+    @if (solicitudes is null)
+    {
+        <p class="text-muted">Cargando solicitudes…</p>
+    }
+    else if (solicitudes.Count == 0)
+    {
+        <EstadoVacio Titulo="Aún no tienes solicitudes" Descripcion="Crea una nueva solicitud de cirugía para verla aquí." />
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>N.º</th>
+                        <th>Fecha solicitada</th>
+                        <th>Clínica</th>
+                        <th>Paciente</th>
+                        <th>Procedimiento</th>
+                        <th>Médico</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in solicitudes)
+                    {
+                        <tr>
+                            <td>@s.CodigoMostrado</td>
+                            <td>@s.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@s.ClinicaNombre</td>
+                            <td>@s.PacienteNombre</td>
+                            <td>@s.TipoProcedimiento</td>
+                            <td>@s.DoctorNombre</td>
+                            <td><span class="badge @s.ClaseEstado">@s.EstadoMostrado</span></td>
+                            <td class="text-end text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.IdSolicitud)">
+                                    @(abierta == s.IdSolicitud ? "Ocultar detalle" : "Ver detalle")
+                                </button>
+                            </td>
+                        </tr>
+                        @if (abierta == s.IdSolicitud)
+                        {
+                            <tr>
+                                <td colspan="8" class="bg-light">
+                                    <div class="p-2">
+                                        <div class="mb-1"><strong>Diagnóstico:</strong> @s.Diagnostico</div>
+                                        @if (!string.IsNullOrWhiteSpace(s.Observaciones))
+                                        {
+                                            <div class="mb-1"><strong>Observaciones:</strong> @s.Observaciones</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(s.MotivoRechazo))
+                                        {
+                                            <div class="alert alert-danger py-2 mb-0"><strong>Motivo del rechazo:</strong> @s.MotivoRechazo</div>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+else
+{
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>N.º</th>
+                <th>Fecha solicitada</th>
+                <th>Cliente</th>
+                <th>Clínica</th>
+                <th>Procedimiento</th>
+                <th>Médico</th>
+                <th>Documentos</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in DatosClientes.Solicitudes.Where(s => Vista.Perfil.Clave == "cliente" ? s.IdCliente == 1 : s.IdCliente == 4))
+            {
+                var cirugia = DatosAgenda.Cirugias.FirstOrDefault(c => c.SolicitudId == s.Id);
+                <tr>
+                    <td>@s.Id</td>
+                    <td>@s.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@s.Cliente</td>
+                    <td>@s.Clinica</td>
+                    <td>@s.Procedimiento</td>
+                    <td>@s.Doctor</td>
+                    <td>@(s.Documentos.Count(d => d.Estado == "Validado") + " de " + s.Documentos.Count + " validados")</td>
+                    <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
+                    <td class="text-end text-nowrap">
+                        @if (s.Estado.StartsWith("Rechazada"))
+                        {
+                            <a class="btn btn-sm btn-warning" href="/mis-solicitudes/corregir/@s.Id">Resubir documento</a>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.Id)">
+                            @(abierta == s.Id ? "Ocultar documentos" : "Ver documentos")
+                        </button>
+                    </td>
+                </tr>
+                @if (abierta == s.Id)
+                {
+                    <tr>
+                        <td colspan="9" class="bg-light">
+                            <div class="p-2">
+                                <div class="mb-2"><strong>Diagnóstico:</strong> @s.Diagnostico</div>
+                                @if (s.Estado.StartsWith("Rechazada"))
+                                {
+                                    <div class="alert alert-danger py-2">
+                                        <strong>Mensaje del administrador:</strong> @s.MotivoRechazo
+                                        <a class="alert-link ms-2" href="/mis-solicitudes/corregir/@s.Id">Resubir documento</a>
+                                    </div>
+                                }
+                                <table class="table table-sm mb-2">
+                                    <thead>
+                                        <tr><th>Documento</th><th>Archivo</th><th>Estado</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var d in s.Documentos)
+                                        {
+                                            <tr>
+                                                <td>@d.Tipo</td>
+                                                <td>@d.Archivo</td>
+                                                <td><DocumentoEstadoBadge Estado="@d.Estado" /></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                                @if (cirugia is not null)
+                                {
+                                    <a class="btn btn-sm btn-outline-secondary" href="/agenda/cirugia/@cirugia.Id">Ver cirugía en agenda</a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+}
+
+@code {
+    private int abierta;
+    private List<SolicitudCirugiaDto>? solicitudes;
+    private string? error;
+
+    // Cliente con sesión: sus solicitudes reales desde el servidor (siguen ahí al recargar la página).
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Sesion.EsCliente) return;
+        var r = await Api.ListarPorClienteAsync(Sesion.Usuario!.Rol, Sesion.Usuario.Id);
+        if (r.Ok) solicitudes = r.Datos!.OrderByDescending(x => x.IdSolicitud).ToList();
+        else { error = r.Error; solicitudes = new(); }
+    }
+
+
+    // Solo alterna qué fila se muestra expandida (estado de pantalla, no lógica de negocio).
+    private void Alternar(int id) => abierta = abierta == id ? 0 : id;
+}
