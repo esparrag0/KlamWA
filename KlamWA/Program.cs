@@ -10,9 +10,11 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddScoped<KlamWA.ViewModels.VistaPreviaRol>();
 
-// Servicios REST del backend Java (RF02 cirugías, RF13 plantillas de bandejas)
+
 builder.Services.AddScoped<ICirugiaService, CirugiaService>();
 builder.Services.AddScoped<IBandejaService, BandejaService>();
+builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<IDespachoService, DespachoService>();
 
 var app = builder.Build();
 

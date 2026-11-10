@@ -23,6 +23,18 @@ public static class HttpUtils
         return (await response.Content.ReadFromJsonAsync<TResponse>())!;
     }
 
+    public static async Task DoPost<TRequest>(string url, TRequest payload)
+    {
+        var response = await http.PostAsJsonAsync(url, payload);
+        await VerificarRespuesta(response);
+    }
+
+    public static async Task DoPost(string url)
+    {
+        var response = await http.PostAsync(url, null);
+        await VerificarRespuesta(response);
+    }
+
     public static async Task<TResponse>
         DoPut<TRequest, TResponse>(string url, TRequest payload)
     {
