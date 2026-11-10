@@ -1,69 +1,181 @@
 @page "/inventario/despachos/{Codigo}"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.Components.Shared
+@inject IDespachoService DespachoService
 
-<PageTitle>Detalle de despacho</PageTitle>
+<PageTitle>Detalle de despacho | Klam</PageTitle>
 
-@if (despacho is null || cirugia is null)
+@if (cargando)
 {
-    <EstadoVacio Titulo="Despacho no encontrado" Enlace="/inventario/despachos" TextoEnlace="Volver a despachos" />
+    <div class="card p-4 text-center text-muted">Cargando despacho...</div>
+}
+else if (despacho is null)
+{
+    <EstadoVacio Titulo="Despacho no encontrado" Descripcion="@(mensajeError ?? "No existe el despacho solicitado.")" Enlace="/inventario/despachos" TextoEnlace="Volver a despachos" />
 }
 else
 {
-    <PageHeader Titulo="@despacho.Codigo" Subtitulo="@($"CIR-{cirugia.Id:000} · {cirugia.Clinica}")">
-        <a class="btn btn-outline-secondary" href="/inventario/despachos">Volver</a>
+    <PageHeader Titulo="@despacho.Codigo" Subtitulo="@($"CIR-{despacho.IdCirugia:000} · {despacho.Clinica ?? despacho.Cliente}")">
+        <a class="btn btn-outline-secondary" href="/inventario/despachos">Volver a despachos</a>
     </PageHeader>
+
+    @if (mensajeOk != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @mensajeOk
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeOk = null"></button>
+        </div>
+    }
+    @if (mensajeError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @mensajeError
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
     <div class="card mb-3">
-        <div class="card-header">Equipo y kit despachados</div>
+        <div class="card-header fw-bold">Equipo y kit despachados</div>
         <div class="card-body">
             <dl class="row mb-0">
-                <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@despacho.Equipo</dd>
-                <dt class="col-sm-4">Kit / bandeja</dt><dd class="col-sm-8">@despacho.Kit</dd>
-                <dt class="col-sm-4">Salida</dt><dd class="col-sm-8">@despacho.Salida.ToString("dd/MM/yyyy HH:mm")</dd>
-                <dt class="col-sm-4">Retorno</dt><dd class="col-sm-8">@(despacho.Retorno?.ToString("dd/MM/yyyy HH:mm") ?? "Pendiente")</dd>
+                <dt class="col-sm-4">Procedimiento</dt>
+                <dd class="col-sm-8">@(despacho.Procedimiento ?? "—")</dd>
+
+                <dt class="col-sm-4">Paciente</dt>
+                <dd class="col-sm-8">@(despacho.Paciente ?? "—")</dd>
+
+                <dt class="col-sm-4">Médico a cargo</dt>
+                <dd class="col-sm-8">@(despacho.Doctor ?? "—")</dd>
+
+                <dt class="col-sm-4">Equipo médico</dt>
+                <dd class="col-sm-8">
+                    <strong>@(despacho.Equipo ?? "Sin equipo asignado")</strong>
+                </dd>
+
+                <dt class="col-sm-4">Kit / bandeja</dt>
+                <dd class="col-sm-8">@(despacho.Kit ?? "Sin kit asignado")</dd>
+
+                <dt class="col-sm-4">Salida del almacén</dt>
+                <dd class="col-sm-8">@(despacho.Salida?.ToString("dd/MM/yyyy HH:mm") ?? despacho.FechaSalida ?? "—")</dd>
+
+                <dt class="col-sm-4">Retorno al almacén</dt>
+                <dd class="col-sm-8">
+                    @if (despacho.Retorno != null)
+                    {
+                        <span class="badge bg-success">@despacho.Retorno.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Pendiente de retorno</span>
+                    }
+                </dd>
             </dl>
         </div>
     </div>
-    <div class="card mb-3">
-        <div class="card-header">Consumibles del kit</div>
-        <div class="table-responsive">
-            <table class="table table-sm mb-0">
-                <thead><tr><th>Consumible</th><th>Medida</th><th>Despachado</th></tr></thead>
-                <tbody>
-                    @foreach (var item in DatosInsumos.DeCirugia(cirugia.Id))
-                    {
-                        <tr><td>@item.Nombre</td><td>@item.Medida</td><td>@item.Despachado</td></tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-    @if (despacho.Retorno is null)
+
+    @if (despacho.Consumibles.Any())
     {
-        <div class="card" style="max-width:850px">
-            <div class="card-header">Registrar retorno del equipo</div>
-            <div class="card-body row g-3">
-                <CampoForm Etiqueta="Fecha y hora de retorno" Para="retorno-fecha">
-                    <input id="retorno-fecha" type="datetime-local" class="form-control" />
-                </CampoForm>
-                <CampoForm Etiqueta="Estado del equipo" Para="retorno-estado">
-                    <select id="retorno-estado" class="form-select"><option>Completo</option><option>Con observaciones</option></select>
-                </CampoForm>
-                <CampoForm Etiqueta="Observación" Columnas="col-12" Para="retorno-observacion">
-                    <textarea id="retorno-observacion" class="form-control" rows="2"></textarea>
-                </CampoForm>
+        <div class="card mb-3">
+            <div class="card-header fw-bold">Consumibles del kit despachado</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CONSUMIBLE</th>
+                            <th>MEDIDA</th>
+                            <th class="text-end">CANTIDAD DESPACHADA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in despacho.Consumibles)
+                        {
+                            <tr>
+                                <td>@item.Nombre</td>
+                                <td>@item.Medida</td>
+                                <td class="text-end">@item.CantidadDespachada</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-            <div class="card-footer"><BotonDemo Mensaje="Formulario de muestra: el retorno no se registró.">Registrar retorno</BotonDemo></div>
         </div>
     }
-    <AvisoDemostracion />
+
+    @if (despacho.PendienteRetorno)
+    {
+        <div class="card" style="max-width:850px">
+            <div class="card-header fw-bold">Registrar retorno al almacén</div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Al confirmar el retorno, el despacho se marcará como concluido y el equipo quedará inmediatamente disponible en el almacén para otras cirugías.
+                </p>
+                <button type="button" class="btn btn-success" disabled="@procesando" @onclick="() => mostrarModal = true">
+                    <Icono Nombre="check" Tamano="17" /> Registrar retorno
+                </button>
+            </div>
+        </div>
+
+        <ModalConfirmacion Visible="@mostrarModal"
+                          Titulo="Confirmar retorno de equipo al almacén"
+                          Mensaje="@($"¿Confirma el ingreso al almacén del equipo y kit correspondientes al despacho {despacho.Codigo}? El equipo volverá a estar disponible.")"
+                          TextoConfirmar="Confirmar retorno"
+                          ClaseConfirmar="btn-success"
+                          Procesando="@procesando"
+                          OnConfirmar="ConfirmarRetorno"
+                          OnCancelar="() => mostrarModal = false" />
+    }
 }
 
 @code {
     [Parameter] public string Codigo { get; set; } = "";
-    private DespachoVista? despacho;
-    private CirugiaMock? cirugia;
-    protected override void OnParametersSet()
+    private DespachoDetalleDTO? despacho;
+    private bool cargando = true;
+    private bool procesando;
+    private bool mostrarModal;
+    private string? mensajeOk;
+    private string? mensajeError;
+
+    protected override async Task OnParametersSetAsync()
     {
-        despacho = DatosDespachos.De(Codigo);
-        cirugia = despacho is null ? null : DatosAgenda.Cirugias.FirstOrDefault(c => c.Id == despacho.IdCirugia);
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            despacho = await DespachoService.ObtenerAsync(Codigo);
+        }
+        catch (Exception ex)
+        {
+            despacho = null;
+            mensajeError = "No se pudo cargar el detalle del despacho: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task ConfirmarRetorno()
+    {
+        if (despacho == null) return;
+
+        procesando = true;
+        mensajeError = null;
+        try
+        {
+            await DespachoService.RegistrarRetornoAsync(Codigo);
+            mostrarModal = false;
+            mensajeOk = "El retorno del despacho " + Codigo + " se registró con éxito. El equipo ya está disponible.";
+            despacho = await DespachoService.ObtenerAsync(Codigo);
+        }
+        catch (Exception ex)
+        {
+            mostrarModal = false;
+            mensajeError = ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+        }
     }
 }

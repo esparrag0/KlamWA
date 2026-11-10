@@ -1,4 +1,6 @@
 using KlamWA.Components;
+using KlamWA.Servicios;
+using KlamWA.Servicios.Rest;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,12 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped<KlamWA.ViewModels.VistaPreviaRol>();
+
+
+builder.Services.AddScoped<ICirugiaService, CirugiaService>();
+builder.Services.AddScoped<IBandejaService, BandejaService>();
+builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<IDespachoService, DespachoService>();
 
 var app = builder.Build();
 
