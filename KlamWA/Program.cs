@@ -15,6 +15,11 @@ builder.Services.AddHttpClient<IClienteService, ClienteService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<ISolicitudCirugiaService, SolicitudCirugiaService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<IAuditoriaService, AuditoriaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<ICirugiaConsultaService, CirugiaConsultaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+
 
 var app = builder.Build();
 
