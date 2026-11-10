@@ -1,15 +1,26 @@
+@using KlamWA.Dtos
 @page "/mis-solicitudes/nueva"
 @inject VistaPreviaRol Vista
+@inject KlamWA.Services.SolicitudesApiService Api
+@inject KlamWA.Services.ClientesApiService ClientesApi
+@inject KlamWA.Services.SesionUsuario Sesion
 
 <PageTitle>Nueva solicitud de cirugía</PageTitle>
-<PageHeader Titulo="Solicitar cirugía" Subtitulo="Cliente o vendedor · formulario de ejemplo" />
+<PageHeader Titulo="Solicitar cirugía" Subtitulo="Registro de solicitud de cirugía" />
 
-@if (mensaje is not null)
+@if (creada is not null)
 {
-    <div class="alert alert-info" role="status">@mensaje</div>
+    <div class="alert alert-success" role="status">
+        Solicitud <strong>@creada.CodigoMostrado</strong> registrada. Estado: @creada.EstadoMostrado.
+        <a href="/mis-solicitudes">Ver mis solicitudes</a>
+    </div>
+}
+@if (error is not null)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
 }
 
-<EditForm Model="ViewModel" OnValidSubmit="ValidarSolicitud">
+<EditForm Model="ViewModel" OnValidSubmit="EnviarSolicitud">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
@@ -17,12 +28,28 @@
         <div class="card-header">Datos de la cirugía</div>
         <div class="card-body">
             <div class="row g-3">
+                @if (Sesion.EsCliente)
+                {
+                    <div class="col-12"><span class="text-muted">Solicitante:</span> <strong>@NombreSolicitante</strong> (@Sesion.UserName)</div>
+                }
+                else
+                {
                 <CampoForm Etiqueta="Tipo de cliente" Columnas="col-12" Para="tipo-cliente">
-                    <InputSelect id="tipo-cliente" class="form-select" @bind-Value="ViewModel.TipoCliente">
+                    <InputSelect id="tipo-cliente" class="form-select" TValue="string" Value="ViewModel.TipoCliente"
+                                 ValueExpression="() => ViewModel.TipoCliente" ValueChanged="TipoClienteCambio">
                         <option value="@DatosClientes.Clinica">Clínica / hospital</option>
                         <option value="@DatosClientes.Particular">Paciente particular</option>
                     </InputSelect>
                 </CampoForm>
+                <CampoForm Etiqueta="Cliente solicitante *" Columnas="col-12" Para="id-solicitante">
+                    <InputSelect id="id-solicitante" class="form-select" TValue="int" Value="ViewModel.IdSolicitante"
+                                 ValueExpression="() => ViewModel.IdSolicitante" ValueChanged="SolicitanteCambio">
+                        <option value="0">-- Seleccione --</option>
+                        @foreach (var c in clientes.Where(x => x.TipoCliente == ViewModel.TipoClienteApi)) { <option value="@c.IdCliente">@c.Nombre (@c.Documento)</option> }
+                    </InputSelect>
+                    <ValidationMessage For="() => ViewModel.IdSolicitante" />
+                </CampoForm>
+                }
                 @if (ViewModel.TipoCliente == DatosClientes.Particular)
                 {
                     <CampoForm Etiqueta="DNI del paciente *" Para="dni-paciente">
@@ -33,9 +60,13 @@
                 <CampoForm Etiqueta="Clínica u hospital donde se realizará *" Para="clinica">
                     <InputSelect id="clinica" class="form-select" @bind-Value="ViewModel.IdClinica">
                         <option value="0">-- Seleccione --</option>
-                        @foreach (var x in DatosClientes.Clinicas) { <option value="@x.Key">@x.Value</option> }
+                        @foreach (var x in clientes.Where(c => c.TipoCliente == "CLINICA_HOSPITAL")) { <option value="@x.IdCliente">@x.Nombre</option> }
                     </InputSelect>
                     <ValidationMessage For="() => ViewModel.IdClinica" />
+                </CampoForm>
+                <CampoForm Etiqueta="@(ViewModel.TipoCliente == DatosClientes.Particular ? "Nombre del paciente (opcional)" : "Nombre del paciente *")" Para="paciente">
+                    <InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" />
+                    <ValidationMessage For="() => ViewModel.PacienteNombre" />
                 </CampoForm>
                 <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
                     <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
@@ -84,23 +115,53 @@
             }
         </div>
         <div class="card-footer d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Revisar solicitud</button>
+            <button type="submit" class="btn btn-primary" disabled="@enviando">@(enviando ? "Enviando…" : "Enviar solicitud")</button>
             <a class="btn btn-outline-secondary" href="/mis-solicitudes">Cancelar</a>
         </div>
     </div>
 </EditForm>
-<AvisoDemostracion Texto="La validación solo ocurre en la pantalla. No se crea ni envía una solicitud." />
 
 @code {
     private SolicitudCirugiaViewModel ViewModel { get; set; } = new();
     private string? receta;
     private string? comprobante;
-    private string? mensaje;
+    private List<ClienteResumenDto> clientes = new();
+    private SolicitudCirugiaDto? creada;
+    private string? error;
+    private bool enviando;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (Vista.Perfil.Clave == "vendedor")
             ViewModel.TipoCliente = DatosClientes.Particular;
+        var r = await ClientesApi.ListarAsync();
+        if (r.Ok) clientes = r.Datos!; else error = r.Error;
+
+        // Con sesión de cliente, el solicitante es quien ingresó: no se elige.
+        if (Sesion.EsCliente)
+        {
+            ViewModel.TipoCliente = Sesion.Usuario!.Rol == "PACIENTE_PARTICULAR" ? DatosClientes.Particular : DatosClientes.Clinica;
+            ViewModel.IdSolicitante = Sesion.Usuario.Id;
+            SolicitanteCambio(Sesion.Usuario.Id);
+        }
+    }
+
+    private string NombreSolicitante =>
+        clientes.FirstOrDefault(c => c.IdCliente == ViewModel.IdSolicitante && c.TipoCliente == ViewModel.TipoClienteApi)?.Nombre
+        ?? Sesion.UserName;
+
+    private void TipoClienteCambio(string tipo)
+    {
+        ViewModel.TipoCliente = tipo;
+        ViewModel.IdSolicitante = 0;   // el id anterior pertenecía al otro tipo de cliente
+        ViewModel.Dni = "";
+    }
+
+    private void SolicitanteCambio(int id)
+    {
+        ViewModel.IdSolicitante = id;
+        var c = clientes.FirstOrDefault(x => x.IdCliente == id && x.TipoCliente == ViewModel.TipoClienteApi);
+        if (ViewModel.TipoCliente == DatosClientes.Particular) ViewModel.Dni = c?.Dni ?? "";
     }
 
     private void SeleccionarReceta(InputFileChangeEventArgs e) => receta = e.File.Name;
@@ -109,6 +170,14 @@
         comprobante = e.File.Name;
         ViewModel.ComprobanteSeleccionado = true;
     }
-    private void ValidarSolicitud() =>
-        mensaje = "Formulario válido. La solicitud no se envió porque esta entrega es solo visual.";
+    // La validación real la hace la BL en Java; aquí se muestra su mensaje tal cual.
+    // La carga real de archivos (receta/comprobante) es del integrante 4 (RF07/RF08).
+    private async Task EnviarSolicitud()
+    {
+        enviando = true; creada = null; error = null;
+        var r = await Api.RegistrarAsync(ViewModel.TipoClienteApi, ViewModel.IdSolicitante, ViewModel.ToRequest());
+        if (r.Ok) { creada = r.Datos; ViewModel = new() { TipoCliente = ViewModel.TipoCliente, IdSolicitante = ViewModel.IdSolicitante, Dni = ViewModel.Dni }; }
+        else error = r.Error;
+        enviando = false;
+    }
 }

@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject VistaPreviaRol Vista
+@inject KlamWA.Services.SesionUsuario Sesion
 @inject NavigationManager Nav
 
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -10,29 +11,24 @@
         <header class="app-topbar">
             <a class="topbar-brand" href="/inicio">BIOKLAM</a>
             <div class="topbar-actions">
-                <div class="role-preview">
-                    <label for="vista-rol">Vista según rol</label>
-                    <select id="vista-rol" class="form-select form-select-sm" value="@Vista.Perfil.Clave" @onchange="CambiarVista">
-                        @foreach (var perfil in DatosAcceso.Perfiles)
-                        {
-                            <option value="@perfil.Clave">@perfil.Nombre</option>
-                        }
-                    </select>
-                </div>
                 @if (Vista.Perfil.Clave is "administrador" or "instrumentista")
                 {
                     <a class="header-bell" href="@($"/notificaciones/{Vista.Perfil.Clave}")" aria-label="Ver notificaciones, 2 sin leer de ejemplo">
                         <Icono Nombre="campana" /><span class="notification-dot"></span>
                     </a>
                 }
-                <span class="avatar avatar-sm" aria-label="@Vista.Perfil.Persona">@Vista.Perfil.Iniciales</span>
+                <span class="small text-muted d-none d-md-inline">@Sesion.UserName · @Vista.Perfil.Nombre</span>
+                <span class="avatar avatar-sm" aria-label="@Sesion.UserName">@Iniciales</span>
+                <a class="btn btn-link btn-sm" href="/cuenta/password">Cambiar contraseña</a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CerrarSesion">Cerrar sesión</button>
             </div>
         </header>
         <main id="contenido" class="app-content" tabindex="-1">
-            @if (PaginaPermitida) { @Body }
+            @if (!verificada) { <p class="text-muted">Verificando sesión…</p> }
+            else if (PaginaPermitida) { @Body }
             else
             {
-                <EstadoVacio Titulo="Pantalla no disponible en este perfil" Descripcion="Usa las opciones del menú correspondientes a tu perfil de demostración." />
+                <EstadoVacio Titulo="Pantalla no disponible en este perfil" Descripcion="Usa las opciones del menú correspondientes a tu perfil." />
                 <a class="btn btn-outline-primary" href="/inicio">Volver al inicio</a>
             }
         </main>
@@ -44,7 +40,7 @@
 </div>
 
 @code {
-    // Restricción visual de la maqueta; no sustituye permisos del backend.
+    // Restricción visual por perfil; no sustituye permisos del backend.
     private bool PaginaPermitida
     {
         get
@@ -68,15 +64,42 @@
             return true;
         }
     }
-    protected override void OnInitialized() => Vista.Cambio += Actualizar;
-    private void Actualizar() => _ = InvokeAsync(StateHasChanged);
-    private void CambiarVista(ChangeEventArgs e)
+    private bool verificada;
+
+    protected override void OnInitialized()
     {
-        if (DatosAcceso.Perfil(e.Value?.ToString()) is { } perfil)
+        Vista.Cambio += Actualizar;
+        if (Sesion.EstaAutenticado)   // navegación dentro del mismo circuito: no hace falta volver a verificar
         {
-            Vista.Mostrar(perfil);
-            Nav.NavigateTo($"/inicio/{perfil.Clave}");
+            verificada = true;
+            if (DatosAcceso.Perfil(Sesion.ClavePerfil) is { } propio) Vista.Mostrar(propio);
         }
     }
+
+    // Todas las pantallas (salvo /login) exigen sesión. Tras una recarga (F5) la sesión se recupera del
+    // almacenamiento de la pestaña; si no hay ninguna, se vuelve al acceso. El perfil visible sale de la cuenta.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        if (!await Sesion.RestaurarAsync())
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+        if (DatosAcceso.Perfil(Sesion.ClavePerfil) is { } propio) Vista.Mostrar(propio);
+        verificada = true;
+        StateHasChanged();
+    }
+
+    private string Iniciales => Sesion.UserName.Length >= 2 ? Sesion.UserName[..2].ToUpperInvariant() : Sesion.UserName.ToUpperInvariant();
+
+    private void Actualizar() => _ = InvokeAsync(StateHasChanged);
+
+    private async Task CerrarSesion()
+    {
+        await Sesion.CerrarAsync();
+        Nav.NavigateTo("/login", forceLoad: true);   // circuito nuevo: no queda estado de la sesión anterior
+    }
+
     public void Dispose() => Vista.Cambio -= Actualizar;
 }

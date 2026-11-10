@@ -2,11 +2,12 @@
 @page "/inicio"
 @page "/inicio/{Rol}"
 @inject VistaPreviaRol Vista
+@inject KlamWA.Services.SesionUsuario Sesion
 
 <PageTitle>Inicio | Klam</PageTitle>
 @if (rolDesconocido)
 {
-    <EstadoVacio Titulo="Perfil no disponible" Descripcion="Elige uno de los perfiles de demostración desde el encabezado." />
+    <EstadoVacio Titulo="Perfil no disponible" Descripcion="El perfil sale de tu cuenta. Vuelve al inicio desde el menú." />
 }
 else
 {
@@ -70,6 +71,13 @@ else
     private IReadOnlyList<NotificacionVista> Avisos => Vista.Perfil.Clave == "instrumentista" ? DatosAcceso.AvisosInstrumentista : DatosAcceso.AvisosAdministrador;
     protected override void OnParametersSet()
     {
+        // Con sesión, el perfil es el de la cuenta: el {Rol} de la URL no puede cambiarlo.
+        if (Sesion.EstaAutenticado)
+        {
+            rolDesconocido = false;
+            if (DatosAcceso.Perfil(Sesion.ClavePerfil) is { } propio) Vista.Mostrar(propio);
+            return;
+        }
         rolDesconocido = Rol is not null && DatosAcceso.Perfil(Rol) is null;
         if (DatosAcceso.Perfil(Rol) is { } perfil) Vista.Mostrar(perfil);
     }
