@@ -1,34 +1,96 @@
 @page "/agenda/eliminar/{Id:int}"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject ICirugiaService CirugiaService
+@inject NavigationManager Nav
 
 <PageTitle>Eliminar cirugía</PageTitle>
 
-@if (cirugia is null)
+@if (cargando)
 {
-    <EstadoVacio Titulo="Cirugía no encontrada" Enlace="/agenda/lista" TextoEnlace="Volver a la lista" />
+    <div class="alert alert-info">Cargando cirugía...</div>
+}
+else if (cirugia is null)
+{
+    <EstadoVacio Titulo="Cirugía no encontrada" Descripcion="@(MensajeError ?? "La cirugía no existe en el sistema.")"
+                 Enlace="/agenda/lista" TextoEnlace="Volver a la lista" />
 }
 else
 {
-    <PageHeader Titulo="Eliminar cirugía" Subtitulo="@($"CIR-{Id:000} · {cirugia.Procedimiento}")" />
+    <PageHeader Titulo="Eliminar cirugía" Subtitulo="@($"CIR-{Id:000} · {cirugia.TipoProcedimiento}")" />
+    @if (MensajeError != null)
+    {
+        <div class="alert alert-danger">@MensajeError</div>
+    }
     <div class="card" style="max-width:700px">
         <div class="card-body">
-            <p>Confirma que deseas eliminar esta programación.</p>
+            <p>La cirugía se dará de baja (eliminación lógica): se conserva en la bitácora, pero ya no aparecerá en la agenda.</p>
             <dl class="row mb-0">
-                <dt class="col-sm-4">Fecha</dt><dd class="col-sm-8">@cirugia.Inicio.ToString("dd/MM/yyyy HH:mm")</dd>
-                <dt class="col-sm-4">Paciente</dt><dd class="col-sm-8">@cirugia.Paciente</dd>
-                <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@cirugia.Cliente</dd>
+                <dt class="col-sm-4">Fecha</dt><dd class="col-sm-8">@(cirugia.Inicio?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
+                <dt class="col-sm-4">Estado</dt><dd class="col-sm-8"><EstadoBadge Estado="@cirugia.EstadoTexto" /></dd>
+                <dt class="col-sm-4">Paciente</dt><dd class="col-sm-8">@(cirugia.PacienteNombre ?? "—")</dd>
+                <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@cirugia.ClienteNombre</dd>
             </dl>
         </div>
         <div class="card-footer d-flex gap-2">
-            <BotonDemo Clase="btn-danger" Mensaje="Demostración: la cirugía no se eliminó.">Confirmar eliminación</BotonDemo>
+            <button type="button" class="btn btn-danger" disabled="@(!cirugia.Activo)" @onclick="() => mostrarModal = true">Eliminar</button>
             <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Cancelar</a>
         </div>
     </div>
-    <AvisoDemostracion />
+
+    <ModalConfirmacion Visible="@mostrarModal"
+                       Titulo="Eliminar cirugía"
+                       Mensaje="@($"¿Confirma eliminar la cirugía #{Id}? Esta acción no se puede deshacer desde la aplicación.")"
+                       TextoConfirmar="Eliminar" Procesando="@procesando"
+                       OnConfirmar="Eliminar" OnCancelar="() => mostrarModal = false" />
 }
 
 @code {
     [Parameter] public int Id { get; set; }
-    private CirugiaMock? cirugia;
-    protected override void OnParametersSet() =>
-        cirugia = DatosAgenda.Cirugias.FirstOrDefault(c => c.Id == Id);
+    private CirugiaDTO? cirugia;
+    private bool cargando = true;
+    private bool mostrarModal;
+    private bool procesando;
+    private string? MensajeError;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        cargando = true;
+        try
+        {
+            cirugia = await CirugiaService.ObtenerAsync(Id);
+        }
+        catch (ServicioException ex)
+        {
+            MensajeError = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            MensajeError = "No se pudo conectar con el servicio de cirugías";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        procesando = true;
+        MensajeError = null;
+        try
+        {
+            await CirugiaService.EliminarAsync(Id);
+            Nav.NavigateTo($"/agenda/cirugia/{Id}");
+        }
+        catch (ServicioException ex)
+        {
+            MensajeError = ex.Message;
+            mostrarModal = false;
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
 }

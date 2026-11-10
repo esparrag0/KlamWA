@@ -1,21 +1,49 @@
 @inject VistaPreviaRol Vista
 @page "/agenda/cirugia/{Id:int}"
 @using KlamWA.Components.Shared
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject ICirugiaService CirugiaService
+@inject IBandejaService BandejaService
 
 <PageTitle>Detalle de cirugía</PageTitle>
 
-@if (c == null)
+@if (cargando)
 {
-    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <div class="alert alert-info">Cargando cirugía...</div>
+}
+else if (c == null)
+{
+    <div class="alert alert-warning">@(MensajeError ?? "Cirugía no encontrada.")</div>
     <a href="/agenda/lista">Volver a la lista</a>
 }
 else
 {
-    <PageHeader Titulo="@("Cirugía #" + c.Id)" Subtitulo="@c.Procedimiento">
-        <EstadoBadge Estado="@c.Estado" />
-        @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a><a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a> }
+    <PageHeader Titulo="@("Cirugía #" + c.IdCirugia)" Subtitulo="@c.TipoProcedimiento">
+        <EstadoBadge Estado="@c.EstadoTexto" />
+        @if (EsAdmin && c.Activo && c.Estado != "CANCELADA")
+        {
+            <a class="btn btn-primary" href="/agenda/editar/@c.IdCirugia">Editar</a>
+        }
+        @if (EsAdmin && c.Activo)
+        {
+            <a class="btn btn-outline-danger" href="/agenda/eliminar/@c.IdCirugia">Eliminar</a>
+        }
         <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
     </PageHeader>
+
+    @if (MensajeOk != null)
+    {
+        <div class="alert alert-success">@MensajeOk</div>
+    }
+    @if (MensajeError != null)
+    {
+        <div class="alert alert-danger">@MensajeError</div>
+    }
+    @if (!c.Activo)
+    {
+        <div class="alert alert-secondary">Esta cirugía fue eliminada (baja lógica): se conserva en el sistema, pero ya no se puede modificar.</div>
+    }
 
     <div class="row g-3">
         <div class="col-lg-8">
@@ -23,39 +51,59 @@ else
                 <div class="card-header">Datos de la cirugía</div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4">Procedimiento</dt><dd class="col-sm-8">@c.Procedimiento</dd>
-                        <dt class="col-sm-4">Inicio</dt><dd class="col-sm-8">@c.Inicio.ToString("dd/MM/yyyy HH:mm")</dd>
-                        <dt class="col-sm-4">Fin</dt><dd class="col-sm-8">@c.Fin.ToString("dd/MM/yyyy HH:mm")</dd>
-                        <dt class="col-sm-4">Doctor</dt><dd class="col-sm-8">@c.Doctor</dd>
-                        <dt class="col-sm-4">Paciente</dt><dd class="col-sm-8">@c.Paciente</dd>
+                        <dt class="col-sm-4">Procedimiento</dt><dd class="col-sm-8">@c.TipoProcedimiento</dd>
+                        <dt class="col-sm-4">Inicio</dt><dd class="col-sm-8">@(c.Inicio?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
+                        <dt class="col-sm-4">Fin</dt><dd class="col-sm-8">@(c.Fin?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
+                        <dt class="col-sm-4">Doctor</dt><dd class="col-sm-8">@c.DoctorNombre</dd>
+                        <dt class="col-sm-4">Paciente</dt><dd class="col-sm-8">@(c.PacienteNombre ?? "—")</dd>
                         <dt class="col-sm-4">Diagnóstico</dt><dd class="col-sm-8">@c.Diagnostico</dd>
-                        <dt class="col-sm-4">Clínica u hospital</dt><dd class="col-sm-8">@c.Clinica</dd>
-                        <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@c.Cliente</dd>
-                        <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@c.Equipo</dd>
-                        <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@c.Bandeja</dd>
-                        @if (c.Estado == "Cancelada")
+                        <dt class="col-sm-4">Clínica u hospital</dt><dd class="col-sm-8">@(c.ClinicaNombre ?? "—")</dd>
+                        <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@c.ClienteNombre</dd>
+                        <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@(c.EquipoNombre ?? "—")</dd>
+                        <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@(c.BandejaTipo ?? "—")</dd>
+                        @if (c.Estado == "CANCELADA")
                         {
                             <dt class="col-sm-4">Motivo de cancelación</dt><dd class="col-sm-8">@c.MotivoCancelacion</dd>
                         }
                     </dl>
                 </div>
             </div>
-            @if (c.Estado == "Culminada")
+            @if (bandeja != null)
             {
                 <div class="card mt-3">
-                    <div class="card-header">Consumibles despachados y consumidos</div>
+                    <div class="card-header">Consumibles de la bandeja (plantilla)</div>
                     <div class="table-responsive">
                         <table class="table table-sm mb-0">
-                            <thead><tr><th>Consumible</th><th>Medida</th><th>Despachado</th><th>Consumido</th><th>Diferencia</th></tr></thead>
+                            <thead><tr><th>CONSUMIBLE</th><th>MEDIDA</th><th>CANTIDAD DESPACHADA</th></tr></thead>
                             <tbody>
-                                @foreach (var insumo in DatosInsumos.DeCirugia(c.Id))
+                                @foreach (ConsumibleBandejaDTO consumible in bandeja.Consumibles)
                                 {
-                                    <tr><td>@insumo.Nombre</td><td>@insumo.Medida</td><td>@insumo.Despachado</td><td>@(insumo.Consumido?.ToString() ?? "Pendiente")</td><td>@(insumo.Diferencia?.ToString() ?? "—")</td></tr>
+                                    <tr><td>@consumible.NombreComercial</td><td>@consumible.Medida</td><td>@consumible.Cantidad</td></tr>
+                                }
+                                @if (bandeja.Consumibles.Count == 0)
+                                {
+                                    <tr><td colspan="3" class="text-muted">La bandeja no tiene consumibles asociados.</td></tr>
                                 }
                             </tbody>
                         </table>
                     </div>
-                    <div class="card-footer small text-muted">Las cantidades son de ejemplo y no se registran en este laboratorio.</div>
+                </div>
+            }
+            @if (EsAdmin && c.Activo && c.Estado is "PROGRAMADA" or "EN_PROCESO")
+            {
+                <div class="card mt-3">
+                    <div class="card-header">Estado de la cirugía</div>
+                    <div class="card-body d-flex flex-wrap gap-2">
+                        @if (c.Estado == "PROGRAMADA")
+                        {
+                            <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("EN_PROCESO")'>Iniciar cirugía</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("FINALIZADA")'>Marcar como culminada</button>
+                        }
+                        <button type="button" class="btn btn-outline-danger" @onclick="PedirCancelacion">Cancelar cirugía</button>
+                    </div>
                 </div>
             }
         </div>
@@ -64,13 +112,20 @@ else
             <div class="card mb-3">
                 <div class="card-header">Cotización</div>
                 <div class="card-body">
-                    <div class="fs-4">S/ @c.PrecioCotizacion.ToString("N2")</div>
-                    <span class="badge text-bg-secondary">@c.EstadoCotizacion</span>
+                    @if (c.PrecioPactado is double precio)
+                    {
+                        <div class="fs-4">S/ @precio.ToString("N2")</div>
+                        <span class="badge text-bg-secondary">@c.EstadoCotizacion</span>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Sin cotización registrada.</p>
+                    }
                 </div>
             </div>
             <div class="card mb-3">
                 <div class="card-header">Cierre de insumos</div>
-                @if (c.Estado != "Culminada")
+                @if (c.Estado != "FINALIZADA")
                 {
                     <div class="card-body">
                         <p class="text-muted mb-0">La orden de compra y el comparativo se habilitan cuando el administrador marca la cirugía como culminada.</p>
@@ -99,36 +154,36 @@ else
                         }
                         @if (Vista.Perfil.Clave == "cliente" && cierre.PuedeAdjuntarOc)
                         {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.Id/orden-compra">
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.IdCirugia/orden-compra">
                                 Adjuntar orden de compra
                             </a>
                         }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeRevisarOc)
+                        @if (EsAdmin && cierre.PuedeRevisarOc)
                         {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.Id/revisar-oc">
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.IdCirugia/revisar-oc">
                                 Revisar orden de compra
                             </a>
                         }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeRegistrarConsumo)
+                        @if (EsAdmin && cierre.PuedeRegistrarConsumo)
                         {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/inventario/consumos/registrar/@c.Id">
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/inventario/consumos/registrar/@c.IdCirugia">
                                 Registrar consumo real
                             </a>
                         }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeVerComparativo)
+                        @if (EsAdmin && cierre.PuedeVerComparativo)
                         {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/reportes/comparativo/@c.Id">
+                            <a class="list-group-item list-group-item-action fw-semibold" href="/reportes/comparativo/@c.IdCirugia">
                                 Ver despachado vs. consumido
                             </a>
                         }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.EstadoOc == DatosCierre.OcPorAdjuntar)
+                        @if (EsAdmin && cierre.EstadoOc == DatosCierre.OcPorAdjuntar)
                         {
                             <div class="list-group-item text-muted small">Esperando a que la clínica adjunte la orden de compra.</div>
                         }
                     </div>
                 }
             </div>
-            @if (Vista.Perfil.Clave == "administrador" && c.SolicitudId is int solicitudId)
+            @if (EsAdmin && c.IdSolicitudOrigen is int solicitudId)
             {
                 <div class="card">
                     <div class="card-header">Relacionado</div>
@@ -141,24 +196,160 @@ else
         </div>
     }
     </div>
+
+    <ModalConfirmacion Visible="@(estadoPendiente != null)"
+                       Titulo="Cambiar estado"
+                       Mensaje="@($"¿Confirma pasar la cirugía #{c.IdCirugia} a «{TextoEstado(estadoPendiente)}»?")"
+                       TextoConfirmar="Confirmar" ClaseConfirmar="btn-primary" Procesando="@procesando"
+                       OnConfirmar="ConfirmarCambioEstado" OnCancelar="() => estadoPendiente = null" />
+
+    <ModalConfirmacion Visible="@mostrarCancelacion"
+                       Titulo="Cancelar cirugía"
+                       Mensaje="La cirugía quedará cancelada y su bandeja se liberará. Indique el motivo:"
+                       TextoConfirmar="Cancelar cirugía" Procesando="@procesando"
+                       OnConfirmar="ConfirmarCancelacion" OnCancelar="() => mostrarCancelacion = false">
+        <textarea class="form-control" rows="3" maxlength="200" @bind="motivo" placeholder="Motivo de la cancelación"></textarea>
+        @if (errorModal != null)
+        {
+            <div class="text-danger small mt-2">@errorModal</div>
+        }
+    </ModalConfirmacion>
 }
 
 @code {
     [Parameter] public int Id { get; set; }
-    private CirugiaMock? c;
+    [SupplyParameterFromQuery(Name = "guardado")] public int? Guardado { get; set; }
+
+    private CirugiaDTO? c;
+    private BandejaDTO? bandeja;
     private CierreCirugiaMock? cierre;
     private bool esClinica;
+    private bool cargando = true;
+    private bool procesando;
+    private string? MensajeOk;
+    private string? MensajeError;
 
-    protected override void OnParametersSet()
+    private string? estadoPendiente;
+    private bool mostrarCancelacion;
+    private string motivo = "";
+    private string? errorModal;
+
+    private bool EsAdmin => Vista.Perfil.Clave == "administrador";
+
+    protected override async Task OnParametersSetAsync()
     {
-        c = DatosAgenda.ParaPerfil(Vista.Perfil.Clave).FirstOrDefault(x => x.Id == Id);
+        cargando = true;
+        MensajeError = null;
+        MensajeOk = Guardado == 1 ? "La cirugía se guardó correctamente." : null;
+        try
+        {
+            c = await CirugiaService.ObtenerAsync(Id);
+            await CargarExtras();
+        }
+        catch (ServicioException ex)
+        {
+            c = null;
+            MensajeError = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            c = null;
+            MensajeError = "No se pudo conectar con el servicio de cirugías";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task CargarExtras()
+    {
+        bandeja = null;
         if (c == null)
         {
-            cierre = null;
-            esClinica = false;
             return;
         }
-        esClinica = DatosCierre.EsClinica(c.Cliente);
-        cierre = DatosCierre.De(c.Id);
+        esClinica = c.TipoCliente == "CLINICA_HOSPITAL";
+        // El cierre (orden de compra y consumo) lo conectan los responsables de RF15
+        cierre = DatosCierre.De(c.IdCirugia);
+        if (c.IdBandeja is int idBandeja)
+        {
+            bandeja = await BandejaService.ObtenerAsync(idBandeja);
+        }
     }
+
+    private void PedirCambioEstado(string estado)
+    {
+        MensajeOk = null;
+        MensajeError = null;
+        estadoPendiente = estado;
+    }
+
+    private async Task ConfirmarCambioEstado()
+    {
+        if (c == null || estadoPendiente == null)
+        {
+            return;
+        }
+        procesando = true;
+        try
+        {
+            c = await CirugiaService.CambiarEstadoAsync(c.IdCirugia, estadoPendiente);
+            c.Activo = true;
+            await CargarExtras();
+            MensajeOk = $"La cirugía ahora está «{c.EstadoTexto}».";
+        }
+        catch (ServicioException ex)
+        {
+            MensajeError = ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+            estadoPendiente = null;
+        }
+    }
+
+    private void PedirCancelacion()
+    {
+        MensajeOk = null;
+        MensajeError = null;
+        errorModal = null;
+        motivo = "";
+        mostrarCancelacion = true;
+    }
+
+    private async Task ConfirmarCancelacion()
+    {
+        if (c == null)
+        {
+            return;
+        }
+        procesando = true;
+        errorModal = null;
+        try
+        {
+            c = await CirugiaService.CancelarAsync(c.IdCirugia, motivo);
+            c.Activo = true;
+            await CargarExtras();
+            mostrarCancelacion = false;
+            MensajeOk = "La cirugía se canceló.";
+        }
+        catch (ServicioException ex)
+        {
+            // p. ej. "Debe indicar el motivo de la cancelación" (validado en la BL)
+            errorModal = ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
+
+    private static string TextoEstado(string? estado) => estado switch
+    {
+        "EN_PROCESO" => "En curso",
+        "FINALIZADA" => "Culminada",
+        _ => estado ?? ""
+    };
 }
