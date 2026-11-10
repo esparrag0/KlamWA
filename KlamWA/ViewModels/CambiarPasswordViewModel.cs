@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using KlamWA.Services;
 
 namespace KlamWA.ViewModels;
 
@@ -7,13 +6,13 @@ namespace KlamWA.ViewModels;
 public class CambiarPasswordViewModel : IValidatableObject
 {
     [Required(ErrorMessage = "Ingrese su contraseña actual")]
-    public string PasswordActual { get; set; } = "";
+    public string PasswordActual { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Ingrese la nueva contraseña")]
-    public string PasswordNueva { get; set; } = "";
+    public string PasswordNueva { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Confirme la nueva contraseña")]
-    public string Confirmar { get; set; } = "";
+    public string Confirmar { get; set; } = string.Empty;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {

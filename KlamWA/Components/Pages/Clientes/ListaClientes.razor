@@ -1,7 +1,8 @@
 @page "/clientes"
 @using KlamWA.Components.Shared
-@using KlamWA.Dtos
-@inject KlamWA.Services.ClientesApiService Api
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IGestionClienteService Api
 
 <PageTitle>Clientes</PageTitle>
 
@@ -84,12 +85,12 @@
 </div>
 
 @code {
-    private List<ClienteResumenDto> clientes = new();
+    private List<ClienteGestionDTO> clientes = [];
     private string? error;
 
     protected override async Task OnInitializedAsync()
     {
-        var r = await Api.ListarAsync();
-        if (r.Ok) clientes = r.Datos!; else error = r.Error;
+        try { clientes = await Api.ListarAsync(); }
+        catch (HttpRequestException ex) { error = ex.Message; }
     }
 }

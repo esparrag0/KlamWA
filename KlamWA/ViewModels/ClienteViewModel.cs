@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using KlamWA.Components.Shared;
-using KlamWA.Dtos;
-using KlamWA.Services;
+using KlamWA.DTOs;
 
 namespace KlamWA.ViewModels;
 
@@ -47,7 +46,7 @@ public class ClienteViewModel : IValidatableObject
     public ClienteViewModel() { }
 
     // Edición: carga desde el detalle que devuelve el REST (GET clientes/{tipo}/{id}).
-    public ClienteViewModel(ClienteRegistroDto d)
+    public ClienteViewModel(ClienteFormDTO d)
     {
         Id = d.IdCliente;
         Activo = d.Activo;
@@ -79,7 +78,7 @@ public class ClienteViewModel : IValidatableObject
     }
 
     // Arma el DTO del REST para el alta. La validación real la hace la BL.
-    public ClienteRegistroDto ToRegistro() => new()
+    public ClienteFormDTO ToRegistro() => new()
     {
         TipoCliente = Tipo == DatosClientes.Particular ? "PACIENTE_PARTICULAR" : "CLINICA_HOSPITAL",
         Nombre = Nombre,

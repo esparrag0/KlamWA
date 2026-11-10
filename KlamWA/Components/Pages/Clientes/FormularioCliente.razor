@@ -3,7 +3,9 @@
 @using KlamWA.Components.Shared
 @using KlamWA.ViewModels
 @inject NavigationManager Nav
-@inject KlamWA.Services.ClientesApiService Api
+@using KlamWA.Servicios
+@using KlamWA.DTOs
+@inject IGestionClienteService Api
 
 <PageTitle>Formulario de cliente</PageTitle>
 
@@ -100,14 +102,14 @@
                 {
                     <div class="col-12"><hr class="my-1" /><strong>Acceso a la plataforma</strong></div>
                     <CampoForm Etiqueta="Usuario *">
-                        <InputText class="form-control" maxlength="@KlamWA.Services.ReglasCredenciales.MaxUsuario" autocomplete="off" @bind-Value="ViewModel.Username" />
-                        <div class="form-text">@KlamWA.Services.ReglasCredenciales.TextoUsuario</div>
+                        <InputText class="form-control" maxlength="@ReglasCredenciales.MaxUsuario" autocomplete="off" @bind-Value="ViewModel.Username" />
+                        <div class="form-text">@ReglasCredenciales.TextoUsuario</div>
                         <ValidationMessage For="() => ViewModel.Username" />
                     </CampoForm>
                     <div class="col-md-6"></div>
                     <CampoForm Etiqueta="Contraseña *">
-                        <InputText type="password" class="form-control" maxlength="@KlamWA.Services.ReglasCredenciales.MaxPassword" autocomplete="new-password" @bind-Value="ViewModel.Password" />
-                        <div class="form-text">@KlamWA.Services.ReglasCredenciales.TextoPassword</div>
+                        <InputText type="password" class="form-control" maxlength="@ReglasCredenciales.MaxPassword" autocomplete="new-password" @bind-Value="ViewModel.Password" />
+                        <div class="form-text">@ReglasCredenciales.TextoPassword</div>
                         <ValidationMessage For="() => ViewModel.Password" />
                     </CampoForm>
                     <CampoForm Etiqueta="Confirmar contraseña *">
@@ -142,9 +144,8 @@
             ViewModel = new ClienteViewModel();
             return;
         }
-        var r = await Api.ObtenerAsync(Tipo ?? "", Id.Value);
-        if (r.Ok) ViewModel = new ClienteViewModel(r.Datos!);
-        else MensajeError = r.Error;
+        try { ViewModel = new ClienteViewModel(await Api.ObtenerAsync(Tipo ?? "", Id.Value)); }
+        catch (HttpRequestException ex) { MensajeError = ex.Message; }
     }
 
     // Solo se ejecuta si el ViewModel es válido (ayuda de UX); la BL de Java valida de verdad.
@@ -154,20 +155,23 @@
         if (Id != null)
         {
             enviando = true;
-            var m = await Api.ActualizarAsync(Tipo ?? "", Id.Value, ViewModel.ToRegistro());
+            try
+            {
+                await Api.ActualizarAsync(Tipo ?? "", Id.Value, ViewModel.ToRegistro());
+                MensajeOk = "Cliente actualizado.";
+            }
+            catch (HttpRequestException ex) { MensajeError = ex.Message; }
             enviando = false;
-            if (m.Ok) MensajeOk = "Cliente actualizado.";
-            else MensajeError = m.Error;
             return;
         }
         enviando = true;
-        var r = await Api.RegistrarAsync(ViewModel.ToRegistro());
-        enviando = false;
-        if (r.Ok)
+        try
         {
-            MensajeOk = $"Cliente «{r.Datos!.Nombre}» registrado con el usuario {ViewModel.Username.Trim()}.";
+            var creado = await Api.RegistrarAsync(ViewModel.ToRegistro());
+            MensajeOk = $"Cliente «{creado.Nombre}» registrado con el usuario {ViewModel.Username.Trim()}.";
             ViewModel = new ClienteViewModel { Tipo = ViewModel.Tipo };
         }
-        else MensajeError = r.Error;
+        catch (HttpRequestException ex) { MensajeError = ex.Message; }
+        enviando = false;
     }
 }

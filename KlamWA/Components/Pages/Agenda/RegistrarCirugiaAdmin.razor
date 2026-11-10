@@ -1,9 +1,9 @@
 @page "/agenda/registrar"
-@using KlamWA.Dtos
-@inject KlamWA.Services.CirugiasApiService Api
-@inject KlamWA.Services.ClientesApiService ClientesApi
-@inject NavigationManager Nav
-@inject KlamWA.Services.SesionUsuario Sesion
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.ViewModels
+@inject IRegistroCirugiaService Cirugias
+@inject IGestionClienteService Clientes
 
 <PageTitle>Registrar cirugía</PageTitle>
 <PageHeader Titulo="Registrar cirugía" Subtitulo="Registro directo por el administrador (RF09)" />
@@ -36,20 +36,15 @@
                     </InputSelect>
                 </CampoForm>
                 <CampoForm Etiqueta="@(ViewModel.TipoCliente == "CLINICA_HOSPITAL" ? "Clínica destino *" : "Paciente particular *")" Columnas="col-12" Para="cliente">
-                    <InputSelect id="cliente" class="form-select" TValue="int" Value="ViewModel.IdCliente"
-                                 ValueExpression="() => ViewModel.IdCliente" ValueChanged="ClienteCambio">
+                    <InputSelect id="cliente" class="form-select" @bind-Value="ViewModel.IdCliente">
                         <option value="0">-- Seleccione --</option>
-                        @foreach (var c in clientes.Where(x => x.TipoCliente == ViewModel.TipoCliente)) { <option value="@c.IdCliente">@c.Nombre (@c.Documento)</option> }
+                        @foreach (var c in clientes.Where(x => x.TipoCliente == ViewModel.TipoCliente))
+                        {
+                            <option value="@c.IdCliente">@c.Nombre (@c.Documento)</option>
+                        }
                     </InputSelect>
                     <ValidationMessage For="() => ViewModel.IdCliente" />
                 </CampoForm>
-                @if (ViewModel.TipoCliente == "PACIENTE_PARTICULAR")
-                {
-                    <CampoForm Etiqueta="DNI del paciente *" Para="dni">
-                        <InputText id="dni" class="form-control" maxlength="8" @bind-Value="ViewModel.Dni" />
-                        <ValidationMessage For="() => ViewModel.Dni" />
-                    </CampoForm>
-                }
                 <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
                     <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
                     <ValidationMessage For="() => ViewModel.Diagnostico" />
@@ -82,42 +77,36 @@
         </div>
     </div>
 </EditForm>
-<p class="text-muted small">Solo el administrador puede registrar cirugías (lo verifica el servidor). El responsable de la auditoría es @Sesion.UserName.</p>
 
 @code {
     private RegistroCirugiaAdminViewModel ViewModel { get; set; } = new();
-    private List<ClienteResumenDto> clientes = new();
-    private CirugiaRegistradaDto? registrada;
+    private List<ClienteGestionDTO> clientes = [];
+    private CirugiaRegistradaDTO? registrada;
     private string? error;
     private bool enviando;
 
     protected override async Task OnInitializedAsync()
     {
-        var r = await ClientesApi.ListarAsync();
-        if (r.Ok) clientes = r.Datos!; else error = r.Error;
+        try { clientes = await Clientes.ListarAsync(); }
+        catch (HttpRequestException ex) { error = ex.Message; }
     }
 
     private void TipoClienteCambio(string tipo)
     {
         ViewModel.TipoCliente = tipo;
-        ViewModel.IdCliente = 0;
-        ViewModel.Dni = "";
+        ViewModel.IdCliente = 0;   // el id anterior pertenecía al otro tipo de cliente
     }
 
-    private void ClienteCambio(int id)
-    {
-        ViewModel.IdCliente = id;
-        var c = clientes.FirstOrDefault(x => x.IdCliente == id && x.TipoCliente == ViewModel.TipoCliente);
-        if (ViewModel.TipoCliente == "PACIENTE_PARTICULAR") ViewModel.Dni = c?.Dni ?? "";
-    }
-
-    // La validación real (obligatorios, cruces, cliente activo) la hace CirugiaBL; se muestra su mensaje tal cual.
+    // La validación real (obligatorios, cliente activo, cruces) la hace CirugiaBL; se muestra su mensaje tal cual.
     private async Task Registrar()
     {
         enviando = true; registrada = null; error = null;
-        var r = await Api.RegistrarAsync(ViewModel.ToRequest());
-        if (r.Ok) { registrada = r.Datos; ViewModel = new() { TipoCliente = ViewModel.TipoCliente }; }
-        else error = r.Error;
+        try
+        {
+            registrada = await Cirugias.RegistrarAsync(ViewModel.ToDto());
+            ViewModel = new() { TipoCliente = ViewModel.TipoCliente };
+        }
+        catch (HttpRequestException ex) { error = ex.Message; }
         enviando = false;
     }
 }
