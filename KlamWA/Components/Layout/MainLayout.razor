@@ -68,6 +68,7 @@
                 || Es("/bitacora-cirugias") || Es("/historial-documental") || Es("/usuarios")
                 || Es("/clientes") || Es("/solicitudes") || Es("/reportes") || Es("/inventario"))
                 return Vista.Perfil.Clave == "administrador";
+            if (Es("/mis-solicitudes/corregir")) return Vista.Perfil.Clave is "administrador" or "vendedor";
             if (Es("/mis-solicitudes")) return Vista.Perfil.Clave is "cliente" or "vendedor";
             if (ruta == "/cotizaciones") return Vista.Perfil.Clave == "administrador";
             if (Es("/cotizaciones/cliente")) return Vista.Perfil.Clave == "cliente";

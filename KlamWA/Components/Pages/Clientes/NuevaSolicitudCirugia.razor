@@ -1,114 +1,315 @@
 @page "/mis-solicitudes/nueva"
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
 @inject VistaPreviaRol Vista
+@inject IClienteService Clientes
+@inject ISolicitudCirugiaService Solicitudes
+@inject IDocumentoIngresoService Documentos
+@inject NavigationManager Navegacion
 
 <PageTitle>Nueva solicitud de cirugía</PageTitle>
-<PageHeader Titulo="Solicitar cirugía" Subtitulo="Cliente o vendedor · formulario de ejemplo" />
+<PageHeader Titulo="Solicitar cirugía" Subtitulo="Registro de solicitud por vendedor" />
 
-@if (mensaje is not null)
+@if (Vista.Perfil.Clave != "vendedor")
 {
-    <div class="alert alert-info" role="status">@mensaje</div>
+    <div class="alert alert-warning">Esta operación está disponible para el vendedor.</div>
+}
+else
+{
+    @if (mensaje is not null) { <div class="alert alert-@tipoMensaje" role="status">@mensaje</div> }
+    <EditForm Model="ViewModel" OnValidSubmit="Enviar">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <fieldset disabled="@idSolicitudGuardada.HasValue" class="border-0 p-0 m-0 w-100">
+        <div class="card mb-3" style="max-width:900px">
+            <div class="card-header">Cliente solicitante</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <CampoForm Etiqueta="Tipo de cliente" Columnas="col-12" Para="tipo-cliente">
+                        <InputSelect id="tipo-cliente" class="form-select" @bind-Value="ViewModel.TipoCliente" @bind-Value:after="CambiarTipo">
+                            <option value="Particular">Paciente particular</option>
+                            <option value="Clinica">Clínica / hospital</option>
+                        </InputSelect>
+                    </CampoForm>
+                    @if (ViewModel.TipoCliente == "Particular")
+                    {
+                        <CampoForm Etiqueta="DNI *" Para="dni-paciente">
+                            <InputText id="dni-paciente" class="form-control" maxlength="8" @bind-Value="ViewModel.Dni" @bind-Value:after="InvalidarCliente" />
+                        </CampoForm>
+                        <div class="col-12 col-md-auto align-self-end"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarParticular">Buscar paciente</button></div>
+                    }
+                    else
+                    {
+                        <CampoForm Etiqueta="RUC" Para="ruc-clinica"><input id="ruc-clinica" class="form-control" maxlength="11" @bind="ruc" @bind:after="InvalidarCliente" /></CampoForm>
+                        <div class="col-12 col-md-auto align-self-end"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarPorRuc">Buscar por RUC</button></div>
+                        <CampoForm Etiqueta="Nombre" Para="nombre-clinica"><input id="nombre-clinica" class="form-control" @bind="nombreBusqueda" @bind:after="InvalidarCliente" /></CampoForm>
+                        <div class="col-12 col-md-auto align-self-end"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarPorNombre">Buscar por nombre</button></div>
+                    }
+                    @if (seleccionado is not null)
+                    {
+                        <div class="col-12"><div class="alert alert-success mb-0">Cliente seleccionado: @seleccionado.Nombre (@(seleccionado.Dni ?? seleccionado.Ruc))</div></div>
+                    }
+                    @if (resultados.Count > 0 && ViewModel.TipoCliente == "Clinica")
+                    {
+                        <div class="col-12"><div class="list-group">
+                            @foreach (var c in resultados)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action" @onclick="() => ElegirCliente(c)">@c.Nombre · @c.Ruc</button>
+                            }
+                        </div></div>
+                    }
+                </div>
+                @if (mostrarRegistro)
+                {
+                    <hr />
+                    <h6>Registrar cliente nuevo</h6>
+                    <div class="row g-3">
+                        <CampoForm Etiqueta="@(ViewModel.TipoCliente == "Particular" ? "Nombre completo *" : "Razón social *")"><input class="form-control" @bind="nuevo.Nombre" /></CampoForm>
+                        <CampoForm Etiqueta="Dirección *"><input class="form-control" @bind="nuevo.Direccion" /></CampoForm>
+                        <CampoForm Etiqueta="Correo *"><input class="form-control" type="email" @bind="nuevo.EmailContacto" /></CampoForm>
+                        <CampoForm Etiqueta="Teléfono *"><input class="form-control" @bind="nuevo.Telefono" /></CampoForm>
+                        @if (ViewModel.TipoCliente == "Clinica")
+                        {
+                            <CampoForm Etiqueta="RUC *"><input class="form-control" maxlength="11" @bind="nuevo.Ruc" /></CampoForm>
+                            <CampoForm Etiqueta="Periodo de crédito"><input class="form-control" @bind="nuevo.PeriodoCredito" /></CampoForm>
+                            <div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" @bind="nuevo.TieneConsignacion" /><span class="form-check-label">Tiene consignación</span></label></div>
+                        }
+                        <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarCliente">Registrar y seleccionar cliente</button></div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3" style="max-width:900px">
+            <div class="card-header">Datos de la cirugía</div>
+            <div class="card-body"><div class="row g-3">
+                <CampoForm Etiqueta="Clínica u hospital donde se realizará *" Columnas="col-12" Para="destino-busqueda">
+                    <div class="input-group"><input id="destino-busqueda" class="form-control" placeholder="Buscar por RUC o nombre" @bind="destinoBusqueda" @bind:after="InvalidarDestino" /><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarDestino">Buscar</button></div>
+                </CampoForm>
+                @if (destino is not null) { <div class="col-12"><div class="alert alert-success mb-0">Destino seleccionado: @destino.Nombre · @destino.Ruc</div></div> }
+                @if (destinos.Count > 0)
+                {
+                    <div class="col-12"><div class="list-group">@foreach (var c in destinos) { <button type="button" class="list-group-item list-group-item-action" @onclick="() => ElegirDestino(c)">@c.Nombre · @c.Ruc</button> }</div></div>
+                }
+                @if (mostrarRegistroDestino)
+                {
+                    <div class="col-12"><hr /><h6>Registrar clínica de destino</h6></div>
+                    <CampoForm Etiqueta="Razón social *"><input class="form-control" @bind="nuevoDestino.Nombre" /></CampoForm>
+                    <CampoForm Etiqueta="RUC *"><input class="form-control" maxlength="11" @bind="nuevoDestino.Ruc" /></CampoForm>
+                    <CampoForm Etiqueta="Dirección *"><input class="form-control" @bind="nuevoDestino.Direccion" /></CampoForm>
+                    <CampoForm Etiqueta="Correo *"><input class="form-control" type="email" @bind="nuevoDestino.EmailContacto" /></CampoForm>
+                    <CampoForm Etiqueta="Teléfono *"><input class="form-control" @bind="nuevoDestino.Telefono" /></CampoForm>
+                    <CampoForm Etiqueta="Periodo de crédito"><input class="form-control" @bind="nuevoDestino.PeriodoCredito" /></CampoForm>
+                    <div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" @bind="nuevoDestino.TieneConsignacion" /><span class="form-check-label">Tiene consignación</span></label></div>
+                    <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarDestino">Registrar y seleccionar clínica de destino</button></div>
+                }
+                <CampoForm Etiqueta="Nombre del paciente *" Columnas="col-12" Para="paciente"><InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" /><ValidationMessage For="() => ViewModel.PacienteNombre" /></CampoForm>
+                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico"><InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" /><ValidationMessage For="() => ViewModel.Diagnostico" /></CampoForm>
+                <CampoForm Etiqueta="Procedimiento *" Para="procedimiento"><InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" /><ValidationMessage For="() => ViewModel.Procedimiento" /></CampoForm>
+                <CampoForm Etiqueta="Médico *" Para="medico"><InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" /><ValidationMessage For="() => ViewModel.Medico" /></CampoForm>
+                <CampoForm Etiqueta="Fecha *" Para="fecha"><InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" /><ValidationMessage For="() => ViewModel.Fecha" /></CampoForm>
+                <CampoForm Etiqueta="Hora *" Para="hora"><InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" /><ValidationMessage For="() => ViewModel.Hora" /></CampoForm>
+                <CampoForm Etiqueta="Observaciones (opcional)" Columnas="col-12" Para="observaciones"><InputTextArea id="observaciones" class="form-control" rows="2" @bind-Value="ViewModel.Observaciones" /></CampoForm>
+            </div></div>
+        </div>
+        </fieldset>
+        <div class="card mb-3" style="max-width:900px">
+            <div class="card-header">Documentos adjuntos</div>
+            <div class="card-body">
+                @if (idSolicitudGuardada.HasValue) { <div class="alert alert-info">Solicitud @idSolicitudGuardada.Value registrada. Los archivos pendientes pueden reintentarse sin crear otra solicitud.</div> }
+                <div class="row g-3">
+                    @if (ViewModel.TipoCliente == "Particular")
+                    {
+                        <CampoForm Etiqueta="DNI *" Para="archivo-dni"><InputFile id="archivo-dni" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("DNI"))" OnChange='e => SeleccionarArchivo(e, "DNI")' /></CampoForm>
+                        <CampoForm Etiqueta="Comprobante de pago *" Para="archivo-pago"><InputFile id="archivo-pago" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("COMPROBANTE_PAGO"))" OnChange='e => SeleccionarArchivo(e, "COMPROBANTE_PAGO")' /></CampoForm>
+                    }
+                    <CampoForm Etiqueta="Receta médica *" Para="archivo-receta"><InputFile id="archivo-receta" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("RECETA_MEDICA"))" OnChange='e => SeleccionarArchivo(e, "RECETA_MEDICA")' /></CampoForm>
+                </div>
+                @foreach (var tipo in TiposRequeridos)
+                {
+                    <div class="small mt-2">@NombreDocumento(tipo): @(cargados.Contains(tipo) ? "Cargado" : archivos.ContainsKey(tipo) ? "Seleccionado, pendiente de carga" : "Falta seleccionar archivo")
+                        @if (erroresArchivo.TryGetValue(tipo, out var errorArchivo)) { <span class="text-danger">— @errorArchivo</span> }
+                    </div>
+                }
+                <p class="text-muted small mt-2 mb-0">PDF, PNG o JPEG; máximo 5 MB por archivo.</p>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                @if (idSolicitudGuardada.HasValue) { <button type="button" class="btn btn-primary" disabled="@procesando" @onclick="Enviar">@(procesando ? "Cargando..." : "Reintentar archivos pendientes")</button> }
+                else { <button type="submit" class="btn btn-primary" disabled="@procesando">@(procesando ? "Enviando..." : "Registrar solicitud y cargar documentos")</button> }
+                <a class="btn btn-outline-secondary" href="/mis-solicitudes">Volver a solicitudes</a>
+            </div>
+        </div>
+    </EditForm>
 }
 
-<EditForm Model="ViewModel" OnValidSubmit="ValidarSolicitud">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="card mb-3" style="max-width:900px">
-        <div class="card-header">Datos de la cirugía</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <CampoForm Etiqueta="Tipo de cliente" Columnas="col-12" Para="tipo-cliente">
-                    <InputSelect id="tipo-cliente" class="form-select" @bind-Value="ViewModel.TipoCliente">
-                        <option value="@DatosClientes.Clinica">Clínica / hospital</option>
-                        <option value="@DatosClientes.Particular">Paciente particular</option>
-                    </InputSelect>
-                </CampoForm>
-                @if (ViewModel.TipoCliente == DatosClientes.Particular)
-                {
-                    <CampoForm Etiqueta="DNI del paciente *" Para="dni-paciente">
-                        <InputText id="dni-paciente" class="form-control" maxlength="8" @bind-Value="ViewModel.Dni" />
-                        <ValidationMessage For="() => ViewModel.Dni" />
-                    </CampoForm>
-                }
-                <CampoForm Etiqueta="Clínica u hospital donde se realizará *" Para="clinica">
-                    <InputSelect id="clinica" class="form-select" @bind-Value="ViewModel.IdClinica">
-                        <option value="0">-- Seleccione --</option>
-                        @foreach (var x in DatosClientes.Clinicas) { <option value="@x.Key">@x.Value</option> }
-                    </InputSelect>
-                    <ValidationMessage For="() => ViewModel.IdClinica" />
-                </CampoForm>
-                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
-                    <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
-                    <ValidationMessage For="() => ViewModel.Diagnostico" />
-                </CampoForm>
-                <CampoForm Etiqueta="Procedimiento *" Para="procedimiento">
-                    <InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" />
-                    <ValidationMessage For="() => ViewModel.Procedimiento" />
-                </CampoForm>
-                <CampoForm Etiqueta="Médico *" Para="medico">
-                    <InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" />
-                    <ValidationMessage For="() => ViewModel.Medico" />
-                </CampoForm>
-                <CampoForm Etiqueta="Fecha *" Para="fecha">
-                    <InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" />
-                    <ValidationMessage For="() => ViewModel.Fecha" />
-                </CampoForm>
-                <CampoForm Etiqueta="Hora *" Para="hora">
-                    <InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" />
-                    <ValidationMessage For="() => ViewModel.Hora" />
-                </CampoForm>
-                <CampoForm Etiqueta="Observaciones (opcional)" Columnas="col-12" Para="observaciones">
-                    <InputTextArea id="observaciones" class="form-control" rows="2" @bind-Value="ViewModel.Observaciones" />
-                </CampoForm>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-3" style="max-width:900px">
-        <div class="card-header">Documentos adjuntos</div>
-        <div class="card-body">
-            <p class="text-muted small">Los archivos se seleccionan solo para mostrar el formulario; no se suben en esta entrega.</p>
-            <div class="mb-3">
-                <label for="receta" class="form-label">Receta médica</label>
-                <InputFile id="receta" class="form-control" OnChange="SeleccionarReceta" />
-                @if (receta is not null) { <div class="form-text">Seleccionado: @receta</div> }
-            </div>
-            @if (ViewModel.TipoCliente == DatosClientes.Particular)
-            {
-                <div class="mb-3">
-                    <label for="comprobante" class="form-label">Comprobante de pago bancario *</label>
-                    <InputFile id="comprobante" class="form-control" OnChange="SeleccionarComprobante" />
-                    <ValidationMessage For="() => ViewModel.ComprobanteSeleccionado" />
-                    @if (comprobante is not null) { <div class="form-text">Seleccionado: @comprobante</div> }
-                </div>
-            }
-        </div>
-        <div class="card-footer d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Revisar solicitud</button>
-            <a class="btn btn-outline-secondary" href="/mis-solicitudes">Cancelar</a>
-        </div>
-    </div>
-</EditForm>
-<AvisoDemostracion Texto="La validación solo ocurre en la pantalla. No se crea ni envía una solicitud." />
-
 @code {
-    private SolicitudCirugiaViewModel ViewModel { get; set; } = new();
-    private string? receta;
-    private string? comprobante;
+    private SolicitudCirugiaViewModel ViewModel { get; } = new();
+    private ClienteRegistroDTO nuevo = new();
+    private ClienteRegistroDTO nuevoDestino = new();
+    private ClienteBusquedaDTO? seleccionado;
+    private ClienteBusquedaDTO? destino;
+    private List<ClienteBusquedaDTO> resultados = [];
+    private List<ClienteBusquedaDTO> destinos = [];
+    private string ruc = string.Empty, nombreBusqueda = string.Empty, destinoBusqueda = string.Empty;
     private string? mensaje;
-
-    protected override void OnInitialized()
-    {
-        if (Vista.Perfil.Clave == "vendedor")
-            ViewModel.TipoCliente = DatosClientes.Particular;
+    private string tipoMensaje = "danger";
+    private bool mostrarRegistro, mostrarRegistroDestino, procesando;
+    private int? idSolicitudGuardada;
+    private readonly Dictionary<string, IBrowserFile> archivos = new();
+    private readonly Dictionary<string, string> erroresArchivo = new();
+    private readonly HashSet<string> cargados = new();
+    private IEnumerable<string> TiposRequeridos => ViewModel.TipoCliente == "Particular"
+        ? ["DNI", "RECETA_MEDICA", "COMPROBANTE_PAGO"] : ["RECETA_MEDICA"];
+    private static string NombreDocumento(string tipo) => tipo switch {
+        "DNI" => "DNI", "RECETA_MEDICA" => "Receta médica", _ => "Comprobante de pago" };
+    private void SeleccionarArchivo(InputFileChangeEventArgs e, string tipo) {
+        archivos[tipo] = e.File; erroresArchivo.Remove(tipo); mensaje = null;
     }
 
-    private void SeleccionarReceta(InputFileChangeEventArgs e) => receta = e.File.Name;
-    private void SeleccionarComprobante(InputFileChangeEventArgs e)
+    private void CambiarTipo()
     {
-        comprobante = e.File.Name;
-        ViewModel.ComprobanteSeleccionado = true;
+        seleccionado = null; resultados = []; ViewModel.IdCliente = 0;
+        mostrarRegistro = false; nuevo = new(); mensaje = null;
     }
-    private void ValidarSolicitud() =>
-        mensaje = "Formulario válido. La solicitud no se envió porque esta entrega es solo visual.";
+    private void InvalidarCliente()
+    {
+        seleccionado = null; ViewModel.IdCliente = 0; resultados = [];
+        mostrarRegistro = false; mensaje = null;
+    }
+    private void InvalidarDestino()
+    {
+        destino = null; ViewModel.IdClinica = 0; destinos = []; mostrarRegistroDestino = false; mensaje = null;
+    }
+    private void ElegirCliente(ClienteBusquedaDTO cliente)
+    {
+        seleccionado = cliente; ViewModel.IdCliente = cliente.IdCliente;
+        mostrarRegistro = false; resultados = [];
+        if (ViewModel.TipoCliente == "Particular")
+        {
+            ViewModel.Dni = cliente.Dni ?? ViewModel.Dni;
+            if (string.IsNullOrWhiteSpace(ViewModel.PacienteNombre)) ViewModel.PacienteNombre = cliente.Nombre;
+        }
+        Mensaje("Cliente seleccionado.", "success");
+    }
+    private void ElegirDestino(ClienteBusquedaDTO clinica)
+    {
+        destino = clinica; ViewModel.IdClinica = clinica.IdCliente; destinos = []; mostrarRegistroDestino = false;
+        Mensaje("Clínica de destino seleccionada.", "success");
+    }
+    private async Task BuscarParticular()
+    {
+        if (ViewModel.Dni.Length != 8 || !ViewModel.Dni.All(char.IsDigit)) { Mensaje("Ingrese un DNI de 8 dígitos."); return; }
+        await Ejecutar(async () => {
+            seleccionado = null; ViewModel.IdCliente = 0;
+            resultados = await Clientes.BuscarParticularAsync(ViewModel.Dni);
+            if (resultados.Count > 0) ElegirCliente(resultados[0]);
+            else { nuevo = new() { Dni = ViewModel.Dni }; mostrarRegistro = true; Mensaje("No existe el paciente. Puede registrarlo aquí.", "info"); }
+        });
+    }
+    private Task BuscarPorRuc() => BuscarClinica(true);
+    private Task BuscarPorNombre() => BuscarClinica(false);
+    private async Task BuscarClinica(bool porRuc)
+    {
+        if (porRuc && (ruc.Length != 11 || !ruc.All(char.IsDigit))) { Mensaje("Ingrese un RUC de 11 dígitos."); return; }
+        if (!porRuc && string.IsNullOrWhiteSpace(nombreBusqueda)) { Mensaje("Ingrese un nombre para buscar."); return; }
+        await Ejecutar(async () => {
+            seleccionado = null; ViewModel.IdCliente = 0;
+            resultados = porRuc ? await Clientes.BuscarClinicasPorRucAsync(ruc) : await Clientes.BuscarClinicasPorNombreAsync(nombreBusqueda.Trim());
+            mostrarRegistro = resultados.Count == 0;
+            if (mostrarRegistro) { nuevo = new() { Ruc = ruc, Nombre = porRuc ? string.Empty : nombreBusqueda.Trim() }; Mensaje("No se encontró la institución. Puede registrarla aquí.", "info"); }
+            else if (porRuc) ElegirCliente(resultados[0]);
+            else Mensaje("Seleccione la institución encontrada.", "info");
+        });
+    }
+    private async Task BuscarDestino()
+    {
+        if (string.IsNullOrWhiteSpace(destinoBusqueda)) { Mensaje("Ingrese el RUC o nombre de la clínica de destino."); return; }
+        await Ejecutar(async () => {
+            destino = null; ViewModel.IdClinica = 0;
+            var filtro = destinoBusqueda.Trim();
+            destinos = filtro.Length == 11 && filtro.All(char.IsDigit)
+                ? await Clientes.BuscarClinicasPorRucAsync(filtro)
+                : await Clientes.BuscarClinicasPorNombreAsync(filtro);
+            if (destinos.Count == 0) { nuevoDestino = new() { Ruc = filtro.Length == 11 && filtro.All(char.IsDigit) ? filtro : null, Nombre = filtro.All(char.IsDigit) ? string.Empty : filtro }; mostrarRegistroDestino = true; Mensaje("No se encontró una clínica de destino. Puede registrarla aquí.", "info"); }
+            else if (destinos.Count == 1) ElegirDestino(destinos[0]);
+            else Mensaje("Seleccione la clínica de destino encontrada.", "info");
+        });
+    }
+    private async Task RegistrarDestino()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoDestino.Nombre) || string.IsNullOrWhiteSpace(nuevoDestino.Direccion)
+            || string.IsNullOrWhiteSpace(nuevoDestino.EmailContacto) || string.IsNullOrWhiteSpace(nuevoDestino.Telefono)
+            || nuevoDestino.Ruc is null || nuevoDestino.Ruc.Length != 11 || !nuevoDestino.Ruc.All(char.IsDigit))
+        { Mensaje("Complete los datos de la clínica y un RUC de 11 dígitos."); return; }
+        await Ejecutar(async () => {
+            var existentes = await Clientes.BuscarClinicasPorRucAsync(nuevoDestino.Ruc);
+            if (existentes.Count > 0) { ElegirDestino(existentes[0]); Mensaje("La clínica ya existía y quedó seleccionada.", "info"); return; }
+            ElegirDestino(await Clientes.RegistrarClinicaAsync(nuevoDestino));
+        });
+    }
+    private async Task RegistrarCliente()
+    {
+        if (string.IsNullOrWhiteSpace(nuevo.Nombre) || string.IsNullOrWhiteSpace(nuevo.Direccion)
+            || string.IsNullOrWhiteSpace(nuevo.EmailContacto) || string.IsNullOrWhiteSpace(nuevo.Telefono))
+        { Mensaje("Complete nombre, dirección, correo y teléfono."); return; }
+        if (ViewModel.TipoCliente == "Particular") nuevo.Dni = ViewModel.Dni;
+        else if (nuevo.Ruc is null || nuevo.Ruc.Length != 11 || !nuevo.Ruc.All(char.IsDigit))
+        { Mensaje("Ingrese un RUC de 11 dígitos."); return; }
+        await Ejecutar(async () => {
+            var cliente = ViewModel.TipoCliente == "Particular"
+                ? await Clientes.RegistrarParticularAsync(nuevo)
+                : await Clientes.RegistrarClinicaAsync(nuevo);
+            ElegirCliente(cliente);
+        });
+    }
+    private async Task Enviar()
+    {
+        if (procesando) return;
+        if (!idSolicitudGuardada.HasValue && TiposRequeridos.Any(tipo => !archivos.ContainsKey(tipo)))
+        { Mensaje("Seleccione todos los documentos obligatorios antes de registrar la solicitud."); return; }
+        await Ejecutar(async () => {
+            if (!idSolicitudGuardada.HasValue) {
+            var fecha = ViewModel.Fecha!.Value.Date + ViewModel.Hora!.Value.TimeOfDay;
+            var solicitud = new RegistrarSolicitudDTO {
+                TipoCliente = ViewModel.TipoCliente == "Particular" ? "PARTICULAR" : "CLINICA",
+                IdCliente = ViewModel.IdCliente, IdClinicaDestino = ViewModel.IdClinica,
+                PacienteNombre = ViewModel.PacienteNombre, Diagnostico = ViewModel.Diagnostico,
+                TipoProcedimiento = ViewModel.Procedimiento, DoctorNombre = ViewModel.Medico,
+                FechaHoraSolicitada = fecha.ToString("yyyy-MM-ddTHH:mm:ss"), Observaciones = ViewModel.Observaciones
+            };
+            idSolicitudGuardada = (await Solicitudes.RegistrarAsync(solicitud)).IdSolicitud;
+            }
+            foreach (var tipo in TiposRequeridos.Where(tipo => !cargados.Contains(tipo))) {
+                if (!archivos.TryGetValue(tipo, out var archivo)) { erroresArchivo[tipo] = "Seleccione el archivo para reintentar."; continue; }
+                try {
+                    await Documentos.RegistrarArchivoAsync(idSolicitudGuardada.Value, tipo, archivo);
+                    cargados.Add(tipo); erroresArchivo.Remove(tipo);
+                } catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or IOException) {
+                    erroresArchivo[tipo] = ex.Message;
+                }
+            }
+            if (TiposRequeridos.All(cargados.Contains)) Mensaje("Solicitud y documentos registrados correctamente.", "success");
+            else Mensaje("La solicitud se registró, pero faltan archivos. Corrija el error y reintente la carga.");
+        });
+    }
+    private async Task Ejecutar(Func<Task> accion)
+    {
+        if (procesando) return;
+        procesando = true; mensaje = null;
+        try { await accion(); }
+        catch (HttpRequestException ex) {
+            Mensaje(ex.StatusCode switch {
+                HttpStatusCode.BadRequest => "Revise los datos ingresados. " + ex.Message,
+                HttpStatusCode.Unauthorized => "La sesión expiró. Vuelva a iniciar sesión.",
+                HttpStatusCode.Forbidden => "Su usuario no tiene permiso para esta operación.",
+                HttpStatusCode.NotFound => "El registro ya no está disponible. Repita la búsqueda.",
+                HttpStatusCode.Conflict => "El cliente ya existe o la solicitud cambió. Repita la búsqueda.",
+                _ => ex.Message
+            });
+        }
+        finally { procesando = false; }
+    }
+    private void Mensaje(string texto, string tipo = "danger") { mensaje = texto; tipoMensaje = tipo; }
 }

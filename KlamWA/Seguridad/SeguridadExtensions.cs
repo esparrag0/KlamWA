@@ -13,6 +13,8 @@ public static class SeguridadExtensions
         var baseUrl = configuration["RestApi:BaseUrl"]
             ?? throw new InvalidOperationException("Falta RestApi:BaseUrl en appsettings.");
 
+        services.AddMemoryCache();
+        services.AddSingleton<SesionTokenStore>();
         services.AddHttpClient<ICuentaUsuarioService, CuentaUsuarioService>(client =>
             client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/"));
         services.AddScoped<ISesionService, SesionServiceImpl>();
