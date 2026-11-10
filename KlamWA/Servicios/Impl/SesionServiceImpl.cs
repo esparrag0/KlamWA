@@ -41,6 +41,7 @@ public sealed class SesionServiceImpl(
             "ADMINISTRADOR" => "administrador",
             "VENDEDOR" => "vendedor",
             "TECNICO_INSTRUMENTAL" or "TECNICO_INSTRUMENTISTA" => "instrumentista",
+            "CLINICA_HOSPITAL" or "PACIENTE_PARTICULAR" => "cliente",
             _ => null
         };
         if (perfil is null)

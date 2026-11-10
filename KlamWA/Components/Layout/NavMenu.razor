@@ -55,14 +55,20 @@
             <NavLink class="nav-link" href="/clientes" Match="NavLinkMatch.All"><Icono Nombre="usuarios" /> Lista de clientes</NavLink>
             <NavLink class="nav-link" href="/clientes/nuevo"><Icono Nombre="mas" /> Nuevo cliente</NavLink>
         }
-        @if (Perfil.Clave is "cliente" or "vendedor")
+        @if (Perfil.Clave == "cliente")
+        {
+            <div class="nav-section">Solicitudes de cirugía</div>
+            <NavLink class="nav-link" href="/cliente/solicitudes" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Mis solicitudes</NavLink>
+            <NavLink class="nav-link" href="/cliente/solicitudes/nueva"><Icono Nombre="mas" /> Nueva solicitud</NavLink>
+        }
+        @if (Perfil.Clave == "vendedor")
         {
             <div class="nav-section">Solicitudes de cirugía</div>
             <NavLink class="nav-link" href="/mis-solicitudes" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Mis solicitudes</NavLink>
             <NavLink class="nav-link" href="/mis-solicitudes/nueva"><Icono Nombre="mas" /> Nueva solicitud</NavLink>
         }
     </nav>
-    <div class="sidebar-bottom"><form method="post" action="/cuenta/logout"><AntiforgeryToken /><button type="submit" class="exit-link"><Icono Nombre="salir" Tamano="18" /> Cerrar sesión</button></form></div>
+    <div class="sidebar-bottom"><a class="exit-link" href="/cuenta/password"><Icono Nombre="usuarios" Tamano="18" /> Cambiar contraseña</a><form method="post" action="/cuenta/logout"><AntiforgeryToken /><button type="submit" class="exit-link"><Icono Nombre="salir" Tamano="18" /> Cerrar sesión</button></form></div>
 </div>
 
 @code {

@@ -15,6 +15,14 @@ builder.Services.AddHttpClient<IClienteService, ClienteService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<ISolicitudCirugiaService, SolicitudCirugiaService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<ISolicitudClienteService, SolicitudClienteService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<IGestionClienteService, GestionClienteService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<ICuentaService, CuentaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<IRegistroCirugiaService, RegistroCirugiaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 
 var app = builder.Build();
 

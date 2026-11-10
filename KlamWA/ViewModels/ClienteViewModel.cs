@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using KlamWA.Components.Shared;
+using KlamWA.DTOs;
 
 namespace KlamWA.ViewModels;
 
@@ -10,6 +11,7 @@ namespace KlamWA.ViewModels;
 public class ClienteViewModel : IValidatableObject
 {
     public int Id { get; set; }
+    public bool Activo { get; set; } = true;
 
     public string Tipo { get; set; } = DatosClientes.Particular;
 
@@ -36,7 +38,29 @@ public class ClienteViewModel : IValidatableObject
     [StringLength(30, ErrorMessage = "El periodo de crédito no puede exceder 30 caracteres")]
     public string PeriodoCredito { get; set; } = "";
 
+    // Credenciales (RF01): solo al registrar un cliente nuevo (Id = 0).
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string ConfirmarPassword { get; set; } = "";
+
     public ClienteViewModel() { }
+
+    // Edición: carga desde el detalle que devuelve el REST (GET clientes/{tipo}/{id}).
+    public ClienteViewModel(ClienteFormDTO d)
+    {
+        Id = d.IdCliente;
+        Activo = d.Activo;
+        Tipo = d.TipoCliente == "PACIENTE_PARTICULAR" ? DatosClientes.Particular : DatosClientes.Clinica;
+        Nombre = d.Nombre;
+        Direccion = d.Direccion ?? "";
+        Email = d.EmailContacto ?? "";
+        Telefono = d.Telefono ?? "";
+        Dni = d.Dni ?? "";
+        PagoConfirmado = d.PagoConfirmado;
+        Ruc = d.Ruc ?? "";
+        TieneConsignacion = d.TieneConsignacion;
+        PeriodoCredito = d.PeriodoCredito ?? "";
+    }
 
     public ClienteViewModel(ClienteMock c)
     {
@@ -53,8 +77,35 @@ public class ClienteViewModel : IValidatableObject
         PeriodoCredito = c.PeriodoCredito;
     }
 
+    // Arma el DTO del REST para el alta. La validación real la hace la BL.
+    public ClienteFormDTO ToRegistro() => new()
+    {
+        TipoCliente = Tipo == DatosClientes.Particular ? "PACIENTE_PARTICULAR" : "CLINICA_HOSPITAL",
+        Nombre = Nombre,
+        Direccion = Direccion,
+        EmailContacto = Email,
+        Telefono = Telefono,
+        Dni = Tipo == DatosClientes.Particular ? Dni : null,
+        PagoConfirmado = PagoConfirmado,
+        Ruc = Tipo == DatosClientes.Particular ? null : Ruc,
+        TieneConsignacion = TieneConsignacion,
+        PeriodoCredito = Tipo == DatosClientes.Particular ? null : PeriodoCredito,
+        Activo = Activo,
+        Username = Username.Trim(),
+        Password = Password
+    };
+
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
+        if (Id == 0)
+        {
+            if (!ReglasCredenciales.UsuarioValido(Username))
+                yield return new ValidationResult("Usuario inválido. " + ReglasCredenciales.TextoUsuario, new[] { nameof(Username) });
+            if (!ReglasCredenciales.PasswordValida(Password))
+                yield return new ValidationResult("Contraseña inválida. " + ReglasCredenciales.TextoPassword, new[] { nameof(Password) });
+            if (Password != ConfirmarPassword)
+                yield return new ValidationResult("Las contraseñas no coinciden", new[] { nameof(ConfirmarPassword) });
+        }
         if (!string.IsNullOrWhiteSpace(Email) && (!Email.Contains('@') || !Email.Contains('.')))
             yield return new ValidationResult(
                 "El correo de contacto tiene un formato inválido", new[] { nameof(Email) });

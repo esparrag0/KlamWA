@@ -64,6 +64,7 @@ public sealed class VistaPreviaRol
             "ADMINISTRADOR" => "administrador",
             "VENDEDOR" => "vendedor",
             "TECNICO_INSTRUMENTISTA" => "instrumentista",
+            "CLINICA_HOSPITAL" or "PACIENTE_PARTICULAR" => "cliente",
             _ => null
         };
         if (DatosAcceso.Perfil(clave) is not { } perfil) return;

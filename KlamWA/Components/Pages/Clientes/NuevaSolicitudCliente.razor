@@ -1,0 +1,109 @@
+@page "/cliente/solicitudes/nueva"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using Microsoft.AspNetCore.Components.Authorization
+@using KlamWA.ViewModels
+@inject ISolicitudClienteService Solicitudes
+@inject IGestionClienteService Clientes
+@inject AuthenticationStateProvider Autenticacion
+
+<PageTitle>Nueva solicitud de cirugía</PageTitle>
+<PageHeader Titulo="Solicitar cirugía" Subtitulo="Registro de solicitud de cirugía" />
+
+@if (creada is not null)
+{
+    <div class="alert alert-success" role="status">
+        Solicitud <strong>SOL-@creada.IdSolicitud.ToString("D4")</strong> registrada. Estado: @EstadoSolicitudTexto.Texto(creada.Estado).
+        <a href="/cliente/solicitudes">Ver mis solicitudes</a>
+    </div>
+}
+@if (error is not null)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<EditForm Model="ViewModel" OnValidSubmit="Enviar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card mb-3" style="max-width:900px">
+        <div class="card-header">Datos de la cirugía</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12"><span class="text-muted">Solicitante:</span> <strong>@usuario</strong></div>
+                <CampoForm Etiqueta="Clínica u hospital donde se realizará *" Para="clinica">
+                    <InputSelect id="clinica" class="form-select" @bind-Value="ViewModel.IdClinica">
+                        <option value="0">-- Seleccione --</option>
+                        @foreach (var c in clinicas) { <option value="@c.IdCliente">@c.Nombre</option> }
+                    </InputSelect>
+                    <ValidationMessage For="() => ViewModel.IdClinica" />
+                </CampoForm>
+                <CampoForm Etiqueta="@(ViewModel.PacienteObligatorio ? "Nombre del paciente *" : "Nombre del paciente (opcional)")" Para="paciente">
+                    <InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" />
+                    <ValidationMessage For="() => ViewModel.PacienteNombre" />
+                </CampoForm>
+                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
+                    <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
+                    <ValidationMessage For="() => ViewModel.Diagnostico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Procedimiento *" Para="procedimiento">
+                    <InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" />
+                    <ValidationMessage For="() => ViewModel.Procedimiento" />
+                </CampoForm>
+                <CampoForm Etiqueta="Médico *" Para="medico">
+                    <InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" />
+                    <ValidationMessage For="() => ViewModel.Medico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Fecha *" Para="fecha">
+                    <InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" />
+                    <ValidationMessage For="() => ViewModel.Fecha" />
+                </CampoForm>
+                <CampoForm Etiqueta="Hora *" Para="hora">
+                    <InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" />
+                    <ValidationMessage For="() => ViewModel.Hora" />
+                </CampoForm>
+                <CampoForm Etiqueta="Observaciones (opcional)" Columnas="col-12" Para="observaciones">
+                    <InputTextArea id="observaciones" class="form-control" rows="2" @bind-Value="ViewModel.Observaciones" />
+                    <ValidationMessage For="() => ViewModel.Observaciones" />
+                </CampoForm>
+            </div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@enviando">@(enviando ? "Enviando…" : "Enviar solicitud")</button>
+            <a class="btn btn-outline-secondary" href="/cliente/solicitudes">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+<p class="text-muted small">La carga de documentos (receta médica) de esta solicitud se gestiona en el módulo de documentos.</p>
+
+@code {
+    private SolicitudClienteViewModel ViewModel { get; set; } = new();
+    private List<ClienteGestionDTO> clinicas = [];
+    private SolicitudCirugiaDTO? creada;
+    private string usuario = string.Empty;
+    private string? error;
+    private bool enviando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var estado = await Autenticacion.GetAuthenticationStateAsync();
+        usuario = estado.User.Identity?.Name ?? string.Empty;
+        // Un paciente particular puede omitir el nombre del paciente (la BL usa el suyo); una clínica debe indicarlo.
+        ViewModel.PacienteObligatorio = !estado.User.IsInRole("PACIENTE_PARTICULAR");
+        try { clinicas = await Clientes.ListarAsync("CLINICA_HOSPITAL"); }
+        catch (HttpRequestException ex) { error = ex.Message; }
+    }
+
+    // La validación real la hace la BL en Java; aquí se muestra su mensaje tal cual.
+    private async Task Enviar()
+    {
+        enviando = true; creada = null; error = null;
+        try
+        {
+            creada = await Solicitudes.RegistrarAsync(ViewModel.ToDto());
+            ViewModel = new() { PacienteObligatorio = ViewModel.PacienteObligatorio };
+        }
+        catch (HttpRequestException ex) { error = ex.Message; }
+        enviando = false;
+    }
+}
