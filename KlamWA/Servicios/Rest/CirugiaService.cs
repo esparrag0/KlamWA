@@ -66,6 +66,14 @@ public class CirugiaService : ICirugiaService
         try
         {
             var dto = await HttpUtils.DoGet<CirugiaDetalleDTO>($"{_baseUrl}/{id}");
+            // Un cliente solo abre el detalle de sus propias cirugías (aunque escriba la URL a mano)
+            string? tipoCliente = await _sesion.ObtenerTipoClienteAsync();
+            int? idCliente = await _sesion.ObtenerIdClienteAsync();
+            if (tipoCliente != null && idCliente != null
+                && (dto.TipoCliente != tipoCliente || dto.IdCliente != idCliente))
+            {
+                throw new ServicioException("La cirugía no pertenece a su cuenta.", 403);
+            }
             return CirugiaMapeo.ToDetalle(dto);
         }
         catch (ServicioException ex) when (ex.EsNoEncontrado)
