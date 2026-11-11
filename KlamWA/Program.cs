@@ -1,4 +1,6 @@
 using KlamWA.Components;
+using KlamWA.Servicios;
+using KlamWA.Servicios.Rest;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddScoped<KlamWA.ViewModels.VistaPreviaRol>();
+
+// Servicios REST del backend Java (RF02 cirugías, RF13 plantillas de bandejas)
+builder.Services.AddScoped<ICirugiaService, CirugiaService>();
+builder.Services.AddScoped<IBandejaService, BandejaService>();
 
 var app = builder.Build();
 
