@@ -1,16 +1,22 @@
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace KlamWA.Servicios.Rest;
 
-public sealed class CuentaService(
-    HttpClient client,
-    AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : ICuentaService
+// PUT /cuenta/{userName}/password, como /mi-cuenta/{userName}/password del profesor
+public class CuentaService : ICuentaService
 {
-    public async Task CambiarPasswordAsync(string passwordActual, string passwordNueva) =>
-        await HttpUtilsAutenticado.DoPut(
-            client, "cuenta/password", await tokens.ObtenerAsync(autenticacion),
-            new CambioPasswordDTO { PasswordActual = passwordActual, PasswordNueva = passwordNueva });
+    private readonly ISesionService _sesion;
+    private string BaseUrl { get; set; }
+
+    public CuentaService(IConfiguration configuracion, ISesionService sesion)
+    {
+        _sesion = sesion;
+        BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/cuenta";
+    }
+
+    public async Task CambiarPasswordAsync(string passwordActual, string passwordNueva)
+    {
+        string url = $"{BaseUrl}/{Uri.EscapeDataString(await _sesion.ObtenerUserNameAsync())}/password";
+        await HttpUtils.DoPut(url, new CambioPasswordDTO { PasswordActual = passwordActual, PasswordNueva = passwordNueva });
+    }
 }

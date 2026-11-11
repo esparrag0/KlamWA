@@ -1,4 +1,6 @@
 @page "/agenda/registrar"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @using KlamWA.ViewModels
@@ -88,7 +90,7 @@
     protected override async Task OnInitializedAsync()
     {
         try { clientes = await Clientes.ListarAsync(); }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (ServicioException ex) { error = ex.Message; }
     }
 
     private void TipoClienteCambio(string tipo)
@@ -106,7 +108,7 @@
             registrada = await Cirugias.RegistrarAsync(ViewModel.ToDto());
             ViewModel = new() { TipoCliente = ViewModel.TipoCliente };
         }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (ServicioException ex) { error = ex.Message; }
         enviando = false;
     }
 }

@@ -1,4 +1,6 @@
 @page "/cliente/solicitudes/nueva"
+@attribute [Authorize(Roles = "CLINICA_HOSPITAL,PACIENTE_PARTICULAR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @using Microsoft.AspNetCore.Components.Authorization
@@ -99,7 +101,7 @@
             ViewModel = new() { PacienteObligatorio = ViewModel.PacienteObligatorio,
                 ClinicaDestinoObligatoria = ViewModel.ClinicaDestinoObligatoria };
         }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (ServicioException ex) { error = ex.Message; }
         enviando = false;
     }
 }

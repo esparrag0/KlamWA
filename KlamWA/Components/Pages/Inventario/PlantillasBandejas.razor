@@ -283,10 +283,6 @@
         {
             MensajeError = ex.Message;
         }
-        catch (HttpRequestException)
-        {
-            MensajeError = "No se pudo conectar con el servicio de bandejas";
-        }
         finally
         {
             procesando = false;

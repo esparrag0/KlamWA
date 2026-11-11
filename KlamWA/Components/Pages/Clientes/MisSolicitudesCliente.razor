@@ -1,4 +1,6 @@
 @page "/cliente/solicitudes"
+@attribute [Authorize(Roles = "CLINICA_HOSPITAL,PACIENTE_PARTICULAR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @using KlamWA.ViewModels
@@ -85,7 +87,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         try { solicitudes = (await Solicitudes.ListarPropiasAsync()).OrderByDescending(x => x.IdSolicitud).ToList(); }
-        catch (HttpRequestException ex) { error = ex.Message; solicitudes = []; }
+        catch (ServicioException ex) { error = ex.Message; solicitudes = []; }
     }
 
     private void Alternar(int id) => abierta = abierta == id ? 0 : id;

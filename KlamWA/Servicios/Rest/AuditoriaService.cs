@@ -1,19 +1,18 @@
-﻿using System.Net;
-using System.Net.Http.Json;
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace KlamWA.Servicios.Rest;
 
-/// <summary>
-/// Cliente REST de la bitacora de cirugias. No envia token (RF01 pendiente).
-/// </summary>
-public sealed class AuditoriaService(HttpClient client, AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : IAuditoriaService
+// Cliente REST de la bitácora de cirugías (RF16)
+public class AuditoriaService : IAuditoriaService
 {
     // Formato que acepta LocalDateTime.parse en el backend.
     private const string FormatoFecha = "yyyy-MM-dd'T'HH:mm:ss";
+    private string BaseUrl { get; set; }
+
+    public AuditoriaService(IConfiguration configuracion)
+    {
+        BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/auditoria/cirugias";
+    }
 
     public async Task<List<AuditoriaDTO>> ListarAsync(int? idCirugia, DateTime? desde, DateTime? hasta,
                                                       string? accion, string? responsable)
@@ -30,17 +29,19 @@ public sealed class AuditoriaService(HttpClient client, AuthenticationStateProvi
         if (!string.IsNullOrWhiteSpace(responsable))
             parametros.Add($"responsable={Uri.EscapeDataString(responsable)}");
 
-        var ruta = "auditoria/cirugias" + (parametros.Count > 0 ? "?" + string.Join("&", parametros) : "");
-        return await HttpUtilsAutenticado.DoGet<List<AuditoriaDTO>>(
-            client, ruta, await tokens.ObtenerAsync(autenticacion)) ?? [];
+        string url = BaseUrl + (parametros.Count > 0 ? "?" + string.Join("&", parametros) : "");
+        return await HttpUtils.DoGet<List<AuditoriaDTO>>(url) ?? [];
     }
 
     public async Task<AuditoriaDetalleDTO?> ObtenerAsync(int idAuditoria)
     {
-        try {
-            return await HttpUtilsAutenticado.DoGet<AuditoriaDetalleDTO>(
-                client, $"auditoria/cirugias/{idAuditoria}", await tokens.ObtenerAsync(autenticacion));
-        } catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound) {
+        string url = $"{BaseUrl}/{idAuditoria}";
+        try
+        {
+            return await HttpUtils.DoGet<AuditoriaDetalleDTO>(url);
+        }
+        catch (ServicioException ex) when (ex.EsNoEncontrado)
+        {
             return null;
         }
     }

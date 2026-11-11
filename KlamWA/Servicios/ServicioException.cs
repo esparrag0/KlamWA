@@ -6,6 +6,9 @@ public class ServicioException : Exception
 {
     public int? CodigoHttp { get; }
 
+    // Mismo nombre que en HttpRequestException, para las pantallas que eligen el mensaje según el código
+    public System.Net.HttpStatusCode? StatusCode => CodigoHttp is int codigo ? (System.Net.HttpStatusCode)codigo : null;
+
     public bool EsNoEncontrado => CodigoHttp == 404;
     public bool EsErrorDeValidacion => CodigoHttp == 400;
     public bool EsErrorDeConexion => CodigoHttp is null;

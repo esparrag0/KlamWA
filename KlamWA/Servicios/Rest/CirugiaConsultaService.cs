@@ -1,20 +1,28 @@
-﻿using System.Net.Http.Json;
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace KlamWA.Servicios.Rest;
 
-/// <summary>
-/// Cliente REST del historial de cirugias. No envia token: el backend aun no valida
-/// sesion en este endpoint (RF01 pendiente de confirmacion con la profesora).
-/// </summary>
-public sealed class CirugiaConsultaService(HttpClient client, AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : ICirugiaConsultaService
+// Cliente REST del historial de cirugías (RF10): el cliente de la sesión
+public class CirugiaConsultaService : ICirugiaConsultaService
 {
+    private readonly ISesionService _sesion;
+    private string BaseUrl { get; set; }
+
+    public CirugiaConsultaService(IConfiguration configuracion, ISesionService sesion)
+    {
+        _sesion = sesion;
+        BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/cirugias/historial";
+    }
+
     public async Task<List<CirugiaHistorialDTO>> HistorialClienteAsync()
     {
-        return await HttpUtilsAutenticado.DoGet<List<CirugiaHistorialDTO>>(
-            client, "cirugias/historial", await tokens.ObtenerAsync(autenticacion)) ?? [];
+        string? tipoCliente = await _sesion.ObtenerTipoClienteAsync();
+        int? idCliente = await _sesion.ObtenerIdClienteAsync();
+        if (tipoCliente == null || idCliente == null)
+        {
+            throw new ServicioException("La cuenta no está asociada a un cliente.");
+        }
+        string url = $"{BaseUrl}?tipoCliente={Uri.EscapeDataString(tipoCliente)}&idCliente={idCliente}";
+        return await HttpUtils.DoGet<List<CirugiaHistorialDTO>>(url) ?? [];
     }
 }

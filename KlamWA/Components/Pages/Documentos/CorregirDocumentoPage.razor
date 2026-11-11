@@ -112,7 +112,7 @@
         Error = null;
         RequiereLogin = false;
         try { Documentos = await DocumentoService.ListarPropiosAsync(Id > 0 ? Id : null); }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             Documentos = [];
             RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
@@ -143,9 +143,9 @@
             await CargarAsync();
             Mensaje = "Nueva versión cargada; queda pendiente de revisión.";
         }
-        catch (Exception ex) when (ex is HttpRequestException or IOException)
+        catch (Exception ex) when (ex is ServicioException or IOException)
         {
-            RequiereLogin = ex is HttpRequestException http && http.StatusCode == HttpStatusCode.Unauthorized;
+            RequiereLogin = ex is ServicioException servicio && servicio.StatusCode == HttpStatusCode.Unauthorized;
             Error = ex.Message;
         }
         finally { Ocupado = false; }
@@ -160,7 +160,7 @@
             var archivo = await DocumentoService.DescargarAsync(idDocumento);
             await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
         }
-        catch (Exception ex) when (ex is HttpRequestException or JSException)
+        catch (Exception ex) when (ex is ServicioException or JSException)
         {
             Error = ex.Message;
         }

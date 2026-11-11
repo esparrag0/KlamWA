@@ -1,4 +1,6 @@
 @page "/clientes"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.Components.Shared
 @using KlamWA.DTOs
 @using KlamWA.Servicios
@@ -91,6 +93,6 @@
     protected override async Task OnInitializedAsync()
     {
         try { clientes = await Api.ListarAsync(); }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (ServicioException ex) { error = ex.Message; }
     }
 }

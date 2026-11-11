@@ -1,4 +1,6 @@
 @page "/mis-solicitudes/nueva"
+@attribute [Authorize(Roles = "VENDEDOR")]
+@using Microsoft.AspNetCore.Authorization
 @using System.Net
 @using KlamWA.DTOs
 @using KlamWA.Servicios
@@ -286,7 +288,7 @@ else
                 try {
                     await Documentos.RegistrarArchivoAsync(idSolicitudGuardada.Value, tipo, archivo);
                     cargados.Add(tipo); erroresArchivo.Remove(tipo);
-                } catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or IOException) {
+                } catch (Exception ex) when (ex is ServicioException or InvalidDataException or IOException) {
                     erroresArchivo[tipo] = ex.Message;
                 }
             }
@@ -299,7 +301,7 @@ else
         if (procesando) return;
         procesando = true; mensaje = null;
         try { await accion(); }
-        catch (HttpRequestException ex) {
+        catch (ServicioException ex) {
             Mensaje(ex.StatusCode switch {
                 HttpStatusCode.BadRequest => "Revise los datos ingresados. " + ex.Message,
                 HttpStatusCode.Unauthorized => "La sesión expiró. Vuelva a iniciar sesión.",

@@ -196,7 +196,7 @@ else if (Solicitud is not null)
             DocumentacionCompleta = (await DocumentoService.VerificarDocumentosAsync(Id)).DocumentacionCompleta;
             if (TiposDisponibles.Count > 0 && !TiposDisponibles.Contains(TipoNuevo)) TipoNuevo = TiposDisponibles[0];
         }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             Solicitud = null;
             Error = MostrarError(ex);
@@ -236,7 +236,7 @@ else if (Solicitud is not null)
             var archivo = await DocumentoService.DescargarAsync(idDocumento);
             await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
         }
-        catch (Exception ex) when (ex is HttpRequestException or JSException)
+        catch (Exception ex) when (ex is ServicioException or JSException)
         {
             ErrorAccion = ex.Message;
         }
@@ -294,7 +294,7 @@ else if (Solicitud is not null)
             await CargarAsync();
             if (Error is null) Mensaje = confirmacion;
         }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             ErrorAccion = MostrarError(ex);
         }
@@ -312,7 +312,7 @@ else if (Solicitud is not null)
         }
     }
 
-    private string MostrarError(HttpRequestException ex)
+    private string MostrarError(ServicioException ex)
     {
         RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
         return ex.StatusCode switch

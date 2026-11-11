@@ -9,31 +9,20 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddScoped<KlamWA.ViewModels.VistaPreviaRol>();
 builder.Services.AddSeguridad(builder.Configuration);
-builder.Services.AddHttpClient<RestConSesion>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddScoped<ICirugiaService, CirugiaService>();
 builder.Services.AddScoped<IEquipoService, EquipoService>();
 builder.Services.AddScoped<IBandejaService, BandejaService>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<IDespachoService, DespachoService>();
-builder.Services.AddHttpClient<IDocumentoIngresoService, DocumentoIngresoService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<IClienteService, ClienteService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<ISolicitudCirugiaService, SolicitudCirugiaService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<ISolicitudClienteService, SolicitudClienteService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<IGestionClienteService, GestionClienteService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<ICuentaService, CuentaService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<IRegistroCirugiaService, RegistroCirugiaService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<IAuditoriaService, AuditoriaService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
-builder.Services.AddHttpClient<ICirugiaConsultaService, CirugiaConsultaService>(client =>
-    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddScoped<IDocumentoIngresoService, DocumentoIngresoService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<ISolicitudCirugiaService, SolicitudCirugiaService>();
+builder.Services.AddScoped<ISolicitudClienteService, SolicitudClienteService>();
+builder.Services.AddScoped<IGestionClienteService, GestionClienteService>();
+builder.Services.AddScoped<ICuentaService, CuentaService>();
+builder.Services.AddScoped<IRegistroCirugiaService, RegistroCirugiaService>();
+builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
+builder.Services.AddScoped<ICirugiaConsultaService, CirugiaConsultaService>();
 
 var app = builder.Build();
 

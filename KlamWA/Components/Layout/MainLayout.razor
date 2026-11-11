@@ -49,12 +49,9 @@
             if (Es("/notificaciones"))
             {
                 if (Vista.Perfil.Clave is not ("administrador" or "instrumentista")) return false;
+                // El backend solo entrega los avisos propios del usuario de la sesión
                 if (ruta.StartsWith("/notificaciones/detalle/", StringComparison.OrdinalIgnoreCase))
-                {
-                    var idTexto = ruta["/notificaciones/detalle/".Length..];
-                    return int.TryParse(idTexto, out var id)
-                        && DatosAcceso.Aviso(id)?.Perfil == Vista.Perfil.Clave;
-                }
+                    return int.TryParse(ruta["/notificaciones/detalle/".Length..], out _);
                 return ruta == "/notificaciones"
                     || ruta.Equals($"/notificaciones/{Vista.Perfil.Clave}", StringComparison.OrdinalIgnoreCase);
             }
@@ -63,7 +60,7 @@
             if (ruta.Contains("/revisar-oc", StringComparison.OrdinalIgnoreCase) || ruta.Contains("/rechazar-oc", StringComparison.OrdinalIgnoreCase))
                 return Vista.Perfil.Clave == "administrador";
             if (ruta == "/agenda") return Vista.Perfil.Clave is "administrador" or "instrumentista";
-            if (Es("/agenda/historial")) return Vista.Perfil.Clave is "administrador" or "cliente";
+            if (Es("/agenda/historial")) return Vista.Perfil.Clave == "cliente";
             if (Es("/agenda/nueva") || Es("/agenda/registrar") || Es("/agenda/editar") || Es("/agenda/eliminar")
                 || Es("/bitacora-cirugias") || Es("/historial-documental") || Es("/usuarios")
                 || Es("/clientes") || Es("/solicitudes") || Es("/reportes") || Es("/inventario"))

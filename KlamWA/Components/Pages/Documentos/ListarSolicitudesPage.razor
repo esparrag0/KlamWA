@@ -101,7 +101,7 @@ else
         {
             Solicitudes = await SolicitudService.ListarAsync();
         }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
             Error = ex.StatusCode switch

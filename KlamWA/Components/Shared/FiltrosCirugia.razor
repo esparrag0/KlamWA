@@ -1,8 +1,12 @@
 @using KlamWA.Servicios
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IClienteService ClienteSvc
 @inject IEquipoService EquipoSvc
 
-@* Filtros de cirugías (RF17): fechas, maquinaria, tipo de cliente, cliente y estado. Los catálogos vienen del backend. *@
+@* Filtros de cirugías (RF17): fechas, maquinaria, tipo de cliente, cliente y estado. Los catálogos vienen del backend.
+   Solo el administrador filtra: el resto de perfiles no debe ver la lista de clientes. *@
+@if (esAdministrador)
+{
 <div class="card mb-3">
     <div class="card-body">
         <div class="row g-2 align-items-end">
@@ -56,6 +60,7 @@
         }
     </div>
 </div>
+}
 
 @code {
     private const string Clinica = "CLINICA_HOSPITAL";
@@ -63,6 +68,8 @@
     private static readonly string[] Estados = { "Programada", "En curso", "Culminada", "Cancelada" };
 
     [Parameter] public EventCallback<FiltroCirugia> OnFiltrar { get; set; }
+    [CascadingParameter] private Task<AuthenticationState>? EstadoAutenticacion { get; set; }
+    private bool esAdministrador;
 
     private DateTime? desde;
     private DateTime? hasta;
@@ -81,6 +88,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (EstadoAutenticacion != null)
+        {
+            esAdministrador = (await EstadoAutenticacion).User.IsInRole("ADMINISTRADOR");
+        }
+        if (!esAdministrador)
+        {
+            return;
+        }
         try
         {
             clientes = await ClienteSvc.Listar();

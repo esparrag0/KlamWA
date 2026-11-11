@@ -1,4 +1,6 @@
 @page "/bitacora-cirugias"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @inject IAuditoriaService Auditoria
 @using KlamWA.DTOs
 @using KlamWA.Servicios
@@ -116,7 +118,7 @@ else
                 responsable);
             registros = filas.Select(RegistroBitacoraViewModel.DesdeDTO).ToList();
         }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             error = ex.Message;
         }

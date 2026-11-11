@@ -6,12 +6,10 @@ namespace KlamWA.Servicios.Rest;
 
 public class DespachoService : IDespachoService
 {
-    private readonly RestConSesion _rest;
     private string BaseUrl { get; set; }
 
-    public DespachoService(IConfiguration configuracion, RestConSesion rest)
+    public DespachoService(IConfiguration configuracion)
     {
-        _rest = rest;
         BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/despachos";
     }
 
@@ -22,13 +20,13 @@ public class DespachoService : IDespachoService
         if (!string.IsNullOrWhiteSpace(busqueda)) query["q"] = busqueda;
 
         string url = query.Count > 0 ? QueryHelpers.AddQueryString(BaseUrl, query) : BaseUrl;
-        return await _rest.DoGet<List<DespachoDTO>>(url);
+        return await HttpUtils.DoGet<List<DespachoDTO>>(url);
     }
 
     public async Task<List<CirugiaDespachableDTO>> CirugiasDespachablesAsync()
     {
         string url = $"{BaseUrl}/cirugias-despachables";
-        return await _rest.DoGet<List<CirugiaDespachableDTO>>(url);
+        return await HttpUtils.DoGet<List<CirugiaDespachableDTO>>(url);
     }
 
     public async Task<DespachoDetalleDTO?> ObtenerAsync(string codigo)
@@ -36,7 +34,7 @@ public class DespachoService : IDespachoService
         string url = $"{BaseUrl}/{codigo}";
         try
         {
-            return await _rest.DoGet<DespachoDetalleDTO>(url);
+            return await HttpUtils.DoGet<DespachoDetalleDTO>(url);
         }
         catch (ServicioException ex) when (ex.EsNoEncontrado)
         {
@@ -47,13 +45,13 @@ public class DespachoService : IDespachoService
     public async Task<string> RegistrarAsync(NuevoDespachoDTO despacho)
     {
         string url = BaseUrl;
-        var res = await _rest.DoPost<NuevoDespachoDTO, DespachoRespuestaDTO>(url, despacho);
+        var res = await HttpUtils.DoPost<NuevoDespachoDTO, DespachoRespuestaDTO>(url, despacho);
         return res?.Codigo ?? "";
     }
 
     public async Task RegistrarRetornoAsync(string codigo)
     {
         string url = $"{BaseUrl}/{codigo}/retorno";
-        await _rest.DoPost(url);
+        await HttpUtils.DoPost(url);
     }
 }

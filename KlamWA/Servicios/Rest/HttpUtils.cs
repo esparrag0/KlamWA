@@ -1,27 +1,54 @@
-using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace KlamWA.Servicios.Rest;
 
+// Llamadas al backend como en el proyecto del profesor: HttpClient estático y URL completa.
+// Cualquier error (respuesta 4xx/5xx o servidor caído) llega a la pantalla como ServicioException,
+// con el mensaje {"error": "..."} de la BL, para que ninguna página se caiga.
 public static class HttpUtils
 {
-    // ---- Rol 5: llamadas como en el proyecto del profesor (URL completa, HttpClient interno) ----
-
     private static HttpClient http = new();
 
     public static async Task<TResponse> DoGet<TResponse>(string url)
     {
-        var response = await http.GetAsync(url);
+        var response = await Enviar(() => http.GetAsync(url));
         await VerificarRespuesta(response);
         return (await response.Content.ReadFromJsonAsync<TResponse>())!;
+    }
+
+    // Descarga de archivos (documentos): contenido y tipo de contenido
+    public static async Task<(byte[] Contenido, string TipoContenido)> DoGetArchivo(string url)
+    {
+        var response = await Enviar(() => http.GetAsync(url));
+        await VerificarRespuesta(response);
+        string tipo = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        return (await response.Content.ReadAsByteArrayAsync(), tipo);
     }
 
     public static async Task<TResponse>
         DoPost<TRequest, TResponse>(string url, TRequest payload)
     {
-        var response = await http.PostAsJsonAsync(url, payload);
+        var response = await Enviar(() => http.PostAsJsonAsync(url, payload));
+        await VerificarRespuesta(response);
+        return (await response.Content.ReadFromJsonAsync<TResponse>())!;
+    }
+
+    public static async Task DoPost<TRequest>(string url, TRequest payload)
+    {
+        var response = await Enviar(() => http.PostAsJsonAsync(url, payload));
+        await VerificarRespuesta(response);
+    }
+
+    // Acciones sin datos (aprobar, validar, marcar leída): se envía {} para que el backend reciba JSON
+    public static async Task DoPost(string url)
+    {
+        var response = await Enviar(() => http.PostAsJsonAsync(url, new { }));
+        await VerificarRespuesta(response);
+    }
+
+    public static async Task<TResponse> DoPostMultipart<TResponse>(string url, MultipartFormDataContent contenido)
+    {
+        var response = await Enviar(() => http.PostAsync(url, contenido));
         await VerificarRespuesta(response);
         return (await response.Content.ReadFromJsonAsync<TResponse>())!;
     }
@@ -29,34 +56,47 @@ public static class HttpUtils
     public static async Task<TResponse>
         DoPut<TRequest, TResponse>(string url, TRequest payload)
     {
-        var response = await http.PutAsJsonAsync(url, payload);
+        var response = await Enviar(() => http.PutAsJsonAsync(url, payload));
         await VerificarRespuesta(response);
         return (await response.Content.ReadFromJsonAsync<TResponse>())!;
     }
 
     public static async Task DoPut<TRequest>(string url, TRequest payload)
     {
-        var response = await http.PutAsJsonAsync(url, payload);
+        var response = await Enviar(() => http.PutAsJsonAsync(url, payload));
         await VerificarRespuesta(response);
     }
 
     public static async Task DoDelete(string url)
     {
-        var response = await http.DeleteAsync(url);
+        var response = await Enviar(() => http.DeleteAsync(url));
         await VerificarRespuesta(response);
     }
 
-    // En vez de solo EnsureSuccessStatusCode: el 404 se lanza igual que el profesor (HttpRequestException)
-    // y los demás errores llevan el mensaje {"error": "..."} de la BL, para mostrarlo en la pantalla
+    // Backend apagado o sin respuesta: se avisa en la pantalla en vez de tumbar el circuito
+    private static async Task<HttpResponseMessage> Enviar(Func<Task<HttpResponseMessage>> peticion)
+    {
+        try
+        {
+            return await peticion();
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ServicioException("No se pudo conectar con el servidor. Verifique que el backend esté desplegado.", null, ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new ServicioException("El servidor no respondió a tiempo.", null, ex);
+        }
+    }
+
+    // En vez de solo EnsureSuccessStatusCode: el error lleva el mensaje {"error": "..."} de la BL
+    // y el código HTTP (EsNoEncontrado para el 404)
     private static async Task VerificarRespuesta(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
         {
             return;
-        }
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            response.EnsureSuccessStatusCode();
         }
         Dictionary<string, string>? error = null;
         try
@@ -69,84 +109,8 @@ public static class HttpUtils
         }
         if (error != null && error.ContainsKey("error"))
         {
-            throw new ServicioException(error["error"]);
+            throw new ServicioException(error["error"], (int)response.StatusCode);
         }
-        throw new ServicioException($"Error del servicio ({(int)response.StatusCode})");
-    }
-
-    // ---- Login y servicios con sesión (HttpClient inyectado y token) ----
-
-    public static async Task<TRespuesta?> DoGet<TRespuesta>(HttpClient client, string ruta)
-    {
-        using var response = await client.GetAsync(ruta);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TRespuesta>();
-    }
-
-    public static async Task<TRespuesta?> DoPost<TSolicitud, TRespuesta>(
-        HttpClient client, string ruta, TSolicitud datos)
-    {
-        using var response = await client.PostAsJsonAsync(ruta, datos);
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
-            return default;
-
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TRespuesta>();
-    }
-
-    public static async Task<TRespuesta?> DoGetAutenticado<TRespuesta>(
-        HttpClient client, string ruta, string token)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, ruta);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        using var response = await client.SendAsync(request);
-        await VerificarRespuestaAsync(response);
-        return await response.Content.ReadFromJsonAsync<TRespuesta>();
-    }
-
-    public static async Task DoPostAutenticado<TSolicitud>(
-        HttpClient client, string ruta, string token, TSolicitud datos)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, ruta)
-        {
-            Content = JsonContent.Create(datos)
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        using var response = await client.SendAsync(request);
-        await VerificarRespuestaAsync(response);
-    }
-
-    public static async Task<TRespuesta?> DoPostAutenticado<TSolicitud, TRespuesta>(
-        HttpClient client, string ruta, string token, TSolicitud datos)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, ruta)
-        {
-            Content = JsonContent.Create(datos)
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        using var response = await client.SendAsync(request);
-        await VerificarRespuestaAsync(response);
-        return await response.Content.ReadFromJsonAsync<TRespuesta>();
-    }
-
-    public static async Task VerificarRespuestaAsync(HttpResponseMessage response)
-    {
-        if (response.IsSuccessStatusCode) return;
-        string? mensaje = null;
-        try
-        {
-            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            if (json.RootElement.TryGetProperty("error", out var error))
-                mensaje = error.GetString();
-        }
-        catch (JsonException)
-        {
-            // Los errores sin cuerpo JSON conservan el código HTTP.
-        }
-        throw new HttpRequestException(
-            string.IsNullOrWhiteSpace(mensaje)
-                ? $"El servidor respondió {(int)response.StatusCode} ({response.ReasonPhrase})."
-                : mensaje,
-            null, response.StatusCode);
+        throw new ServicioException($"Error del servicio ({(int)response.StatusCode})", (int)response.StatusCode);
     }
 }

@@ -1,43 +1,37 @@
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace KlamWA.Servicios.Rest;
 
-public sealed class GestionClienteService(
-    HttpClient client,
-    AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : IGestionClienteService
+public class GestionClienteService : IGestionClienteService
 {
+    private string BaseUrl { get; set; }
+    private string BaseUrlClientes { get; set; }
+
+    public GestionClienteService(IConfiguration configuracion)
+    {
+        BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/gestion-clientes";
+        BaseUrlClientes = $"{configuracion["RestApi:BaseUrl"]!}/clientes";
+    }
+
     public async Task<List<ClienteGestionDTO>> ListarAsync(string? tipoCliente = null)
     {
-        var ruta = string.IsNullOrWhiteSpace(tipoCliente)
-            ? "gestion-clientes"
-            : $"gestion-clientes?tipo={Uri.EscapeDataString(tipoCliente)}";
-        return await HttpUtilsAutenticado.DoGet<List<ClienteGestionDTO>>(
-            client, ruta, await tokens.ObtenerAsync(autenticacion)) ?? [];
+        string url = string.IsNullOrWhiteSpace(tipoCliente)
+            ? BaseUrl
+            : $"{BaseUrl}?tipo={Uri.EscapeDataString(tipoCliente)}";
+        return await HttpUtils.DoGet<List<ClienteGestionDTO>>(url) ?? [];
     }
 
     public async Task<ClienteGestionDTO> RegistrarAsync(ClienteFormDTO cliente) =>
-        await HttpUtilsAutenticado.DoPost<ClienteFormDTO, ClienteGestionDTO>(
-            client, "gestion-clientes", await tokens.ObtenerAsync(autenticacion), cliente)
-            ?? throw new HttpRequestException("La respuesta del alta de cliente está vacía.");
+        await HttpUtils.DoPost<ClienteFormDTO, ClienteGestionDTO>(BaseUrl, cliente);
 
     public async Task<ClienteFormDTO> ObtenerAsync(string tipoCliente, int id) =>
-        await HttpUtilsAutenticado.DoGet<ClienteFormDTO>(
-            client, $"gestion-clientes/{Uri.EscapeDataString(tipoCliente)}/{id}",
-            await tokens.ObtenerAsync(autenticacion))
-            ?? throw new HttpRequestException("La respuesta del cliente está vacía.");
+        await HttpUtils.DoGet<ClienteFormDTO>($"{BaseUrl}/{Uri.EscapeDataString(tipoCliente)}/{id}");
 
     public async Task ActualizarAsync(string tipoCliente, int id, ClienteFormDTO cliente) =>
-        await HttpUtilsAutenticado.DoPut(
-            client, $"gestion-clientes/{Uri.EscapeDataString(tipoCliente)}/{id}",
-            await tokens.ObtenerAsync(autenticacion), cliente);
+        await HttpUtils.DoPut($"{BaseUrl}/{Uri.EscapeDataString(tipoCliente)}/{id}", cliente);
 
-    public async Task HabilitarCuentaAsync(string tipoCliente, int id, string username, string password)
-    {
-        await HttpUtilsAutenticado.DoPost<object, System.Text.Json.JsonElement>(
-            client, $"clientes/{Uri.EscapeDataString(tipoCliente)}/{id}/cuenta",
-            await tokens.ObtenerAsync(autenticacion), new { userName = username, password });
-    }
+    public async Task HabilitarCuentaAsync(string tipoCliente, int id, string username, string password) =>
+        await HttpUtils.DoPost<object, System.Text.Json.JsonElement>(
+            $"{BaseUrlClientes}/{Uri.EscapeDataString(tipoCliente)}/{id}/cuenta",
+            new { userName = username, password });
 }

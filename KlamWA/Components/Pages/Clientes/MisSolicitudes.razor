@@ -1,4 +1,6 @@
 @page "/mis-solicitudes"
+@attribute [Authorize(Roles = "VENDEDOR")]
+@using Microsoft.AspNetCore.Authorization
 @using System.Net
 @using KlamWA.DTOs
 @using KlamWA.Servicios
@@ -59,7 +61,7 @@ else
     {
         if (Vista.Perfil.Clave != "vendedor") { cargando = false; return; }
         try { solicitudes = await Solicitudes.ListarMiasAsync(); }
-        catch (HttpRequestException ex) {
+        catch (ServicioException ex) {
             error = ex.StatusCode switch {
                 HttpStatusCode.Unauthorized => "La sesión expiró. Vuelva a iniciar sesión.",
                 HttpStatusCode.Forbidden => "No tiene permiso para consultar estas solicitudes.",

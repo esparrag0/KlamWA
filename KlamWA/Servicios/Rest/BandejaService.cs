@@ -7,13 +7,11 @@ namespace KlamWA.Servicios.Rest;
 // Consume BandejasResource y ConsumiblesResource (RF13) del backend Java
 public class BandejaService : IBandejaService
 {
-    private readonly RestConSesion _rest;
     private string BaseUrlBandejas { get; set; }
     private string BaseUrlConsumibles { get; set; }
 
-    public BandejaService(IConfiguration configuracion, RestConSesion rest)
+    public BandejaService(IConfiguration configuracion)
     {
-        _rest = rest;
         BaseUrlBandejas = $"{configuracion["RestApi:BaseUrl"]!}/bandejas";
         BaseUrlConsumibles = $"{configuracion["RestApi:BaseUrl"]!}/consumibles";
     }
@@ -27,7 +25,7 @@ public class BandejaService : IBandejaService
                 { "procedimiento", procedimiento }
             });
         }
-        return await _rest.DoGet<List<BandejaDTO>>(url);
+        return await HttpUtils.DoGet<List<BandejaDTO>>(url);
     }
 
     public async Task<BandejaDTO?> ObtenerAsync(int id)
@@ -35,7 +33,7 @@ public class BandejaService : IBandejaService
         string url = $"{BaseUrlBandejas}/{id}";
         try
         {
-            return await _rest.DoGet<BandejaDTO>(url);
+            return await HttpUtils.DoGet<BandejaDTO>(url);
         }
         catch (ServicioException ex) when (ex.EsNoEncontrado)
         {
@@ -46,20 +44,20 @@ public class BandejaService : IBandejaService
     public async Task<BandejaDTO> RegistrarAsync(BandejaFormDTO bandeja)
     {
         string url = BaseUrlBandejas;
-        return await _rest.DoPost<BandejaFormDTO, BandejaDTO>(url, bandeja);
+        return await HttpUtils.DoPost<BandejaFormDTO, BandejaDTO>(url, bandeja);
     }
 
     public async Task<BandejaDTO> AsociarConsumibleAsync(int idBandeja, int idConsumible, int cantidad)
     {
         string url = $"{BaseUrlBandejas}/{idBandeja}/consumibles";
-        return await _rest.DoPost<ConsumibleBandejaDTO, BandejaDTO>(url,
+        return await HttpUtils.DoPost<ConsumibleBandejaDTO, BandejaDTO>(url,
             new ConsumibleBandejaDTO { IdConsumible = idConsumible, Cantidad = cantidad });
     }
 
     public async Task<BandejaDTO> ActualizarCantidadAsync(int idBandeja, int idConsumible, int cantidad)
     {
         string url = $"{BaseUrlBandejas}/{idBandeja}/consumibles/{idConsumible}";
-        return await _rest.DoPut<ConsumibleBandejaDTO, BandejaDTO>(url,
+        return await HttpUtils.DoPut<ConsumibleBandejaDTO, BandejaDTO>(url,
             new ConsumibleBandejaDTO { IdConsumible = idConsumible, Cantidad = cantidad });
     }
 
@@ -67,13 +65,13 @@ public class BandejaService : IBandejaService
     public async Task<BandejaDTO> QuitarConsumibleAsync(int idBandeja, int idConsumible)
     {
         string url = $"{BaseUrlBandejas}/{idBandeja}/consumibles/{idConsumible}";
-        await _rest.DoDelete(url);
-        return await _rest.DoGet<BandejaDTO>($"{BaseUrlBandejas}/{idBandeja}");
+        await HttpUtils.DoDelete(url);
+        return await HttpUtils.DoGet<BandejaDTO>($"{BaseUrlBandejas}/{idBandeja}");
     }
 
     public async Task<List<ConsumibleDTO>> ListarConsumiblesAsync()
     {
         string url = BaseUrlConsumibles;
-        return await _rest.DoGet<List<ConsumibleDTO>>(url);
+        return await HttpUtils.DoGet<List<ConsumibleDTO>>(url);
     }
 }

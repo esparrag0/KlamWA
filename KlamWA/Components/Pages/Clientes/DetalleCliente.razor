@@ -1,4 +1,6 @@
 @page "/clientes/{Tipo}/{Id:int}"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.Components.Shared
 @using KlamWA.DTOs
 @using KlamWA.Servicios
@@ -69,6 +71,6 @@ else
     {
         c = null; error = null;
         try { c = await Api.ObtenerAsync(Tipo, Id); }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (ServicioException ex) { error = ex.Message; }
     }
 }

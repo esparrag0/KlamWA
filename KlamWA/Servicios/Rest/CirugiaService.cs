@@ -7,18 +7,25 @@ namespace KlamWA.Servicios.Rest;
 
 public class CirugiaService : ICirugiaService
 {
-    private readonly RestConSesion _rest;
+    private readonly ISesionService _sesion;
     private readonly string _baseUrl;
 
-    public CirugiaService(IConfiguration configuracion, RestConSesion rest)
+    public CirugiaService(IConfiguration configuracion, ISesionService sesion)
     {
-        _rest = rest;
+        _sesion = sesion;
         _baseUrl = ServicioBase.Url(configuracion, "cirugias");
     }
 
     public async Task<List<CirugiaResumenViewModel>> Buscar(FiltroCirugia? filtro = null)
     {
         var parametros = new Dictionary<string, string?>();
+        // Un cliente solo consulta sus cirugías: su tipo e id salen de la sesión, no del filtro
+        string? tipoCliente = await _sesion.ObtenerTipoClienteAsync();
+        int? idCliente = await _sesion.ObtenerIdClienteAsync();
+        if (tipoCliente != null && idCliente != null)
+        {
+            filtro = (filtro ?? new FiltroCirugia()) with { TipoCliente = tipoCliente, IdCliente = idCliente };
+        }
         if (filtro is not null)
         {
             Agregar(parametros, "desde", Fecha(filtro.Desde));
@@ -30,18 +37,24 @@ public class CirugiaService : ICirugiaService
         }
 
         var url = QueryHelpers.AddQueryString(_baseUrl, parametros);
-        var dtos = await _rest.DoGet<List<CirugiaResumenDTO>>(url);
+        var dtos = await HttpUtils.DoGet<List<CirugiaResumenDTO>>(url);
         return CirugiaMapeo.ToViewModels(dtos);
     }
 
     public async Task<List<CirugiaResumenViewModel>> ObtenerCalendario(int anio, int mes)
     {
+        // El cliente ve en el calendario solo sus cirugías del mes
+        if (await _sesion.ObtenerIdClienteAsync() != null)
+        {
+            DateTime inicio = new(anio, mes, 1);
+            return await Buscar(new FiltroCirugia(Desde: inicio, Hasta: inicio.AddMonths(1).AddDays(-1)));
+        }
         var url = QueryHelpers.AddQueryString($"{_baseUrl}/calendario", new Dictionary<string, string?>
         {
             ["anio"] = anio.ToString(CultureInfo.InvariantCulture),
             ["mes"] = mes.ToString(CultureInfo.InvariantCulture)
         });
-        var dtos = await _rest.DoGet<List<CirugiaResumenDTO>>(url);
+        var dtos = await HttpUtils.DoGet<List<CirugiaResumenDTO>>(url);
         return CirugiaMapeo.ToViewModels(dtos);
     }
 
@@ -52,7 +65,7 @@ public class CirugiaService : ICirugiaService
     {
         try
         {
-            var dto = await _rest.DoGet<CirugiaDetalleDTO>($"{_baseUrl}/{id}");
+            var dto = await HttpUtils.DoGet<CirugiaDetalleDTO>($"{_baseUrl}/{id}");
             return CirugiaMapeo.ToDetalle(dto);
         }
         catch (ServicioException ex) when (ex.EsNoEncontrado)
@@ -67,7 +80,7 @@ public class CirugiaService : ICirugiaService
     {
         try
         {
-            return await _rest.DoGet<CirugiaDTO>($"{_baseUrl}/{id}");
+            return await HttpUtils.DoGet<CirugiaDTO>($"{_baseUrl}/{id}");
         }
         catch (ServicioException ex) when (ex.EsNoEncontrado)
         {
@@ -76,21 +89,27 @@ public class CirugiaService : ICirugiaService
     }
 
     public Task<OpcionesCirugiaDTO> OpcionesAsync() =>
-        _rest.DoGet<OpcionesCirugiaDTO>($"{_baseUrl}/opciones");
+        HttpUtils.DoGet<OpcionesCirugiaDTO>($"{_baseUrl}/opciones");
 
-    public Task<CirugiaDTO> RegistrarAsync(CirugiaFormDTO cirugia) =>
-        _rest.DoPost<CirugiaFormDTO, CirugiaDTO>(_baseUrl, cirugia);
+    public async Task<CirugiaDTO> RegistrarAsync(CirugiaFormDTO cirugia) =>
+        await HttpUtils.DoPost<CirugiaFormDTO, CirugiaDTO>(await ConResponsable(_baseUrl), cirugia);
 
-    public Task<CirugiaDTO> ModificarAsync(int id, CirugiaFormDTO cirugia) =>
-        _rest.DoPut<CirugiaFormDTO, CirugiaDTO>($"{_baseUrl}/{id}", cirugia);
+    public async Task<CirugiaDTO> ModificarAsync(int id, CirugiaFormDTO cirugia) =>
+        await HttpUtils.DoPut<CirugiaFormDTO, CirugiaDTO>(await ConResponsable($"{_baseUrl}/{id}"), cirugia);
 
-    public Task<CirugiaDTO> CambiarEstadoAsync(int id, string estado) =>
-        _rest.DoPost<AccionCirugiaDTO, CirugiaDTO>($"{_baseUrl}/{id}/estado", new AccionCirugiaDTO { Estado = estado });
+    public async Task<CirugiaDTO> CambiarEstadoAsync(int id, string estado) =>
+        await HttpUtils.DoPost<AccionCirugiaDTO, CirugiaDTO>(await ConResponsable($"{_baseUrl}/{id}/estado"),
+            new AccionCirugiaDTO { Estado = estado });
 
-    public Task<CirugiaDTO> CancelarAsync(int id, string motivo) =>
-        _rest.DoPost<AccionCirugiaDTO, CirugiaDTO>($"{_baseUrl}/{id}/cancelacion", new AccionCirugiaDTO { Motivo = motivo });
+    public async Task<CirugiaDTO> CancelarAsync(int id, string motivo) =>
+        await HttpUtils.DoPost<AccionCirugiaDTO, CirugiaDTO>(await ConResponsable($"{_baseUrl}/{id}/cancelacion"),
+            new AccionCirugiaDTO { Motivo = motivo });
 
-    public Task EliminarAsync(int id) => _rest.DoDelete($"{_baseUrl}/{id}");
+    public async Task EliminarAsync(int id) => await HttpUtils.DoDelete(await ConResponsable($"{_baseUrl}/{id}"));
+
+    // El usuario de la sesión queda como responsable en la bitácora (RF16)
+    private async Task<string> ConResponsable(string url) =>
+        QueryHelpers.AddQueryString(url, "responsable", await _sesion.ObtenerUserNameAsync());
 
     // ------------------------------------------------------------------
 

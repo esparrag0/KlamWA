@@ -1,15 +1,20 @@
 using System.Security.Claims;
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace KlamWA.Servicios.Impl;
 
+// Como en el proyecto del profesor: el login devuelve los datos del usuario y se guardan como claims en la cookie.
+// No hay token: el backend recibe en cada llamada lo que necesita (idUsuario, responsable, cliente).
 public sealed class SesionServiceImpl(
     ICuentaUsuarioService cuentaUsuarioService,
-    SesionTokenStore tokens) : ISesionService
+    AuthenticationStateProvider autenticacion) : ISesionService
 {
+    public const string ClaimIdCliente = "idCliente";
+    public const string ClaimTipoCliente = "tipoCliente";
+
     public async Task<string> IniciarSesionAsync(HttpContext context, string userName, string password)
     {
         if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
@@ -24,11 +29,7 @@ public sealed class SesionServiceImpl(
                 Password = password
             });
         }
-        catch (HttpRequestException)
-        {
-            return "/login?error=servicio";
-        }
-        catch (TaskCanceledException)
+        catch (ServicioException)
         {
             return "/login?error=servicio";
         }
@@ -40,58 +41,56 @@ public sealed class SesionServiceImpl(
         {
             "ADMINISTRADOR" => "administrador",
             "VENDEDOR" => "vendedor",
-            "TECNICO_INSTRUMENTAL" or "TECNICO_INSTRUMENTISTA" => "instrumentista",
+            "TECNICO_INSTRUMENTISTA" => "instrumentista",
             "CLINICA_HOSPITAL" or "PACIENTE_PARTICULAR" => "cliente",
             _ => null
         };
         if (perfil is null)
             return "/login?error=rol";
-        if (string.IsNullOrWhiteSpace(usuario.Token) || usuario.ExpiresAt <= DateTimeOffset.UtcNow)
-            return "/login?error=servicio";
 
-        var sesion = tokens.CrearClaim(usuario.Token, usuario.ExpiresAt);
-        var claims = new[]
-        {
+        List<Claim> claims =
+        [
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Name, usuario.UserName),
-            new Claim(ClaimTypes.Role, usuario.Rol),
-            sesion
-        };
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        try
+            new Claim(ClaimTypes.Role, usuario.Rol)
+        ];
+        if (usuario.IdCliente is int idCliente && !string.IsNullOrWhiteSpace(usuario.TipoCliente))
         {
-            await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(identity),
-                new AuthenticationProperties { ExpiresUtc = usuario.ExpiresAt });
+            claims.Add(new Claim(ClaimIdCliente, idCliente.ToString()));
+            claims.Add(new Claim(ClaimTipoCliente, usuario.TipoCliente));
         }
-        catch
-        {
-            tokens.Eliminar(sesion);
-            throw;
-        }
+        ClaimsIdentity identidad = new(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await context.SignInAsync(new ClaimsPrincipal(identidad));
         return $"/inicio/{perfil}";
     }
 
     public async Task CerrarSesionAsync(HttpContext context)
     {
-        var token = tokens.Obtener(context.User);
-        try
-        {
-            if (token is not null)
-                await cuentaUsuarioService.CerrarSesionAsync(token);
-        }
-        catch (HttpRequestException)
-        {
-            // La sesión local se cierra aunque el backend ya haya expirado.
-        }
-        catch (TaskCanceledException)
-        {
-            // La sesión local se cierra aunque el backend no responda.
-        }
-        finally
-        {
-            tokens.Eliminar(context.User);
-            await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        }
+        await context.SignOutAsync();
     }
+
+    public async Task<int> ObtenerIdUsuarioAsync()
+    {
+        string? valor = (await UsuarioAsync()).FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return int.TryParse(valor, out int id) ? id : 0;
+    }
+
+    public async Task<string> ObtenerUserNameAsync() =>
+        (await UsuarioAsync()).Identity?.Name ?? "";
+
+    public async Task<string> ObtenerRolAsync() =>
+        (await UsuarioAsync()).FindFirst(ClaimTypes.Role)?.Value ?? "";
+
+    public async Task<int?> ObtenerIdClienteAsync()
+    {
+        string? valor = (await UsuarioAsync()).FindFirst(ClaimIdCliente)?.Value;
+        return int.TryParse(valor, out int id) ? id : null;
+    }
+
+    public async Task<string?> ObtenerTipoClienteAsync() =>
+        (await UsuarioAsync()).FindFirst(ClaimTipoCliente)?.Value;
+
+    // En un circuito interactivo el HttpContext no es confiable: se leen los claims del estado de autenticación
+    private async Task<ClaimsPrincipal> UsuarioAsync() =>
+        (await autenticacion.GetAuthenticationStateAsync()).User;
 }

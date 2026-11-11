@@ -1,20 +1,42 @@
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace KlamWA.Servicios.Rest;
 
-public sealed class SolicitudClienteService(
-    HttpClient client,
-    AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : ISolicitudClienteService
+// RF05: el cliente de la sesión registra y consulta sus solicitudes
+public class SolicitudClienteService : ISolicitudClienteService
 {
-    public async Task<SolicitudCirugiaDTO> RegistrarAsync(RegistrarSolicitudDTO solicitud) =>
-        await HttpUtilsAutenticado.DoPost<RegistrarSolicitudDTO, SolicitudCirugiaDTO>(
-            client, "cliente/solicitudes", await tokens.ObtenerAsync(autenticacion), solicitud)
-            ?? throw new HttpRequestException("La respuesta de la solicitud está vacía.");
+    private readonly ISesionService _sesion;
+    private string BaseUrl { get; set; }
 
-    public async Task<List<SolicitudCirugiaDTO>> ListarPropiasAsync() =>
-        await HttpUtilsAutenticado.DoGet<List<SolicitudCirugiaDTO>>(
-            client, "cliente/solicitudes", await tokens.ObtenerAsync(autenticacion)) ?? [];
+    public SolicitudClienteService(IConfiguration configuracion, ISesionService sesion)
+    {
+        _sesion = sesion;
+        BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/cliente/solicitudes";
+    }
+
+    public async Task<SolicitudCirugiaDTO> RegistrarAsync(RegistrarSolicitudDTO solicitud)
+    {
+        (string tipoCliente, int idCliente) = await ClienteDeSesion();
+        solicitud.TipoCliente = tipoCliente;
+        solicitud.IdCliente = idCliente;
+        return await HttpUtils.DoPost<RegistrarSolicitudDTO, SolicitudCirugiaDTO>(BaseUrl, solicitud);
+    }
+
+    public async Task<List<SolicitudCirugiaDTO>> ListarPropiasAsync()
+    {
+        (string tipoCliente, int idCliente) = await ClienteDeSesion();
+        string url = $"{BaseUrl}?tipoCliente={Uri.EscapeDataString(tipoCliente)}&idCliente={idCliente}";
+        return await HttpUtils.DoGet<List<SolicitudCirugiaDTO>>(url) ?? [];
+    }
+
+    private async Task<(string, int)> ClienteDeSesion()
+    {
+        string? tipoCliente = await _sesion.ObtenerTipoClienteAsync();
+        int? idCliente = await _sesion.ObtenerIdClienteAsync();
+        if (tipoCliente == null || idCliente == null)
+        {
+            throw new ServicioException("La cuenta no está asociada a un cliente.");
+        }
+        return (tipoCliente, idCliente.Value);
+    }
 }

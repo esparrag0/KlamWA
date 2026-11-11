@@ -1,37 +1,38 @@
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace KlamWA.Servicios.Rest;
 
-public sealed class SolicitudCirugiaService(
-    HttpClient client,
-    AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : ISolicitudCirugiaService
+// RF08: solicitudes que registra el vendedor de la sesión; el administrador las revisa
+public class SolicitudCirugiaService : ISolicitudCirugiaService
 {
+    private readonly ISesionService _sesion;
+    private string BaseUrl { get; set; }
+
+    public SolicitudCirugiaService(IConfiguration configuracion, ISesionService sesion)
+    {
+        _sesion = sesion;
+        BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/solicitudes";
+    }
+
     public async Task<List<SolicitudCirugiaDTO>> ListarAsync() =>
-        await HttpUtils.DoGetAutenticado<List<SolicitudCirugiaDTO>>(
-            client, "solicitudes", await tokens.ObtenerAsync(autenticacion)) ?? [];
+        await HttpUtils.DoGet<List<SolicitudCirugiaDTO>>(BaseUrl) ?? [];
 
     public async Task<List<SolicitudCirugiaDTO>> ListarMiasAsync() =>
-        await HttpUtils.DoGetAutenticado<List<SolicitudCirugiaDTO>>(
-            client, "solicitudes/mias", await tokens.ObtenerAsync(autenticacion)) ?? [];
+        await HttpUtils.DoGet<List<SolicitudCirugiaDTO>>(
+            $"{BaseUrl}/mias?idVendedor={await _sesion.ObtenerIdUsuarioAsync()}") ?? [];
 
-    public async Task<SolicitudCirugiaDTO> RegistrarAsync(RegistrarSolicitudDTO solicitud) =>
-        await HttpUtils.DoPostAutenticado<RegistrarSolicitudDTO, SolicitudCirugiaDTO>(
-            client, "solicitudes", await tokens.ObtenerAsync(autenticacion), solicitud)
-            ?? throw new HttpRequestException("La respuesta de la solicitud está vacía.");
+    public async Task<SolicitudCirugiaDTO> RegistrarAsync(RegistrarSolicitudDTO solicitud)
+    {
+        solicitud.IdVendedor = await _sesion.ObtenerIdUsuarioAsync();
+        return await HttpUtils.DoPost<RegistrarSolicitudDTO, SolicitudCirugiaDTO>(BaseUrl, solicitud);
+    }
 
     public async Task<SolicitudCirugiaDTO> ConsultarAsync(int idSolicitud) =>
-        await HttpUtils.DoGetAutenticado<SolicitudCirugiaDTO>(
-            client, $"solicitudes/{idSolicitud}", await tokens.ObtenerAsync(autenticacion))
-            ?? throw new HttpRequestException("La respuesta de la solicitud está vacía.");
+        await HttpUtils.DoGet<SolicitudCirugiaDTO>($"{BaseUrl}/{idSolicitud}");
 
     public async Task AprobarAsync(int idSolicitud) =>
-        await HttpUtils.DoPostAutenticado(client, $"solicitudes/{idSolicitud}/aprobacion",
-            await tokens.ObtenerAsync(autenticacion), new { });
+        await HttpUtils.DoPost($"{BaseUrl}/{idSolicitud}/aprobacion");
 
     public async Task RechazarAsync(int idSolicitud, string motivo) =>
-        await HttpUtils.DoPostAutenticado(client, $"solicitudes/{idSolicitud}/rechazo",
-            await tokens.ObtenerAsync(autenticacion), new { Motivo = motivo });
+        await HttpUtils.DoPost($"{BaseUrl}/{idSolicitud}/rechazo", new { Motivo = motivo });
 }

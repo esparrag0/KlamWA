@@ -78,7 +78,7 @@ else
         {
             Registros = await DocumentoService.ConsultarHistorialAsync(IdOperacion);
         }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             Error = ex.StatusCode switch
             {

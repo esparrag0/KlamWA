@@ -75,7 +75,7 @@
             Cliente = solicitud.Cliente;
             Estado = solicitud.Estado;
         }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             Error = MostrarError(ex);
         }
@@ -105,7 +105,7 @@
             Confirmado = true;
             Estado = "RECHAZADA";
         }
-        catch (HttpRequestException ex)
+        catch (ServicioException ex)
         {
             ErrorAccion = MostrarError(ex);
         }
@@ -119,7 +119,7 @@
         }
     }
 
-    private string MostrarError(HttpRequestException ex)
+    private string MostrarError(ServicioException ex)
     {
         RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
         return ex.StatusCode switch

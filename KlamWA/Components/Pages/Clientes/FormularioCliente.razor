@@ -1,5 +1,7 @@
 @page "/clientes/nuevo"
 @page "/clientes/editar/{Tipo}/{Id:int}"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.Components.Shared
 @using KlamWA.ViewModels
 @inject NavigationManager Nav
@@ -180,7 +182,7 @@
             return;
         }
         try { ViewModel = new ClienteViewModel(await Api.ObtenerAsync(Tipo ?? "", Id.Value)); }
-        catch (HttpRequestException ex) { MensajeError = ex.Message; }
+        catch (ServicioException ex) { MensajeError = ex.Message; }
     }
 
     // Solo se ejecuta si el ViewModel es válido (ayuda de UX); la BL de Java valida de verdad.
@@ -195,7 +197,7 @@
                 await Api.ActualizarAsync(Tipo ?? "", Id.Value, ViewModel.ToRegistro());
                 MensajeOk = "Cliente actualizado.";
             }
-            catch (HttpRequestException ex) { MensajeError = ex.Message; }
+            catch (ServicioException ex) { MensajeError = ex.Message; }
             enviando = false;
             return;
         }
@@ -208,7 +210,7 @@
             ClienteCreadoTipo = creado.TipoCliente;
             ViewModel = new ClienteViewModel { Tipo = ViewModel.Tipo };
         }
-        catch (HttpRequestException ex) { MensajeError = ex.Message; }
+        catch (ServicioException ex) { MensajeError = ex.Message; }
         enviando = false;
     }
 
@@ -232,7 +234,7 @@
             MensajeCuentaOk = $"Cuenta «{CuentaUsuario.Trim()}» habilitada.";
             CuentaUsuario = CuentaPassword = CuentaConfirmar = "";
         }
-        catch (HttpRequestException ex) { MensajeCuentaError = ex.Message; }
+        catch (ServicioException ex) { MensajeCuentaError = ex.Message; }
         finally { habilitando = false; }
     }
 }

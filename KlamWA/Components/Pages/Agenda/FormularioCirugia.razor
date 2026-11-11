@@ -170,10 +170,6 @@ else if (opciones != null)
         {
             MensajeError = ex.Message;
         }
-        catch (HttpRequestException)
-        {
-            MensajeError = "No se pudo conectar con el servicio de cirugías";
-        }
         finally
         {
             cargando = false;
@@ -235,10 +231,6 @@ else if (opciones != null)
         {
             // Mensaje de la BL (cruce de horario, bandeja no esterilizada, etc.)
             MensajeError = ex.Message;
-        }
-        catch (HttpRequestException)
-        {
-            MensajeError = "No se pudo conectar con el servicio de cirugías";
         }
         finally
         {

@@ -10,13 +10,10 @@ public static class SeguridadExtensions
 {
     public static IServiceCollection AddSeguridad(this IServiceCollection services, IConfiguration configuration)
     {
-        var baseUrl = configuration["RestApi:BaseUrl"]
-            ?? throw new InvalidOperationException("Falta RestApi:BaseUrl en appsettings.");
+        if (string.IsNullOrWhiteSpace(configuration["RestApi:BaseUrl"]))
+            throw new InvalidOperationException("Falta RestApi:BaseUrl en appsettings.");
 
-        services.AddMemoryCache();
-        services.AddSingleton<SesionTokenStore>();
-        services.AddHttpClient<ICuentaUsuarioService, CuentaUsuarioService>(client =>
-            client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/"));
+        services.AddScoped<ICuentaUsuarioService, CuentaUsuarioService>();
         services.AddScoped<ISesionService, SesionServiceImpl>();
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>

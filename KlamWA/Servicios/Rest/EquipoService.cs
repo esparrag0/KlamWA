@@ -6,12 +6,10 @@ namespace KlamWA.Servicios.Rest;
 
 public class EquipoService : IEquipoService
 {
-    private readonly RestConSesion _rest;
     private readonly string _baseUrl;
 
-    public EquipoService(IConfiguration configuracion, RestConSesion rest)
+    public EquipoService(IConfiguration configuracion)
     {
-        _rest = rest;
         _baseUrl = ServicioBase.Url(configuracion, "equipos");
     }
 
@@ -27,7 +25,7 @@ public class EquipoService : IEquipoService
             parametros["categoria"] = categoria.Trim();
         }
 
-        var dtos = await _rest.DoGet<List<EquipoDTO>>(QueryHelpers.AddQueryString(_baseUrl, parametros));
+        var dtos = await HttpUtils.DoGet<List<EquipoDTO>>(QueryHelpers.AddQueryString(_baseUrl, parametros));
         return dtos.Select(CirugiaMapeo.ToOpcion).ToList();
     }
 }

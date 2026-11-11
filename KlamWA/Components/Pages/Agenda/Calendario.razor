@@ -1,6 +1,8 @@
 @inject VistaPreviaRol Vista
 @inject ICirugiaService CirugiaSvc
 @page "/agenda"
+@attribute [Authorize(Roles = "ADMINISTRADOR,TECNICO_INSTRUMENTISTA")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.Components.Shared
 @using KlamWA.Servicios
 

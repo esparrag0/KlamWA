@@ -1,5 +1,7 @@
 @page "/notificaciones"
 @page "/notificaciones/{Rol}"
+@attribute [Authorize(Roles = "ADMINISTRADOR,TECNICO_INSTRUMENTISTA")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @inject INotificacionService NotificacionService

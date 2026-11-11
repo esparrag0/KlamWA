@@ -1,16 +1,23 @@
 using KlamWA.DTOs;
-using KlamWA.Seguridad;
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace KlamWA.Servicios.Rest;
 
-public sealed class RegistroCirugiaService(
-    HttpClient client,
-    AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : IRegistroCirugiaService
+public class RegistroCirugiaService : IRegistroCirugiaService
 {
-    public async Task<CirugiaRegistradaDTO> RegistrarAsync(CirugiaRegistroDTO cirugia) =>
-        await HttpUtilsAutenticado.DoPost<CirugiaRegistroDTO, CirugiaRegistradaDTO>(
-            client, "admin/cirugias", await tokens.ObtenerAsync(autenticacion), cirugia)
-            ?? throw new HttpRequestException("La respuesta del registro de cirugía está vacía.");
+    private readonly ISesionService _sesion;
+    private string BaseUrl { get; set; }
+
+    public RegistroCirugiaService(IConfiguration configuracion, ISesionService sesion)
+    {
+        _sesion = sesion;
+        BaseUrl = $"{configuracion["RestApi:BaseUrl"]!}/admin/cirugias";
+    }
+
+    // El administrador de la sesión queda como responsable en la bitácora
+    public async Task<CirugiaRegistradaDTO> RegistrarAsync(CirugiaRegistroDTO cirugia)
+    {
+        string url = QueryHelpers.AddQueryString(BaseUrl, "responsable", await _sesion.ObtenerUserNameAsync());
+        return await HttpUtils.DoPost<CirugiaRegistroDTO, CirugiaRegistradaDTO>(url, cirugia);
+    }
 }

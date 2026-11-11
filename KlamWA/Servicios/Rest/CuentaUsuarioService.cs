@@ -2,11 +2,24 @@ using KlamWA.DTOs;
 
 namespace KlamWA.Servicios.Rest;
 
-public sealed class CuentaUsuarioService(HttpClient client) : ICuentaUsuarioService
+public class CuentaUsuarioService : ICuentaUsuarioService
 {
-    public Task<CuentaUsuarioDTO?> AutenticarAsync(CredencialesDTO credenciales) =>
-        HttpUtils.DoPost<CredencialesDTO, CuentaUsuarioDTO>(client, "login", credenciales);
+    private string BaseUrlLogin { get; set; }
 
-    public Task CerrarSesionAsync(string token) =>
-        HttpUtils.DoPostAutenticado(client, "login/logout", token, new { });
+    public CuentaUsuarioService(IConfiguration configuracion)
+    {
+        BaseUrlLogin = $"{configuracion["RestApi:BaseUrl"]!}/login";
+    }
+
+    public async Task<CuentaUsuarioDTO?> AutenticarAsync(CredencialesDTO credenciales)
+    {
+        try
+        {
+            return await HttpUtils.DoPost<CredencialesDTO, CuentaUsuarioDTO>(BaseUrlLogin, credenciales);
+        }
+        catch (ServicioException ex) when (ex.CodigoHttp == 401)
+        {
+            return null;
+        }
+    }
 }
