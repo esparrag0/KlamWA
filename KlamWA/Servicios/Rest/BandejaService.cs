@@ -35,7 +35,7 @@ public class BandejaService : IBandejaService
         {
             return await HttpUtils.DoGet<BandejaDTO>(url);
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        catch (ServicioException ex) when (ex.EsNoEncontrado)
         {
             return null;
         }

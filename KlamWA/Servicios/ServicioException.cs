@@ -1,13 +1,21 @@
 namespace KlamWA.Servicios;
 
-// Error devuelto por el backend (mensaje del campo "error" de la respuesta REST)
+/// Error al consumir el backend Java. El mensaje está listo para mostrarse al usuario:
+/// si el servidor respondió {"error": "..."}, es ese texto; si no se pudo conectar, es un aviso genérico.
 public class ServicioException : Exception
 {
-    public ServicioException(string mensaje) : base(mensaje)
-    {
-    }
+    public int? CodigoHttp { get; }
 
-    public ServicioException(string mensaje, Exception causa) : base(mensaje, causa)
+    // Mismo nombre que en HttpRequestException, para las pantallas que eligen el mensaje según el código
+    public System.Net.HttpStatusCode? StatusCode => CodigoHttp is int codigo ? (System.Net.HttpStatusCode)codigo : null;
+
+    public bool EsNoEncontrado => CodigoHttp == 404;
+    public bool EsErrorDeValidacion => CodigoHttp == 400;
+    public bool EsErrorDeConexion => CodigoHttp is null;
+
+    public ServicioException(string mensaje, int? codigoHttp = null, Exception? causa = null)
+        : base(mensaje, causa)
     {
+        CodigoHttp = codigoHttp;
     }
 }
