@@ -102,7 +102,7 @@ else
                 }
                 <div class="table-footer">
                     <span>@avisos.Count notificaciones</span>
-                    <span>@DateTime.Now.ToString("MMMM yyyy")</span>
+                    <span>@DateTime.Now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))</span>
                 </div>
             </section>
         </div>
