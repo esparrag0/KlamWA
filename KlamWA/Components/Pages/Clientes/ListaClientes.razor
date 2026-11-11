@@ -55,7 +55,7 @@
                 <th>Documento</th>
                 <th>Contacto</th>
                 <th>Estado</th>
-                <th></th>
+                <th class="acciones">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -74,8 +74,8 @@
                     <td>
                         <span class="badge @(c.Activo ? "text-bg-success" : "text-bg-secondary")">@(c.Activo ? "Activo" : "Inactivo")</span>
                     </td>
-                    <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary" href="/clientes/@c.TipoCliente/@c.IdCliente">Detalle</a>
+                    <td class="acciones">
+                        <a class="btn btn-sm btn-outline-primary" href="/clientes/@c.TipoCliente/@c.IdCliente">Ver detalle</a>
                         <a class="btn btn-sm btn-outline-secondary" href="/clientes/editar/@c.TipoCliente/@c.IdCliente">Editar</a>
                     </td>
                 </tr>

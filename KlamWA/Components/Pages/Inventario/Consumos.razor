@@ -1,0 +1,80 @@
+﻿@page "/inventario/consumos"
+
+<PageTitle>Consumo por cirugía</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">Operaciones / Consumos</span>
+        <h2 class="mt-2">Consumo por cirugía</h2>
+        <p class="text-muted">Se habilita después de validar la orden de compra de una cirugía culminada</p>
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-4"><label for="consumo-buscar" class="form-label">Cirugía o cliente</label><input id="consumo-buscar" class="form-control" placeholder="CIR-001 o nombre" @bind="busqueda" @bind:event="oninput" /></div>
+    <div class="col-md-3"><label for="consumo-desde" class="form-label">Desde</label><input id="consumo-desde" type="date" class="form-control" @bind="desde" /></div>
+    <div class="col-md-3"><label for="consumo-hasta" class="form-label">Hasta</label><input id="consumo-hasta" type="date" class="form-control" @bind="hasta" /></div>
+</div>
+
+<div class="table-responsive mb-4">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>CIRUGÍA</th>
+                <th>CLIENTE</th>
+                <th>FECHA</th>
+                <th>ESTADO</th>
+                <th>ORDEN DE COMPRA</th>
+                <th>REGISTRO DE CONSUMO</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var fila in Filas)
+            {
+                <tr class="@(fila.Cierre.PuedeRegistrarConsumo ? "table-active" : null)">
+                    <td>CIR-@fila.Cirugia.Id.ToString("000")</td>
+                    <td>@fila.Cirugia.Cliente</td>
+                    <td>@fila.Cirugia.Inicio.ToString("dd MMM")</td>
+                    <td>@fila.Cirugia.Estado</td>
+                    <td><DocumentoEstadoBadge Estado="@fila.Cierre.EstadoOc" /></td>
+                    <td><DocumentoEstadoBadge Estado="@fila.Cierre.EstadoConsumo" /></td>
+                    <td class="text-end text-nowrap">
+                        @if (fila.Cierre.PuedeRegistrarConsumo)
+                        {
+                            <a href="/inventario/consumos/registrar/@fila.Cirugia.Id" class="btn btn-sm btn-accion btn-primary">Registrar consumo</a>
+                        }
+                        else if (fila.Cierre.PuedeVerComparativo)
+                        {
+                            <a href="/reportes/comparativo/@fila.Cirugia.Id" class="btn btn-sm btn-accion btn-outline-primary">Ver comparativo</a>
+                        }
+                        else if (fila.Cierre.PuedeRevisarOc)
+                        {
+                            <a href="/agenda/cirugia/@fila.Cirugia.Id/revisar-oc" class="btn btn-sm btn-accion btn-outline-primary">Revisar OC</a>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (!Filas.Any())
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay cirugías culminadas de clínicas en esta sesión.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private string busqueda = "";
+    private DateTime? desde;
+    private DateTime? hasta;
+    private IEnumerable<(CirugiaMock Cirugia, CierreCirugiaMock Cierre)> Filas =>
+        DatosAgenda.Cirugias
+            .Where(c => c.Estado == "Culminada" && DatosCierre.EsClinica(c.Cliente))
+            .Where(c => string.IsNullOrWhiteSpace(busqueda) || $"CIR-{c.Id:000}".Contains(busqueda, StringComparison.OrdinalIgnoreCase) || c.Cliente.Contains(busqueda, StringComparison.OrdinalIgnoreCase))
+            .Where(c => desde is null || c.Inicio.Date >= desde.Value.Date)
+            .Where(c => hasta is null || c.Inicio.Date <= hasta.Value.Date)
+            .Select(c =>
+            {
+                return (c, DatosCierre.De(c.Id));
+            });
+}

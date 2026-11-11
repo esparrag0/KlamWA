@@ -1,0 +1,124 @@
+﻿@page "/inventario/consumos/registrar/{Id:int}"
+@inject NavigationManager Nav
+
+<PageTitle>Registrar consumo real</PageTitle>
+
+@if (c == null)
+{
+    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <a class="btn btn-outline-secondary" href="/inventario/consumos">Volver a consumos</a>
+}
+else if (cierre == null || !cierre.PuedeRegistrarConsumo && !cierre.PuedeVerComparativo)
+{
+    <PageHeader Titulo="Registrar consumo real" Subtitulo="@($"CIR-{Id:000} · {c.Cliente}")">
+        <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver al detalle</a>
+    </PageHeader>
+    <EstadoVacio Titulo="Aún no se puede registrar el consumo"
+                 Descripcion="Primero la clínica debe adjuntar la orden de compra y administración debe validarla." />
+    @if (cierre?.PuedeRevisarOc == true)
+    {
+        <a class="btn btn-primary" href="/agenda/cirugia/@Id/revisar-oc">Revisar orden de compra</a>
+    }
+    else
+    {
+        <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Ver detalle de la cirugía</a>
+    }
+}
+else
+{
+    <div class="mb-4">
+        <span class="text-muted">Operaciones / Consumos</span>
+        <h2 class="mt-2">Registrar consumo real</h2>
+        <p class="text-muted">CIR-@Id.ToString("000") · Cirugía culminada · OC validada · Registro por administración</p>
+        <EstadoBadge Estado="@c.Estado" />
+        <DocumentoEstadoBadge Estado="@cierre.EstadoOc" />
+    </div>
+
+    @if (cierre.PuedeVerComparativo)
+    {
+        <div class="alert alert-success">El consumo de esta cirugía ya está completo.</div>
+    }
+
+    <table class="table table-borderless table-striped mb-5">
+        <thead class="table-light">
+            <tr>
+                <th>CONSUMIBLE</th>
+                <th>MEDIDA</th>
+                <th>DESPACHADO</th>
+                <th>CONSUMIDO</th>
+                <th>DIFERENCIA</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var insumo in DatosInsumos.DeCirugia(Id))
+            {
+                <tr>
+                    <td>@insumo.Nombre</td><td>@insumo.Medida</td><td>@insumo.Despachado</td>
+                    <td>@(insumo.Consumido?.ToString() ?? "Pendiente")</td>
+                    <td>@(insumo.Diferencia?.ToString() ?? "—")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="card mb-4 p-3 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-4">Ajustar consumo</h5>
+            <p class="text-muted small">Use la orden de compra validada (@cierre.ArchivoOc) y la hoja de sala. El despacho ya viene del kit enviado.</p>
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <label class="form-label">Consumible</label>
+                    <select class="form-select">
+                        @foreach (var insumo in DatosInsumos.DeCirugia(Id))
+                        {
+                            <option>@insumo.Nombre · @insumo.Medida</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cantidad consumida *</label>
+                    <input type="number" class="form-control" min="0" placeholder="Cantidad" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Observación</label>
+                <input type="text" class="form-control" placeholder="Observación de la hoja de sala" />
+            </div>
+        </div>
+    </div>
+
+    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
+    <div class="d-flex gap-2">
+        @if (cierre.PuedeRegistrarConsumo)
+        {
+            <button type="button" class="btn btn-primary" @onclick="Guardar">Guardar cantidades reales</button>
+        }
+        @if (cierre.PuedeVerComparativo)
+        {
+            <a class="btn btn-primary" href="/reportes/comparativo/@Id">Ver control de consumo</a>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-secondary" disabled>Ver reporte comparativo</button>
+        }
+        <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Volver al detalle</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private CirugiaMock? c;
+    private CierreCirugiaMock? cierre;
+    private string? mensaje;
+
+    protected override void OnParametersSet()
+    {
+        c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
+        cierre = c == null ? null : DatosCierre.De(Id);
+    }
+
+    private void Guardar()
+    {
+        mensaje = "Cantidades de ejemplo revisadas. El consumo no se guardó.";
+    }
+}

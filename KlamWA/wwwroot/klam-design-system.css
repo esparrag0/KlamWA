@@ -1,0 +1,77 @@
+/*
+ * Design System Klam (estándar único del equipo · Laboratorio 11).
+ * Lo coordina el integrante 1. Se carga al final para que todas las pantallas
+ * usen los mismos colores, botones y tablas. Ningún módulo debe definir su propia paleta de estados:
+ * los colores de estado de cirugía están en DatosAgenda.Color/ColorTexto y los de documentos en DocumentoEstadoBadge.
+ */
+:root {
+    --klam-primario: #0F766E;       /* Primario / Guardar */
+    --klam-primario-hover: #0B5F59;
+    --klam-accion: #2563EB;         /* Acción / Ver detalle */
+    --klam-accion-hover: #1D4ED8;
+    --klam-peligro: #B91C1C;        /* Peligro / Eliminar */
+    --klam-peligro-hover: #991B1B;
+    --klam-texto: #334155;          /* Texto */
+    --klam-fondo: #F8FAFC;          /* Fondo general */
+    --klam-borde: #CBD5E1;          /* Bordes */
+    --klam-radio: 8px;
+    --klam-alto-boton: 36px;        /* referencia 34–38 px */
+    --klam-neutro: #475569;         /* botones neutros (secundarios) */
+    --klam-neutro-hover: #334155;
+    --klam-neutro-borde: #94A3B8;
+    --klam-neutro-fondo: #F1F5F9;
+}
+
+html, body { background: var(--klam-fondo); color: var(--klam-texto); }
+.card, .table, .form-control, .form-select { border-color: var(--klam-borde); }
+
+/* ---- Botones: tamaño uniforme, esquinas ~8 px, jerarquía por color ---- */
+.btn { min-height: var(--klam-alto-boton); border-radius: var(--klam-radio); padding-top: .35rem; padding-bottom: .35rem; }
+.btn-sm { min-height: 34px; border-radius: var(--klam-radio); font-size: .875rem; padding-left: .7rem; padding-right: .7rem; }
+.btn { font-weight: 500; white-space: nowrap; }   /* el texto del botón no se parte en dos líneas */
+.btn-primary, .btn-success { background-color: var(--klam-primario); border-color: var(--klam-primario); color: #fff; }
+.btn-primary:hover, .btn-primary:focus, .btn-success:hover, .btn-success:focus { background-color: var(--klam-primario-hover); border-color: var(--klam-primario-hover); color: #fff; }
+.btn-outline-primary { color: var(--klam-accion); border-color: var(--klam-accion); }
+.btn-outline-primary:hover, .btn-outline-primary:focus { background-color: var(--klam-accion); border-color: var(--klam-accion); color: #fff; }
+.btn-danger { background-color: var(--klam-peligro); border-color: var(--klam-peligro); color: #fff; }
+.btn-danger:hover, .btn-danger:focus { background-color: var(--klam-peligro-hover); border-color: var(--klam-peligro-hover); color: #fff; }
+.btn-outline-danger { color: var(--klam-peligro); border-color: var(--klam-peligro); }
+.btn-outline-danger:hover, .btn-outline-danger:focus { background-color: var(--klam-peligro); border-color: var(--klam-peligro); color: #fff; }
+
+/* Neutros (Volver, Cancelar, Actualizar, Ver cirugía...): mismo borde, texto y alto en todo el sistema */
+.btn-outline-secondary, .btn-outline-dark, .btn-light { color: var(--klam-texto); border-color: var(--klam-neutro-borde); background-color: #fff; }
+.btn-outline-secondary:hover, .btn-outline-secondary:focus, .btn-outline-secondary:active,
+.btn-outline-dark:hover, .btn-outline-dark:focus, .btn-outline-dark:active,
+.btn-light:hover, .btn-light:focus { background-color: var(--klam-neutro-fondo); border-color: var(--klam-neutro); color: var(--klam-texto); }
+.btn-outline-secondary:disabled, .btn-outline-dark:disabled, .btn-light:disabled { color: var(--klam-neutro); background-color: #fff; opacity: .55; }
+.btn-secondary { background-color: var(--klam-neutro); border-color: var(--klam-neutro); color: #fff; }
+.btn-secondary:hover, .btn-secondary:focus { background-color: var(--klam-neutro-hover); border-color: var(--klam-neutro-hover); color: #fff; }
+.btn-outline-success { color: var(--klam-primario); border-color: var(--klam-primario); }
+.btn-outline-success:hover, .btn-outline-success:focus { background-color: var(--klam-primario); border-color: var(--klam-primario); color: #fff; }
+.btn:focus-visible { box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .25); }
+
+/* ---- Tablas: encabezados en MAYÚSCULAS, alturas consistentes, ACCIONES al final ---- */
+.table thead th { text-transform: uppercase; font-size: .78rem; letter-spacing: .03em; color: var(--klam-texto); white-space: nowrap; vertical-align: middle; }
+.table td { vertical-align: middle; }
+.table td.acciones, .table th.acciones { text-align: right; white-space: nowrap; width: 1%; }
+.table td.text-end { white-space: nowrap; }
+.btn-accion { min-width: 10.5rem; }                      /* botones de la columna ACCIONES: mismo ancho */
+.page-heading .btn { min-width: 6.5rem; }                /* botones del encabezado: mismo ancho mínimo */   /* los botones de una fila de acciones quedan en la misma línea */
+.table td.acciones .btn + .btn, .table td.text-end .btn + .btn { margin-left: .35rem; }
+
+/* ---- Formularios: etiqueta encima, error debajo ---- */
+.form-label { color: var(--klam-texto); margin-bottom: .25rem; }
+.validation-message, .invalid-feedback { color: var(--klam-peligro); font-size: .85rem; }
+
+/* ---- Estados de documentos y solicitudes (colores fijos del Design System) ---- */
+.estado-badge { font-weight: 600; font-size: .8rem; line-height: 1.2; letter-spacing: normal; padding: .35em .65em; border-radius: 6px; }
+.estado-badge-lg { font-size: 1rem; padding: .35em .8em; border-radius: 8px; }   /* junto al nombre de la cirugía */
+.estado-pendiente { background-color: #DBEAFE; color: #1E40AF; }   /* Pendiente / Por revisar */
+.estado-validado  { background-color: #CCFBF1; color: #115E59; }   /* Validado / Aprobada */
+.estado-rechazado { background-color: #FFE4E6; color: #9F1239; }   /* Rechazado / Rechazada */
+.estado-neutro    { background-color: #E5E7EB; color: #374151; }
+
+/* Tabla de solicitudes: ancho completo, sin scroll horizontal; texto largo se ajusta en varias líneas */
+.tabla-solicitudes { width: 100%; table-layout: auto; }
+.tabla-solicitudes td { white-space: normal; word-break: break-word; }
+.tabla-solicitudes td.acciones, .tabla-solicitudes td.text-nowrap { white-space: nowrap; }
