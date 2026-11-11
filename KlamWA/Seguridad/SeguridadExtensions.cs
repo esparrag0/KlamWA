@@ -1,6 +1,7 @@
 using KlamWA.Servicios;
 using KlamWA.Servicios.Impl;
 using KlamWA.Servicios.Rest;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +25,17 @@ public static class SeguridadExtensions
                 options.LoginPath = "/login";
                 options.AccessDeniedPath = "/login";
                 options.ExpireTimeSpan = TimeSpan.FromHours(8);
+                // El token del backend vive en la memoria del servidor web: si se reinició (o venció), la cookie ya no
+                // sirve. Se descarta para volver al login en lugar de fallar dentro de cada pantalla.
+                options.Events.OnValidatePrincipal = async contexto =>
+                {
+                    var tokens = contexto.HttpContext.RequestServices.GetRequiredService<SesionTokenStore>();
+                    if (contexto.Principal is null || tokens.Obtener(contexto.Principal) is null)
+                    {
+                        contexto.RejectPrincipal();
+                        await contexto.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    }
+                };
             });
         services.AddAuthorization();
         services.AddCascadingAuthenticationState();

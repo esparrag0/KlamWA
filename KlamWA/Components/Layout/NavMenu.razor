@@ -14,7 +14,7 @@
         }
         <div class="nav-section">Agenda y cirugías</div>
         @if (Perfil.Clave is "administrador" or "instrumentista") { <NavLink class="nav-link" href="/agenda" Match="NavLinkMatch.All"><Icono Nombre="calendario" /> Calendario</NavLink> }
-        <NavLink class="nav-link" href="/agenda/lista"><Icono Nombre="lista" /> @(Perfil.Clave == "vendedor" ? "Cirugías que coordino" : Perfil.Clave is "instrumentista" or "cliente" ? "Mis cirugías" : "Lista de cirugías")</NavLink>
+        <NavLink class="nav-link" href="/agenda/lista"><Icono Nombre="lista" /> @(Perfil.Clave == "vendedor" ? "Cirugías coordinadas" : Perfil.Clave is "instrumentista" or "cliente" ? "Mis cirugías" : "Lista de cirugías")</NavLink>
         @if (Perfil.Clave == "administrador")
         {
             <NavLink class="nav-link" href="/agenda/nueva"><Icono Nombre="mas" /> Nueva cirugía</NavLink>

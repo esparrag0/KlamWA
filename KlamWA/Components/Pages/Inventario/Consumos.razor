@@ -26,7 +26,7 @@
                 <th>ESTADO</th>
                 <th>ORDEN DE COMPRA</th>
                 <th>REGISTRO DE CONSUMO</th>
-                <th class="acciones">Acciones</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -42,15 +42,15 @@
                     <td class="text-end text-nowrap">
                         @if (fila.Cierre.PuedeRegistrarConsumo)
                         {
-                            <a href="/inventario/consumos/registrar/@fila.Cirugia.Id" class="btn btn-sm text-white" style="background-color: #0f766e;">Registrar consumo</a>
+                            <a href="/inventario/consumos/registrar/@fila.Cirugia.Id" class="btn btn-sm btn-accion btn-primary">Registrar consumo</a>
                         }
                         else if (fila.Cierre.PuedeVerComparativo)
                         {
-                            <a href="/reportes/comparativo/@fila.Cirugia.Id" class="btn btn-sm btn-outline-primary">Ver comparativo</a>
+                            <a href="/reportes/comparativo/@fila.Cirugia.Id" class="btn btn-sm btn-accion btn-outline-primary">Ver comparativo</a>
                         }
                         else if (fila.Cierre.PuedeRevisarOc)
                         {
-                            <a href="/agenda/cirugia/@fila.Cirugia.Id/revisar-oc" class="btn btn-sm btn-outline-primary">Revisar OC</a>
+                            <a href="/agenda/cirugia/@fila.Cirugia.Id/revisar-oc" class="btn btn-sm btn-accion btn-outline-primary">Revisar OC</a>
                         }
                     </td>
                 </tr>

@@ -26,16 +26,18 @@ else if (c == null)
 else
 {
     <PageHeader Titulo="@("Cirugía #" + c.Id)" Subtitulo="@c.Procedimiento">
-        <EstadoBadge Estado="@c.Estado" />
-        @if (EsAdmin && c.EstadoCodigo != "CANCELADA")
-        {
-            <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a>
-        }
-        @if (EsAdmin)
-        {
-            <a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a>
-        }
-        <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
+        <Etiqueta><EstadoBadge Estado="@c.Estado" Grande="true" /></Etiqueta>
+        <ChildContent>
+            @if (EsAdmin && c.EstadoCodigo != "CANCELADA")
+            {
+                <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a>
+            }
+            @if (EsAdmin)
+            {
+                <a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a>
+            }
+            <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
+        </ChildContent>
     </PageHeader>
 
     @if (mensajeOk != null)
@@ -180,7 +182,7 @@ else
                         @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeVerComparativo)
                         {
                             <a class="list-group-item list-group-item-action fw-semibold" href="/reportes/comparativo/@c.Id">
-                                Ver despachado vs. consumido
+                                Ver control de consumo
                             </a>
                         }
                         @if (Vista.Perfil.Clave == "administrador" && cierre.EstadoOc == DatosCierre.OcPorAdjuntar)

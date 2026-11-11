@@ -30,8 +30,10 @@ else if (!cierre.PuedeAdjuntarOc && cierre.EstadoOc != DatosCierre.OcPendiente)
 else
 {
     <PageHeader Titulo="Adjuntar orden de compra" Subtitulo="@($"CIR-{Id:000} · Cirugía culminada · {c.Cliente}")">
-        <EstadoBadge Estado="@c.Estado" />
-        <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver</a>
+        <Etiqueta><EstadoBadge Estado="@c.Estado" Grande="true" /></Etiqueta>
+        <ChildContent>
+            <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver</a>
+        </ChildContent>
     </PageHeader>
 
     @if (cierre.EstadoOc == DatosCierre.OcRechazado)
