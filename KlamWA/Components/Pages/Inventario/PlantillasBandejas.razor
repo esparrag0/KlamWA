@@ -1,0 +1,295 @@
+@page "/inventario/plantillas"
+@page "/inventario/plantillas/{Id:int}"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IBandejaService BandejaService
+@inject NavigationManager Nav
+
+<PageTitle>Plantillas de bandejas</PageTitle>
+<PageHeader Titulo="Plantillas de bandejas" Subtitulo="Consumibles que se despachan con cada bandeja según el procedimiento" />
+
+@if (MensajeOk != null)
+{
+    <div class="alert alert-success">@MensajeOk</div>
+}
+@if (MensajeError != null)
+{
+    <div class="alert alert-danger">@MensajeError</div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-body">
+                <label class="form-label" for="filtro-procedimiento">Procedimiento</label>
+                <select id="filtro-procedimiento" class="form-select" @bind="filtro" @bind:after="CargarBandejas">
+                    <option value="">Todos</option>
+                    @foreach (string procedimiento in Procedimientos)
+                    {
+                        <option value="@procedimiento">@procedimiento</option>
+                    }
+                </select>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light"><tr><th>ID</th><th>BANDEJA</th><th>PROCEDIMIENTO</th><th>ACCIONES</th></tr></thead>
+                    <tbody>
+                        @foreach (BandejaDTO b in bandejas)
+                        {
+                            <tr class="@(seleccionada?.IdBandeja == b.IdBandeja ? "table-active" : "")">
+                                <td>@b.IdBandeja</td>
+                                <td>@b.Tipo</td>
+                                <td>@b.Procedimiento</td>
+                                <td class="acciones"><a class="btn btn-sm btn-outline-primary" href="/inventario/plantillas/@b.IdBandeja">Ver detalle</a></td>
+                            </tr>
+                        }
+                        @if (bandejas.Count == 0)
+                        {
+                            <tr><td colspan="4" class="text-muted text-center py-3">No hay bandejas para este procedimiento.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Nueva plantilla</div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <label class="form-label" for="nueva-tipo">Nombre de la bandeja</label>
+                    <input id="nueva-tipo" class="form-control" @bind="nueva.Tipo" placeholder="Bandeja de columna lumbar" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label" for="nueva-procedimiento">Procedimiento</label>
+                    <select id="nueva-procedimiento" class="form-select" @bind="nueva.Procedimiento">
+                        <option value="">-- Seleccione --</option>
+                        @foreach (string procedimiento in Procedimientos)
+                        {
+                            <option value="@procedimiento">@procedimiento</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-check mb-3">
+                    <input id="nueva-esterilizada" class="form-check-input" type="checkbox" @bind="nueva.Esterilizado" />
+                    <label class="form-check-label" for="nueva-esterilizada">Esterilizada</label>
+                </div>
+                <button type="button" class="btn btn-primary" disabled="@procesando" @onclick="CrearPlantilla">Registrar plantilla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        @if (seleccionada == null)
+        {
+            <div class="alert alert-info">Seleccione una bandeja para ver y editar sus consumibles.</div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>@seleccionada.Tipo · @seleccionada.Procedimiento</span>
+                    <span class="small text-muted">
+                        @(seleccionada.Esterilizado ? "Esterilizada" : "Sin esterilizar")
+                        @if (seleccionada.IdCirugia is int idCirugia)
+                        {
+                            <text> · asignada a la cirugía #@idCirugia</text>
+                        }
+                    </span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light"><tr><th>CONSUMIBLE</th><th>MEDIDA</th><th style="width:130px">CANTIDAD</th><th>ACCIONES</th></tr></thead>
+                        <tbody>
+                            @foreach (ConsumibleBandejaDTO item in seleccionada.Consumibles)
+                            {
+                                <tr>
+                                    <td>@item.NombreComercial</td>
+                                    <td>@item.Medida</td>
+                                    <td><input type="number" min="1" class="form-control form-control-sm" @bind="cantidades[item.IdConsumible]" /></td>
+                                    <td class="text-nowrap">
+                                        <button type="button" class="btn btn-sm btn-primary" disabled="@procesando" @onclick="() => ActualizarCantidad(item.IdConsumible)">Guardar</button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-1" disabled="@procesando" @onclick="() => quitarPendiente = item">Quitar</button>
+                                    </td>
+                                </tr>
+                            }
+                            @if (seleccionada.Consumibles.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-muted text-center py-3">La plantilla todavía no tiene consumibles.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-7">
+                            <label class="form-label small mb-1" for="agregar-consumible">Agregar consumible</label>
+                            <select id="agregar-consumible" class="form-select form-select-sm" @bind="idConsumibleNuevo">
+                                <option value="0">-- Seleccione --</option>
+                                @foreach (ConsumibleDTO consumible in ConsumiblesDisponibles)
+                                {
+                                    <option value="@consumible.IdConsumible">@consumible.NombreComercial · @consumible.Medida</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1" for="agregar-cantidad">Cantidad</label>
+                            <input id="agregar-cantidad" type="number" min="1" class="form-control form-control-sm" @bind="cantidadNueva" />
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-sm btn-primary w-100" disabled="@procesando" @onclick="AsociarConsumible">Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<ModalConfirmacion Visible="@(quitarPendiente != null)"
+                   Titulo="Quitar consumible"
+                   Mensaje="@($"¿Quitar «{quitarPendiente?.NombreComercial}» de la plantilla?")"
+                   TextoConfirmar="Quitar" Procesando="@procesando"
+                   OnConfirmar="ConfirmarQuitar" OnCancelar="() => quitarPendiente = null" />
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    // RF13: cráneo/cabeza y columna, más los procedimientos que ya existan en las bandejas
+    private static readonly string[] ProcedimientosBase = ["Cirugía de cráneo", "Cirugía de columna"];
+
+    private List<BandejaDTO> todas = [];
+    private List<BandejaDTO> bandejas = [];
+    private List<ConsumibleDTO> consumibles = [];
+    private BandejaDTO? seleccionada;
+    private Dictionary<int, int> cantidades = new();
+    private BandejaFormDTO nueva = new();
+    private string filtro = "";
+    private int idConsumibleNuevo;
+    private int cantidadNueva = 1;
+    private ConsumibleBandejaDTO? quitarPendiente;
+    private bool procesando;
+    private string? MensajeOk;
+    private string? MensajeError;
+
+    private IEnumerable<string> Procedimientos =>
+        ProcedimientosBase.Concat(todas.Select(b => b.Procedimiento ?? "")).Where(p => p != "").Distinct().OrderBy(p => p);
+
+    private IEnumerable<ConsumibleDTO> ConsumiblesDisponibles =>
+        consumibles.Where(c => seleccionada == null || seleccionada.Consumibles.All(x => x.IdConsumible != c.IdConsumible));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Ejecutar(async () =>
+        {
+            consumibles = await BandejaService.ListarConsumiblesAsync();
+            todas = await BandejaService.ListarAsync(null);
+            bandejas = todas;
+        });
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        seleccionada = null;
+        if (Id is int id)
+        {
+            await Ejecutar(async () => Seleccionar(await BandejaService.ObtenerAsync(id)));
+        }
+    }
+
+    private async Task CargarBandejas()
+    {
+        await Ejecutar(async () => bandejas = await BandejaService.ListarAsync(filtro));
+    }
+
+    private async Task CrearPlantilla()
+    {
+        await Ejecutar(async () =>
+        {
+            BandejaDTO creada = await BandejaService.RegistrarAsync(nueva);
+            todas = await BandejaService.ListarAsync(null);
+            bandejas = await BandejaService.ListarAsync(filtro);
+            nueva = new BandejaFormDTO();
+            // abre la plantilla nueva para agregarle consumibles
+            Nav.NavigateTo($"/inventario/plantillas/{creada.IdBandeja}");
+        });
+    }
+
+    private async Task AsociarConsumible()
+    {
+        if (seleccionada == null)
+        {
+            return;
+        }
+        int idBandeja = seleccionada.IdBandeja;
+        await Ejecutar(async () =>
+        {
+            Seleccionar(await BandejaService.AsociarConsumibleAsync(idBandeja, idConsumibleNuevo, cantidadNueva));
+            idConsumibleNuevo = 0;
+            cantidadNueva = 1;
+            MensajeOk = "Se agregó el consumible a la plantilla.";
+        });
+    }
+
+    private async Task ActualizarCantidad(int idConsumible)
+    {
+        if (seleccionada == null)
+        {
+            return;
+        }
+        int idBandeja = seleccionada.IdBandeja;
+        int cantidad = cantidades[idConsumible];
+        await Ejecutar(async () =>
+        {
+            Seleccionar(await BandejaService.ActualizarCantidadAsync(idBandeja, idConsumible, cantidad));
+            MensajeOk = "Se actualizó la cantidad.";
+        });
+    }
+
+    private async Task ConfirmarQuitar()
+    {
+        if (seleccionada == null || quitarPendiente == null)
+        {
+            return;
+        }
+        int idBandeja = seleccionada.IdBandeja;
+        int idConsumible = quitarPendiente.IdConsumible;
+        await Ejecutar(async () =>
+        {
+            Seleccionar(await BandejaService.QuitarConsumibleAsync(idBandeja, idConsumible));
+            MensajeOk = "Se quitó el consumible de la plantilla.";
+        });
+        quitarPendiente = null;
+    }
+
+    private void Seleccionar(BandejaDTO? bandeja)
+    {
+        seleccionada = bandeja;
+        cantidades = bandeja?.Consumibles.ToDictionary(c => c.IdConsumible, c => c.Cantidad) ?? new Dictionary<int, int>();
+    }
+
+    // Muestra el mensaje de la BL (por ejemplo, "ya tiene consumo registrado") sin romper la pantalla
+    private async Task Ejecutar(Func<Task> accion)
+    {
+        procesando = true;
+        MensajeOk = null;
+        MensajeError = null;
+        try
+        {
+            await accion();
+        }
+        catch (ServicioException ex)
+        {
+            MensajeError = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            MensajeError = "No se pudo conectar con el servicio de bandejas";
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
+}

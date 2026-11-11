@@ -1,0 +1,140 @@
+@page "/solicitudes"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject ISolicitudCirugiaService SolicitudService
+
+<PageTitle>Solicitudes de cirugía | Klam</PageTitle>
+
+<PageHeader Titulo="Solicitudes de cirugía" Subtitulo="Revisa la documentación y decide sobre las solicitudes recibidas">
+    <button type="button" class="btn btn-outline-secondary" @onclick="CargarAsync" disabled="@Cargando">Actualizar</button>
+</PageHeader>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+                <label for="buscar-solicitud" class="form-label small mb-1">Buscar</label>
+                <input id="buscar-solicitud" class="form-control form-control-sm" placeholder="Número, cliente, paciente o procedimiento" @bind="Busqueda" @bind:event="oninput" @bind:after="() => Pagina = 1" />
+            </div>
+            <div class="col-md-4">
+                <label for="estado-solicitud" class="form-label small mb-1">Estado</label>
+                <select id="estado-solicitud" class="form-select form-select-sm" @bind="EstadoFiltro" @bind:after="() => Pagina = 1">
+                    <option value="">Todos</option>
+                    @foreach (var estado in Solicitudes.Select(s => s.Estado).Distinct().Order())
+                    {
+                        <option value="@estado">@EstadoSolicitudTexto.Texto(estado)</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando solicitudes…</p>
+}
+else if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        @Error
+        @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+    </div>
+}
+else
+{
+    @* Tabla a ancho completo sin scroll horizontal: código, solicitante, fecha, estado y acciones;
+       el diagnóstico y los documentos se ven en «Revisar». *@
+    <table class="table table-hover align-middle tabla-solicitudes">
+        <thead class="table-light">
+            <tr>
+                <th>Solicitud</th>
+                <th>Cliente</th>
+                <th class="d-none d-lg-table-cell">Paciente</th>
+                <th class="d-none d-md-table-cell">Procedimiento</th>
+                <th>Fecha solicitada</th>
+                <th>Estado</th>
+                <th class="acciones">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in PaginaActual)
+            {
+                <tr>
+                    <td class="fw-semibold text-nowrap">@s.Codigo</td>
+                    <td>@s.Cliente</td>
+                    <td class="d-none d-lg-table-cell">@s.PacienteNombre</td>
+                    <td class="d-none d-md-table-cell">@s.TipoProcedimiento</td>
+                    <td class="text-nowrap">@s.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
+                    <td class="acciones">
+                        <a class="btn btn-sm btn-primary" href="/solicitudes/revision/@s.IdSolicitud">Revisar</a>
+                        <a class="btn btn-sm btn-outline-primary ms-1" href="/historial-documental?solicitud=@s.IdSolicitud">Historial</a>
+                    </td>
+                </tr>
+            }
+            @if (Filtradas.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay solicitudes para los filtros seleccionados.</td></tr>
+            }
+        </tbody>
+    </table>
+    <Paginacion Total="Filtradas.Count" PorPagina="PorPagina" @bind-Pagina="Pagina" />
+}
+
+@code {
+    private List<SolicitudCirugiaDTO> Solicitudes { get; set; } = [];
+    private string Busqueda { get; set; } = "";
+    private string EstadoFiltro { get; set; } = "";
+    private string? Error { get; set; }
+    private bool Cargando { get; set; }
+    private bool RequiereLogin { get; set; }
+    private const int PorPagina = 10;
+    private int Pagina { get; set; } = 1;
+    private IEnumerable<SolicitudCirugiaDTO> PaginaActual => Filtradas.Skip((Pagina - 1) * PorPagina).Take(PorPagina);
+
+    private List<SolicitudCirugiaDTO> Filtradas => Solicitudes.Where(s =>
+        (string.IsNullOrEmpty(EstadoFiltro) || s.Estado == EstadoFiltro) &&
+        (string.IsNullOrWhiteSpace(Busqueda) ||
+         s.Codigo.Contains(Busqueda, StringComparison.OrdinalIgnoreCase) ||
+         s.Cliente.Contains(Busqueda, StringComparison.OrdinalIgnoreCase) ||
+         s.PacienteNombre.Contains(Busqueda, StringComparison.OrdinalIgnoreCase) ||
+         s.TipoProcedimiento.Contains(Busqueda, StringComparison.OrdinalIgnoreCase)))
+        .OrderByDescending(s => s.IdSolicitud)
+        .ToList();
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+
+    private async Task CargarAsync()
+    {
+        Cargando = true;
+        Error = null;
+        RequiereLogin = false;
+        try
+        {
+            Solicitudes = await SolicitudService.ListarAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
+            Error = ex.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
+                HttpStatusCode.Forbidden => "No tienes permiso para consultar las solicitudes.",
+                _ => ex.Message
+            };
+        }
+        catch (TaskCanceledException)
+        {
+            Error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+        }
+        finally
+        {
+            Cargando = false;
+        }
+    }
+}

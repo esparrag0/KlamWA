@@ -1,0 +1,143 @@
+@page "/historial-documental"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IDocumentoIngresoService DocumentoService
+@inject ISolicitudCirugiaService SolicitudService
+
+<PageTitle>Historial documental</PageTitle>
+
+<PageHeader Titulo="Historial documental" Subtitulo="Versiones y cambios de estado de los documentos de una solicitud" />
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+                <label for="historial-solicitud" class="form-label small mb-1">Solicitud</label>
+                <select id="historial-solicitud" class="form-select form-select-sm" @bind="IdOperacion" @bind:after="ActualizarAsync">
+                    <option value="0">-- Seleccione una solicitud --</option>
+                    @foreach (var s in Solicitudes)
+                    {
+                        <option value="@s.IdSolicitud">@s.Codigo · @s.Cliente · @s.TipoProcedimiento</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(IdOperacion <= 0 || Cargando)" @onclick="ActualizarAsync">Actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando historial…</p>
+}
+else if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert">@Error @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }</div>
+}
+else if (IdOperacion <= 0)
+{
+    <EstadoVacio Titulo="Elige una solicitud" Descripcion="Selecciona una solicitud para ver las versiones de sus documentos." Enlace="/solicitudes" TextoEnlace="Ir a solicitudes" />
+}
+else
+{
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr><th>Fecha y hora</th><th>Documento</th><th>Versión</th><th class="d-none d-lg-table-cell">Responsable</th><th>Estado</th><th>Motivo de rechazo</th><th>Resubida</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Registros.Skip((Pagina - 1) * PorPagina).Take(PorPagina))
+            {
+                <tr>
+                    <td class="text-nowrap">@r.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@TextoDocumento(r.Documento)</td>
+                    <td>v@(r.Version)</td>
+                    <td class="d-none d-lg-table-cell">@(r.Responsable ?? "—")</td>
+                    <td><DocumentoEstadoBadge Estado="@r.Estado" /></td>
+                    <td>@(string.IsNullOrWhiteSpace(r.MotivoRechazo) ? "—" : r.MotivoRechazo)</td>
+                    <td>@(r.Estado == "RECHAZADO" ? (r.HabilitarResubida ? "Habilitada" : "No habilitada") : "—")</td>
+                </tr>
+            }
+            @if (Registros.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay documentos registrados para esta solicitud.</td></tr>
+            }
+        </tbody>
+    </table>
+    <Paginacion Total="Registros.Count" PorPagina="PorPagina" @bind-Pagina="Pagina" />
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "solicitud")] public int? IdSolicitud { get; set; }
+    private List<HistorialDocumentoDTO> Registros { get; set; } = [];
+    private int IdOperacion { get; set; }
+    private const int PorPagina = 10;
+    private int Pagina { get; set; } = 1;
+    private List<SolicitudCirugiaDTO> Solicitudes { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { Solicitudes = (await SolicitudService.ListarAsync()).OrderByDescending(x => x.IdSolicitud).ToList(); }
+        catch (HttpRequestException) { /* el error se mostrará al consultar */ }
+    }
+
+    private static string TextoDocumento(string tipo) => tipo switch
+    {
+        "DNI" => "DNI",
+        "RECETA_MEDICA" => "Receta médica",
+        "ORDEN_COMPRA" => "Orden de compra",
+        "COMPROBANTE_PAGO" => "Comprobante de pago",
+        _ => tipo
+    };
+    private bool Cargando { get; set; }
+    private string? Error { get; set; }
+    private bool RequiereLogin { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IdSolicitud is > 0)
+        {
+            IdOperacion = IdSolicitud.Value;
+            await ActualizarAsync();
+        }
+    }
+
+    private async Task ActualizarAsync()
+    {
+        if (IdOperacion <= 0) return;
+        Cargando = true;
+        Error = null;
+        RequiereLogin = false;
+        Registros = [];
+        Pagina = 1;
+        try
+        {
+            Registros = await DocumentoService.ConsultarHistorialAsync(IdOperacion);
+        }
+        catch (HttpRequestException ex)
+        {
+            Error = ex.StatusCode switch
+            {
+                HttpStatusCode.BadRequest => "El número de solicitud no es válido.",
+                HttpStatusCode.Unauthorized => "Debes iniciar sesión nuevamente.",
+                HttpStatusCode.Forbidden => "No tienes permiso para consultar este historial.",
+                HttpStatusCode.NotFound => "No existe la solicitud indicada.",
+                HttpStatusCode.Conflict => "El historial cambió. Vuelve a consultarlo.",
+                HttpStatusCode.InternalServerError => $"Error del servidor: {ex.Message}",
+                _ => "No se pudo consultar el backend. Inténtalo de nuevo."
+            };
+        }
+        catch (TaskCanceledException)
+        {
+            Error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+        }
+        finally
+        {
+            Cargando = false;
+        }
+    }
+}

@@ -1,0 +1,197 @@
+@page "/cliente/solicitudes/{Id:int}/documentos"
+@page "/mis-solicitudes/{Id:int}/documentos"
+@attribute [Authorize(Roles = "PACIENTE_PARTICULAR,CLINICA_HOSPITAL,VENDEDOR")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IDocumentoIngresoService DocumentoService
+@inject IJSRuntime JS
+@inject VistaPreviaRol Vista
+
+@* RF05/RF07/RF08: quien presenta la solicitud (cliente o vendedor) adjunta los documentos obligatorios
+   y sube una nueva versión de los que el administrador rechazó con la resubida habilitada. *@
+<PageTitle>Documentos de la solicitud | Klam</PageTitle>
+<PageHeader Titulo="@($"Documentos de SOL-{Id:000}")" Subtitulo="Documentos obligatorios de tu solicitud y su revisión">
+    <a class="btn btn-outline-secondary" href="@Volver">Volver a mis solicitudes</a>
+</PageHeader>
+
+@if (Mensaje is not null) { <div class="alert alert-success" role="status">@Mensaje</div> }
+@if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert">@Error
+        @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+    </div>
+}
+
+@if (Cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando documentos…</p>
+}
+else if (Requisitos is not null)
+{
+    @if (!AdmiteCarga)
+    {
+        <div class="alert alert-info">La solicitud está <strong>@EstadoSolicitudTexto.Texto(Requisitos.EstadoSolicitud)</strong>: ya no admite nuevos documentos.</div>
+    }
+    else if (Requisitos.Documentos.Any(d => d.EstadoValidacion == "RECHAZADO" && d.HabilitarResubida))
+    {
+        <div class="alert alert-warning">El administrador observó un documento y habilitó su resubida. Sube una nueva versión para continuar con la revisión.</div>
+    }
+
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr><th>Documento</th><th>Estado</th><th>Versión</th><th>Observación</th><th class="acciones">Acciones</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var tipo in Requisitos.Obligatorios)
+            {
+                var doc = Requisitos.Documentos.FirstOrDefault(d => d.TipoDocumento == tipo);
+                var puedeSubir = AdmiteCarga && doc is null;
+                var puedeResubir = doc is { EstadoValidacion: "RECHAZADO", HabilitarResubida: true };
+                <tr>
+                    <td class="fw-semibold">@TextoDocumento(tipo)</td>
+                    <td>
+                        @if (doc is null) { <span class="badge estado-badge estado-neutro">Sin presentar</span> }
+                        else
+                        {
+                            <DocumentoEstadoBadge Estado="@doc.EstadoValidacion" />
+                            @if (doc.EstadoValidacion == "RECHAZADO")
+                            {
+                                <div class="small text-muted mt-1">Resubida @(doc.HabilitarResubida ? "habilitada" : "no habilitada")</div>
+                            }
+                        }
+                    </td>
+                    <td>@(doc is null ? "—" : $"v{doc.Version}")</td>
+                    <td>@(string.IsNullOrWhiteSpace(doc?.MotivoRechazo) ? "—" : doc!.MotivoRechazo)</td>
+                    <td class="acciones">
+                        @if (doc is not null)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@Ocupado" @onclick="() => DescargarAsync(doc.IdDocumento)">Descargar</button>
+                        }
+                        @if (puedeSubir || puedeResubir)
+                        {
+                            <button type="button" class="btn btn-sm btn-primary ms-1" disabled="@Ocupado" @onclick="() => Elegir(tipo, doc)">
+                                @(puedeResubir ? "Subir nueva versión" : "Adjuntar")
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="form-text">PDF, PNG o JPEG hasta 5 MB. El administrador revisará cada documento.</p>
+
+    @if (TipoElegido is not null)
+    {
+        <div class="card mt-3">
+            <div class="card-header fw-semibold">@(DocumentoAResubir is null ? "Adjuntar" : "Nueva versión de") @TextoDocumento(TipoElegido).ToLowerInvariant()</div>
+            <div class="card-body">
+                <InputFile OnChange="SeleccionarArchivo" accept=".pdf,.png,.jpg,.jpeg" class="form-control form-control-sm mb-2" />
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" disabled="@(Ocupado || Archivo is null)" @onclick="EnviarAsync">Guardar documento</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@Ocupado" @onclick="Cancelar">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private RequisitosDocumentosDTO? Requisitos { get; set; }
+    private string? TipoElegido { get; set; }
+    private DocumentoIngresoDTO? DocumentoAResubir { get; set; }
+    private IBrowserFile? Archivo { get; set; }
+    private bool Cargando { get; set; } = true;
+    private bool Ocupado { get; set; }
+    private bool RequiereLogin { get; set; }
+    private string? Error { get; set; }
+    private string? Mensaje { get; set; }
+
+    private string Volver => Vista.Perfil.Clave == "vendedor" ? "/mis-solicitudes" : "/cliente/solicitudes";
+    private bool AdmiteCarga => Requisitos?.EstadoSolicitud is "POR_REVISAR" or "DOCUMENTACION_INCOMPLETA";
+
+    protected override Task OnParametersSetAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        Cargando = true;
+        Error = null;
+        try { Requisitos = await DocumentoService.RequisitosAsync(Id); }
+        catch (HttpRequestException ex)
+        {
+            Requisitos = null;
+            RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
+            Error = ex.StatusCode == HttpStatusCode.Forbidden ? "Esta solicitud no pertenece a tu cuenta." : ex.Message;
+        }
+        finally { Cargando = false; }
+    }
+
+    private void Elegir(string tipo, DocumentoIngresoDTO? doc)
+    {
+        TipoElegido = tipo;
+        DocumentoAResubir = doc is { EstadoValidacion: "RECHAZADO" } ? doc : null;
+        Archivo = null;
+        Mensaje = null;
+        Error = null;
+    }
+
+    private void Cancelar()
+    {
+        TipoElegido = null;
+        DocumentoAResubir = null;
+        Archivo = null;
+    }
+
+    private void SeleccionarArchivo(InputFileChangeEventArgs e) => Archivo = e.File;
+
+    private async Task EnviarAsync()
+    {
+        if (Archivo is null || TipoElegido is null) return;
+        Ocupado = true;
+        Error = null;
+        try
+        {
+            if (DocumentoAResubir is not null) await DocumentoService.ResubirArchivoAsync(DocumentoAResubir.IdDocumento, Archivo);
+            else await DocumentoService.RegistrarArchivoAsync(Id, TipoElegido, Archivo);
+            Mensaje = DocumentoAResubir is not null
+                ? "Nueva versión cargada; queda pendiente de revisión."
+                : "Documento adjuntado; queda pendiente de revisión.";
+            Cancelar();
+            await CargarAsync();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException)
+        {
+            Error = ex.Message;
+        }
+        finally { Ocupado = false; }
+    }
+
+    private async Task DescargarAsync(int idDocumento)
+    {
+        Ocupado = true;
+        Error = null;
+        try
+        {
+            var archivo = await DocumentoService.DescargarAsync(idDocumento);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JSException)
+        {
+            Error = ex.Message;
+        }
+        finally { Ocupado = false; }
+    }
+
+    private static string TextoDocumento(string? tipo) => tipo switch
+    {
+        "DNI" => "DNI del paciente",
+        "RECETA_MEDICA" => "Receta médica",
+        "ORDEN_COMPRA" => "Orden de compra",
+        "COMPROBANTE_PAGO" => "Comprobante de pago",
+        _ => tipo?.Replace('_', ' ') ?? ""
+    };
+}
