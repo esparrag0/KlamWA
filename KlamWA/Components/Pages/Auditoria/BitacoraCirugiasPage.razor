@@ -1,86 +1,138 @@
 @page "/bitacora-cirugias"
-@inject NavigationManager Nav;
-
-@using Microsoft.AspNetCore.Components.QuickGrid
+@inject IAuditoriaService Auditoria
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.ViewModels
 
 <PageTitle>Bitácora de cirugías</PageTitle>
 
-<h3 class="mb-3">Bitácora de cirugías</h3>
-<p class="text-muted">Trazabilidad de creaciones, modificaciones y cancelaciones</p>
+<PageHeader Titulo="Bitácora de cirugías"
+            Subtitulo="Trazabilidad de creaciones, modificaciones y cancelaciones"></PageHeader>
 
-<div class="row mb-3">
-    <div class="col">
-        <label class="form-label">Desde</label>
-        <input tabindex="1" type="date" class="form-control" @bind="Desde" />
+<div class="row g-2 align-items-end mb-3">
+    <div class="col-md-2">
+        <label for="bit-desde" class="form-label">Desde</label>
+        <input id="bit-desde" type="date" class="form-control" @bind="desde" />
     </div>
-    <div class="col">
-        <label class="form-label">Hasta</label>
-        <input tabindex="2" type="date" class="form-control" @bind="Hasta" />
+    <div class="col-md-2">
+        <label for="bit-hasta" class="form-label">Hasta</label>
+        <input id="bit-hasta" type="date" class="form-control" @bind="hasta" />
     </div>
-    <div class="col">
-        <label class="form-label">Responsable</label>
-        <select tabindex="3" class="form-select" @bind="FiltroResponsable">
-            <option value="">Todos</option>
-            @foreach (string responsable in Responsables) {
-                <option value="@responsable">@responsable</option>
-            }
-        </select>
+    <div class="col-md-2">
+        <label for="bit-cirugia" class="form-label">ID de cirugía</label>
+        <input id="bit-cirugia" type="number" min="1" class="form-control" @bind="idCirugia" />
     </div>
-    <div class="col">
-        <label class="form-label">Acción</label>
-        <select tabindex="4" class="form-select" @bind="FiltroAccion">
+    <div class="col-md-2">
+        <label for="bit-responsable" class="form-label">Responsable</label>
+        <input id="bit-responsable" type="text" class="form-control" @bind="responsable" />
+    </div>
+    <div class="col-md-2">
+        <label for="bit-accion" class="form-label">Acción</label>
+        <select id="bit-accion" class="form-select" @bind="accion">
             <option value="">Todas</option>
-            @foreach (string accion in Acciones) {
-                <option value="@accion">@accion</option>
+            @foreach (var (codigo, etiqueta) in RegistroBitacoraViewModel.Acciones)
+            {
+                <option value="@codigo">@etiqueta</option>
             }
         </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary flex-fill" @onclick="BuscarAsync" disabled="@cargando">Buscar</button>
+        <button class="btn btn-outline-secondary" @onclick="LimpiarAsync" disabled="@cargando">Limpiar</button>
     </div>
 </div>
 
-@if (!Registros.Any()) {
-    <div class="alert alert-info">No hay cambios registrados en la bitácora.</div>
+@if (error is not null)
+{
+    <div class="alert alert-danger">@error</div>
 }
-else {
-    <QuickGrid Items="Registros" Pagination="Paginacion" Class="table table-striped table-hover">
-        <PropertyColumn Title="Fecha y hora" Property="r => r.FechaHora" Format="dd/MM/yyyy HH:mm"
-                        Sortable="true" />
-        <PropertyColumn Title="Cirugía" Property="r => r.Cirugia" Sortable="true" />
-        <PropertyColumn Title="Acción" Property="r => r.Accion" Sortable="true" />
-        <PropertyColumn Title="Responsable" Property="r => r.Responsable" Sortable="true" />
-        <PropertyColumn Title="Detalle" Property="r => r.Detalle" />
-        <TemplateColumn Title="Acciones">
-            <button class="btn btn-primary btn-sm" @onclick="() => VerCambios(context.Id)">
-                Ver cambios
-            </button>
-        </TemplateColumn>
-    </QuickGrid>
-    <Paginator State="Paginacion"></Paginator>
+else if (!cargando && registros.Count == 0)
+{
+    <div class="alert alert-info">No hay cambios registrados con esos filtros.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>FECHA Y HORA</th>
+                    <th>CIRUGÍA</th>
+                    <th>ACCIÓN</th>
+                    <th>RESPONSABLE</th>
+                    <th>DETALLE</th>
+                    <th class="text-end">ACCIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (RegistroBitacoraViewModel r in registros)
+                {
+                    <tr>
+                        <td>@r.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@r.Cirugia</td>
+                        <td>@r.Accion</td>
+                        <td>@r.Responsable</td>
+                        <td>@r.Detalle</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-primary" href="/bitacora-cirugias/detalle/@r.Id">Ver cambios</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {
-    private IQueryable<RegistroBitacoraViewModel> Registros =>
-        DatosBitacora.Registros.Where(r =>
-            r.FechaHora.Date >= Desde.Date && r.FechaHora.Date <= Hasta.Date &&
-            (FiltroResponsable == "" || r.Responsable == FiltroResponsable) &&
-            (FiltroAccion == "" || r.Accion == FiltroAccion)).AsQueryable();
-    private DateTime Desde { get; set; } = new DateTime(2026, 10, 1);
-    private DateTime Hasta { get; set; } = new DateTime(2026, 10, 31);
-    private string FiltroResponsable { get; set; } = string.Empty;
-    private string FiltroAccion { get; set; } = string.Empty;
-    private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
+    private DateTime? desde;
+    private DateTime? hasta;
+    private int? idCirugia;
+    private string responsable = "";
+    private string accion = "";
+    private bool cargando;
+    private string? error;
+    private List<RegistroBitacoraViewModel> registros = [];
 
-    private string[] Responsables { get; } = [
-        "Valeria Torres",
-        "Lucía Salazar"
-    ];
+    protected override async Task OnInitializedAsync() => await BuscarAsync();
 
-    private string[] Acciones { get; } = [
-        "Creación",
-        "Modificación",
-        "Cancelación"
-    ];
+    private async Task BuscarAsync()
+    {
+        error = null;
+        if (desde is not null && hasta is not null && desde > hasta)
+        {
+            error = "La fecha inicial no puede ser posterior a la final.";
+            return;
+        }
 
-    private void VerCambios(int id) {
-        Nav.NavigateTo($"/bitacora-cirugias/detalle/{id}");
+        cargando = true;
+        try
+        {
+            // "Hasta" incluye todo el dia seleccionado (el backend recibe 23:59:59).
+            List<AuditoriaDTO> filas = await Auditoria.ListarAsync(
+                idCirugia,
+                desde?.Date,
+                hasta?.Date.AddDays(1).AddSeconds(-1),
+                accion,
+                responsable);
+            registros = filas.Select(RegistroBitacoraViewModel.DesdeDTO).ToList();
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task LimpiarAsync()
+    {
+        desde = null;
+        hasta = null;
+        idCirugia = null;
+        responsable = "";
+        accion = "";
+        await BuscarAsync();
     }
 }
