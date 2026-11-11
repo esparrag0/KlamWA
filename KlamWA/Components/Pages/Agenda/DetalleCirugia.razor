@@ -3,6 +3,7 @@
 @using KlamWA.Components.Shared
 @using KlamWA.DTOs
 @using KlamWA.Servicios
+@using Microsoft.AspNetCore.Components.Authorization
 @inject ICirugiaService CirugiaService
 @inject IBandejaService BandejaService
 
@@ -234,13 +235,19 @@ else
     private string motivo = "";
     private string? errorModal;
 
-    private bool EsAdmin => Vista.Perfil.Clave == "administrador";
+    // Rol real de la sesión (cookie del login): solo el administrador ve las acciones de RF02
+    [CascadingParameter] private Task<AuthenticationState>? EstadoAutenticacion { get; set; }
+    private bool EsAdmin { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
         cargando = true;
         MensajeError = null;
         MensajeOk = Guardado == 1 ? "La cirugía se guardó correctamente." : null;
+        if (EstadoAutenticacion != null)
+        {
+            EsAdmin = (await EstadoAutenticacion).User.IsInRole("ADMINISTRADOR");
+        }
         try
         {
             c = await CirugiaService.ObtenerAsync(Id);

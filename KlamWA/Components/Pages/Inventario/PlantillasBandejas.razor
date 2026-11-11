@@ -1,5 +1,7 @@
 @page "/inventario/plantillas"
 @page "/inventario/plantillas/{Id:int}"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @inject IBandejaService BandejaService
