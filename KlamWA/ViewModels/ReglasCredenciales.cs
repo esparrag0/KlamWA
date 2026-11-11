@@ -1,6 +1,6 @@
 namespace KlamWA.ViewModels;
 
-// Reglas de usuario y contraseña. Deben coincidir con CredencialesCliente y Contrasenas (Java, BL), que son las que
+// Reglas de usuario y contraseña. Deben coincidir con UsuarioPlataformaBLImpl y Contrasenas (Java, BL), que son las que
 // validan de verdad; estos textos y validaciones solo evitan un viaje inútil al servidor.
 public static class ReglasCredenciales
 {

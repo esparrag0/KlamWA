@@ -7,8 +7,8 @@ namespace KlamWA.ViewModels;
 // (obligatorios, longitudes, cliente existente) la hace SolicitudCirugiaBL (Java) y sus mensajes se muestran tal cual.
 public class SolicitudClienteViewModel : IValidatableObject
 {
-    [Range(1, int.MaxValue, ErrorMessage = "Seleccione la clínica u hospital donde se realizará")]
     public int IdClinica { get; set; }
+    public bool ClinicaDestinoObligatoria { get; set; } = true;
 
     // La BL lo exige para clínicas; para un paciente particular, si falta, usa su propio nombre.
     public bool PacienteObligatorio { get; set; } = true;
@@ -53,6 +53,8 @@ public class SolicitudClienteViewModel : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
+        if (ClinicaDestinoObligatoria && IdClinica <= 0)
+            yield return new ValidationResult("Indique la clínica u hospital de destino", new[] { nameof(IdClinica) });
         if (PacienteObligatorio && string.IsNullOrWhiteSpace(PacienteNombre))
             yield return new ValidationResult("El nombre del paciente es obligatorio", new[] { nameof(PacienteNombre) });
     }

@@ -4,7 +4,6 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using KlamWA.ViewModels
 @inject ISolicitudClienteService Solicitudes
-@inject IGestionClienteService Clientes
 @inject AuthenticationStateProvider Autenticacion
 
 <PageTitle>Nueva solicitud de cirugía</PageTitle>
@@ -31,11 +30,9 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-12"><span class="text-muted">Solicitante:</span> <strong>@usuario</strong></div>
-                <CampoForm Etiqueta="Clínica u hospital donde se realizará *" Para="clinica">
-                    <InputSelect id="clinica" class="form-select" @bind-Value="ViewModel.IdClinica">
-                        <option value="0">-- Seleccione --</option>
-                        @foreach (var c in clinicas) { <option value="@c.IdCliente">@c.Nombre</option> }
-                    </InputSelect>
+                <CampoForm Etiqueta="@(ViewModel.ClinicaDestinoObligatoria ? "ID de clínica u hospital de destino *" : "ID de clínica de destino (opcional)")" Para="clinica">
+                    <InputNumber id="clinica" class="form-control" min="0" @bind-Value="ViewModel.IdClinica" />
+                    <div class="form-text">Si representa a una clínica, deje 0 para usar su propia sede.</div>
                     <ValidationMessage For="() => ViewModel.IdClinica" />
                 </CampoForm>
                 <CampoForm Etiqueta="@(ViewModel.PacienteObligatorio ? "Nombre del paciente *" : "Nombre del paciente (opcional)")" Para="paciente">
@@ -78,7 +75,6 @@
 
 @code {
     private SolicitudClienteViewModel ViewModel { get; set; } = new();
-    private List<ClienteGestionDTO> clinicas = [];
     private SolicitudCirugiaDTO? creada;
     private string usuario = string.Empty;
     private string? error;
@@ -90,8 +86,7 @@
         usuario = estado.User.Identity?.Name ?? string.Empty;
         // Un paciente particular puede omitir el nombre del paciente (la BL usa el suyo); una clínica debe indicarlo.
         ViewModel.PacienteObligatorio = !estado.User.IsInRole("PACIENTE_PARTICULAR");
-        try { clinicas = await Clientes.ListarAsync("CLINICA_HOSPITAL"); }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        ViewModel.ClinicaDestinoObligatoria = estado.User.IsInRole("PACIENTE_PARTICULAR");
     }
 
     // La validación real la hace la BL en Java; aquí se muestra su mensaje tal cual.
@@ -101,7 +96,8 @@
         try
         {
             creada = await Solicitudes.RegistrarAsync(ViewModel.ToDto());
-            ViewModel = new() { PacienteObligatorio = ViewModel.PacienteObligatorio };
+            ViewModel = new() { PacienteObligatorio = ViewModel.PacienteObligatorio,
+                ClinicaDestinoObligatoria = ViewModel.ClinicaDestinoObligatoria };
         }
         catch (HttpRequestException ex) { error = ex.Message; }
         enviando = false;

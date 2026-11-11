@@ -33,4 +33,11 @@ public sealed class GestionClienteService(
         await HttpUtilsAutenticado.DoPut(
             client, $"gestion-clientes/{Uri.EscapeDataString(tipoCliente)}/{id}",
             await tokens.ObtenerAsync(autenticacion), cliente);
+
+    public async Task HabilitarCuentaAsync(string tipoCliente, int id, string username, string password)
+    {
+        await HttpUtilsAutenticado.DoPost<object, System.Text.Json.JsonElement>(
+            client, $"clientes/{Uri.EscapeDataString(tipoCliente)}/{id}/cuenta",
+            await tokens.ObtenerAsync(autenticacion), new { userName = username, password });
+    }
 }

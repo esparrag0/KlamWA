@@ -1,7 +1,6 @@
 namespace KlamWA.DTOs;
 
-// Alta (POST), detalle (GET) y modificación (PUT) de gestion-clientes (Java: ClienteRegistroDTO).
-// Username y Password solo se usan en el alta; la contraseña nunca viaja en las respuestas.
+// Datos comerciales de alta, detalle y modificación en gestion-clientes.
 public sealed class ClienteFormDTO
 {
     public int IdCliente { get; set; }
@@ -16,6 +15,4 @@ public sealed class ClienteFormDTO
     public string? PeriodoCredito { get; set; }
     public string? Dni { get; set; }
     public bool PagoConfirmado { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
 }
