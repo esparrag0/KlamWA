@@ -1,7 +1,11 @@
-@* Encabezado reutilizable: título, subtítulo y botones de acción (ChildContent) *@
+@* Encabezado reutilizable: título (con su etiqueta de estado al lado, opcional), subtítulo y botones de acción (ChildContent).
+   Si se usa Etiqueta, los botones van dentro de <ChildContent>...</ChildContent>. *@
 <div class="page-heading d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom">
     <div>
-        <h1 class="mb-1">@Titulo</h1>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <h1 class="mb-1">@Titulo</h1>
+            @Etiqueta
+        </div>
         @if (!string.IsNullOrEmpty(Subtitulo))
         {
             <small class="text-muted">@Subtitulo</small>
@@ -15,5 +19,6 @@
 @code {
     [Parameter] public string Titulo { get; set; } = "";
     [Parameter] public string? Subtitulo { get; set; }
+    [Parameter] public RenderFragment? Etiqueta { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

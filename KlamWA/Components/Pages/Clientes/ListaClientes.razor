@@ -1,9 +1,12 @@
 @page "/clientes"
 @using KlamWA.Components.Shared
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IGestionClienteService Api
 
 <PageTitle>Clientes</PageTitle>
 
-<PageHeader Titulo="Clientes" Subtitulo="Pacientes particulares y clínicas/hospitales (datos de ejemplo)">
+<PageHeader Titulo="Clientes" Subtitulo="Pacientes particulares y clínicas/hospitales">
     <a class="btn btn-outline-secondary" href="/mis-solicitudes">Solicitudes de cirugía</a>
     <a class="btn btn-primary" href="/clientes/nuevo">Nuevo cliente</a>
 </PageHeader>
@@ -39,6 +42,10 @@
     </div>
 </div>
 
+@if (error is not null)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
 <div class="table-responsive">
     <table class="table table-hover align-middle">
         <thead class="table-light">
@@ -48,31 +55,42 @@
                 <th>Documento</th>
                 <th>Contacto</th>
                 <th>Estado</th>
-                <th></th>
+                <th class="acciones">Acciones</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var c in DatosClientes.Lista)
+            @foreach (var c in clientes)
             {
                 <tr>
                     <td>@c.Nombre</td>
                     <td>
-                        <span class="badge @(c.Tipo == DatosClientes.Particular ? "text-bg-info" : "text-bg-primary")">@c.Tipo</span>
+                        <span class="badge @(c.TipoCliente == "PACIENTE_PARTICULAR" ? "text-bg-info" : "text-bg-primary")">@(c.TipoCliente == "PACIENTE_PARTICULAR" ? DatosClientes.Particular : DatosClientes.Clinica)</span>
                     </td>
                     <td>@c.Documento</td>
                     <td>
-                        <div>@c.Email</div>
+                        <div>@c.EmailContacto</div>
                         <small class="text-muted">@c.Telefono</small>
                     </td>
                     <td>
                         <span class="badge @(c.Activo ? "text-bg-success" : "text-bg-secondary")">@(c.Activo ? "Activo" : "Inactivo")</span>
                     </td>
-                    <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary" href="/clientes/@c.Id">Detalle</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="/clientes/editar/@c.Id">Editar</a>
+                    <td class="acciones">
+                        <a class="btn btn-sm btn-outline-primary" href="/clientes/@c.TipoCliente/@c.IdCliente">Ver detalle</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="/clientes/editar/@c.TipoCliente/@c.IdCliente">Editar</a>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
 </div>
+
+@code {
+    private List<ClienteGestionDTO> clientes = [];
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { clientes = await Api.ListarAsync(); }
+        catch (HttpRequestException ex) { error = ex.Message; }
+    }
+}

@@ -1,83 +1,143 @@
 @page "/historial-documental"
-
-@using Microsoft.AspNetCore.Components.QuickGrid
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IDocumentoIngresoService DocumentoService
+@inject ISolicitudCirugiaService SolicitudService
 
 <PageTitle>Historial documental</PageTitle>
 
-<h3 class="mb-3">Historial documental</h3>
-<p class="text-muted">Ciclo de documentos por operación</p>
+<PageHeader Titulo="Historial documental" Subtitulo="Versiones y cambios de estado de los documentos de una solicitud" />
 
-<div class="d-flex align-items-center gap-2 mb-3">
-    <label class="text-nowrap">Operación:</label>
-    <select tabindex="1" class="form-select" @bind="IdOperacion">
-        @foreach (var operacion in DatosClientes.Solicitudes) {
-            <option value="@operacion.Id">SOL-@operacion.Id.ToString("000") · @operacion.Cliente</option>
-        }
-    </select>
-    <button tabindex="2" type="button" class="btn btn-primary" @onclick="Actualizar">Consultar</button>
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+                <label for="historial-solicitud" class="form-label small mb-1">Solicitud</label>
+                <select id="historial-solicitud" class="form-select form-select-sm" @bind="IdOperacion" @bind:after="ActualizarAsync">
+                    <option value="0">-- Seleccione una solicitud --</option>
+                    @foreach (var s in Solicitudes)
+                    {
+                        <option value="@s.IdSolicitud">@s.Codigo · @s.Cliente · @s.TipoProcedimiento</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(IdOperacion <= 0 || Cargando)" @onclick="ActualizarAsync">Actualizar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
-@if (!Registros.Any()) {
-    <div class="alert alert-info">No hay documentos registrados para la operación.</div>
+@if (Cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando historial…</p>
 }
-else {
-    <QuickGrid Items="Registros" Pagination="Paginacion" Class="table table-striped table-hover">
-        <PropertyColumn Title="Fecha y hora" Property="r => r.FechaHora" Format="dd/MM/yyyy HH:mm"
-                        Sortable="true" />
-        <PropertyColumn Title="Documento" Property="r => r.Documento" Sortable="true" />
-        <PropertyColumn Title="Responsable" Property="r => r.Responsable" Sortable="true" />
-        <PropertyColumn Title="Estado" Property="r => r.Estado" />
-        <PropertyColumn Title="Referencia" Property="r => r.Referencia" />
-    </QuickGrid>
-    <Paginator State="Paginacion"></Paginator>
+else if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert">@Error @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }</div>
+}
+else if (IdOperacion <= 0)
+{
+    <EstadoVacio Titulo="Elige una solicitud" Descripcion="Selecciona una solicitud para ver las versiones de sus documentos." Enlace="/solicitudes" TextoEnlace="Ir a solicitudes" />
+}
+else
+{
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr><th>Fecha y hora</th><th>Documento</th><th>Versión</th><th class="d-none d-lg-table-cell">Responsable</th><th>Estado</th><th>Motivo de rechazo</th><th>Resubida</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Registros.Skip((Pagina - 1) * PorPagina).Take(PorPagina))
+            {
+                <tr>
+                    <td class="text-nowrap">@r.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@TextoDocumento(r.Documento)</td>
+                    <td>v@(r.Version)</td>
+                    <td class="d-none d-lg-table-cell">@(r.Responsable ?? "—")</td>
+                    <td><DocumentoEstadoBadge Estado="@r.Estado" /></td>
+                    <td>@(string.IsNullOrWhiteSpace(r.MotivoRechazo) ? "—" : r.MotivoRechazo)</td>
+                    <td>@(r.Estado == "RECHAZADO" ? (r.HabilitarResubida ? "Habilitada" : "No habilitada") : "—")</td>
+                </tr>
+            }
+            @if (Registros.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay documentos registrados para esta solicitud.</td></tr>
+            }
+        </tbody>
+    </table>
+    <Paginacion Total="Registros.Count" PorPagina="PorPagina" @bind-Pagina="Pagina" />
 }
 
 @code {
-    [SupplyParameterFromQuery(Name = "solicitud")]
-    public int? IdSolicitud { get; set; }
+    [SupplyParameterFromQuery(Name = "solicitud")] public int? IdSolicitud { get; set; }
+    private List<HistorialDocumentoDTO> Registros { get; set; } = [];
+    private int IdOperacion { get; set; }
+    private const int PorPagina = 10;
+    private int Pagina { get; set; } = 1;
+    private List<SolicitudCirugiaDTO> Solicitudes { get; set; } = [];
 
-    private IQueryable<RegistroHistorialViewModel> Registros { get; set; } =
-        Enumerable.Empty<RegistroHistorialViewModel>().AsQueryable();
-    private int IdOperacion { get; set; } = 1;
-    private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
-
-    protected override void OnParametersSet()
+    protected override async Task OnInitializedAsync()
     {
-        IdOperacion = DatosClientes.Solicitudes.Any(s => s.Id == IdSolicitud) ? IdSolicitud!.Value : 1;
-        Actualizar();
+        try { Solicitudes = (await SolicitudService.ListarAsync()).OrderByDescending(x => x.IdSolicitud).ToList(); }
+        catch (HttpRequestException) { /* el error se mostrará al consultar */ }
     }
 
-    private void Actualizar()
+    private static string TextoDocumento(string tipo) => tipo switch
     {
-        var solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == IdOperacion);
-        if (solicitud is null)
+        "DNI" => "DNI",
+        "RECETA_MEDICA" => "Receta médica",
+        "ORDEN_COMPRA" => "Orden de compra",
+        "COMPROBANTE_PAGO" => "Comprobante de pago",
+        _ => tipo
+    };
+    private bool Cargando { get; set; }
+    private string? Error { get; set; }
+    private bool RequiereLogin { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IdSolicitud is > 0)
         {
-            Registros = Enumerable.Empty<RegistroHistorialViewModel>().AsQueryable();
-            return;
+            IdOperacion = IdSolicitud.Value;
+            await ActualizarAsync();
         }
-        var registros = new List<RegistroHistorialViewModel>
+    }
+
+    private async Task ActualizarAsync()
+    {
+        if (IdOperacion <= 0) return;
+        Cargando = true;
+        Error = null;
+        RequiereLogin = false;
+        Registros = [];
+        Pagina = 1;
+        try
         {
-            new() { FechaHora = solicitud.Fecha.AddDays(-2), Documento = "Solicitud",
-                    Responsable = solicitud.Cliente, Estado = "Recibida", Referencia = $"SOL-{solicitud.Id:000}" }
-        };
-        foreach (var documento in solicitud.Documentos)
-            registros.Add(new RegistroHistorialViewModel {
-                FechaHora = solicitud.Fecha.AddDays(-1), Documento = documento.Tipo,
-                Responsable = solicitud.Cliente, Estado = documento.Estado,
-                Referencia = string.IsNullOrEmpty(documento.Archivo) ? "Sin archivo" : documento.Archivo
-            });
-        if (solicitud.Estado == "Aprobada")
-            registros.Add(new RegistroHistorialViewModel {
-                FechaHora = solicitud.Fecha.AddHours(-12), Documento = "Cotización",
-                Responsable = "Administración", Estado = "Aceptada", Referencia = $"COT-{solicitud.Id:000}"
-            });
-        var cirugia = DatosAgenda.Cirugias.FirstOrDefault(c => c.SolicitudId == solicitud.Id);
-        if (cirugia?.Estado == "Culminada" && DatosCierre.EsClinica(cirugia.Cliente))
-            registros.Add(new RegistroHistorialViewModel {
-                FechaHora = cirugia.Fin.AddHours(2), Documento = "Orden de compra",
-                Responsable = cirugia.Cliente, Estado = DatosCierre.De(cirugia.Id).EstadoOc,
-                Referencia = DatosCierre.De(cirugia.Id).ArchivoOc
-            });
-        Registros = registros.OrderBy(r => r.FechaHora).AsQueryable();
+            Registros = await DocumentoService.ConsultarHistorialAsync(IdOperacion);
+        }
+        catch (HttpRequestException ex)
+        {
+            Error = ex.StatusCode switch
+            {
+                HttpStatusCode.BadRequest => "El número de solicitud no es válido.",
+                HttpStatusCode.Unauthorized => "Debes iniciar sesión nuevamente.",
+                HttpStatusCode.Forbidden => "No tienes permiso para consultar este historial.",
+                HttpStatusCode.NotFound => "No existe la solicitud indicada.",
+                HttpStatusCode.Conflict => "El historial cambió. Vuelve a consultarlo.",
+                HttpStatusCode.InternalServerError => $"Error del servidor: {ex.Message}",
+                _ => "No se pudo consultar el backend. Inténtalo de nuevo."
+            };
+        }
+        catch (TaskCanceledException)
+        {
+            Error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+        }
+        finally
+        {
+            Cargando = false;
+        }
     }
 }

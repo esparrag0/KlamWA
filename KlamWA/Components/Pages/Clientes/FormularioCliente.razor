@@ -1,17 +1,30 @@
 @page "/clientes/nuevo"
-@page "/clientes/editar/{Id:int}"
+@page "/clientes/editar/{Tipo}/{Id:int}"
 @using KlamWA.Components.Shared
 @using KlamWA.ViewModels
 @inject NavigationManager Nav
+@using KlamWA.Servicios
+@using KlamWA.DTOs
+@inject IGestionClienteService Api
 
 <PageTitle>Formulario de cliente</PageTitle>
 
 <PageHeader Titulo="@(Id == null ? "Registrar cliente" : "Editar cliente #" + Id)"
-            Subtitulo="Los datos se validan pero no se guardan en este laboratorio" />
+            Subtitulo="@(Id == null ? "Registra los datos comerciales del cliente" : "Modifica los datos comerciales o habilita una cuenta por separado")" />
 
 @if (MensajeOk != null)
 {
-    <div class="alert alert-success">@MensajeOk</div>
+    <div class="alert alert-success">
+        @MensajeOk
+        @if (ClienteCreadoId != null)
+        {
+            <a href="/clientes/editar/@ClienteCreadoTipo/@ClienteCreadoId#acceso">Agregar otra cuenta de acceso</a>
+        }
+    </div>
+}
+@if (MensajeError != null)
+{
+    <div class="alert alert-danger" role="alert">@MensajeError</div>
 }
 
 <EditForm Model="ViewModel" OnValidSubmit="Guardar">
@@ -82,44 +95,166 @@
                         </div>
                     </div>
                 }
+                @if (Id != null)
+                {
+                    <div class="col-12">
+                        <div class="form-check">
+                            <InputCheckbox class="form-check-input" id="activo" @bind-Value="ViewModel.Activo" />
+                            <label class="form-check-label" for="activo">Cliente activo</label>
+                        </div>
+                    </div>
+                }
+                @if (Id == null)
+                {
+                    <div class="col-12"><hr class="my-1" /><strong>Acceso a la plataforma</strong>
+                        <div class="form-text">Todo cliente se registra con su usuario y contraseña; sin ellos no se puede guardar.</div>
+                    </div>
+                    <CampoForm Etiqueta="Usuario *">
+                        <InputText class="form-control" maxlength="@ReglasCredenciales.MaxUsuario" autocomplete="off" @bind-Value="ViewModel.Username" />
+                        <div class="form-text">@ReglasCredenciales.TextoUsuario</div>
+                        <ValidationMessage For="() => ViewModel.Username" />
+                    </CampoForm>
+                    <div class="col-md-6"></div>
+                    <CampoForm Etiqueta="Contraseña *">
+                        <InputText type="password" class="form-control" maxlength="@ReglasCredenciales.MaxPassword" autocomplete="new-password" @bind-Value="ViewModel.Password" />
+                        <div class="form-text">@ReglasCredenciales.TextoPassword</div>
+                        <ValidationMessage For="() => ViewModel.Password" />
+                    </CampoForm>
+                    <CampoForm Etiqueta="Confirmar contraseña *">
+                        <InputText type="password" class="form-control" autocomplete="new-password" @bind-Value="ViewModel.ConfirmarPassword" />
+                        <ValidationMessage For="() => ViewModel.ConfirmarPassword" />
+                    </CampoForm>
+                }
             </div>
         </div>
         <div class="card-footer">
-            <button type="submit" class="btn btn-primary">Guardar</button>
+            <button type="submit" class="btn btn-primary" disabled="@enviando">@(enviando ? "Guardando…" : "Guardar")</button>
             <a class="btn btn-outline-secondary" href="/clientes">Cancelar</a>
         </div>
     </div>
 </EditForm>
 
+@if (Id != null)
+{
+    <div id="acceso" class="card mt-3" style="max-width:900px">
+        <div class="card-header">Habilitar cuenta de acceso</div>
+        <div class="card-body">
+            <p class="text-muted">Todo cliente se registra con su cuenta de acceso. Aquí puedes agregar otra cuenta con otro usuario y contraseña.</p>
+            @if (MensajeCuentaOk != null)
+            {
+                <div class="alert alert-success" role="status">@MensajeCuentaOk</div>
+            }
+            @if (MensajeCuentaError != null)
+            {
+                <div class="alert alert-danger" role="alert">@MensajeCuentaError</div>
+            }
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="cuentaUsuario">Usuario</label>
+                    <input id="cuentaUsuario" class="form-control" maxlength="@ReglasCredenciales.MaxUsuario" autocomplete="off" @bind="CuentaUsuario" />
+                    <div class="form-text">@ReglasCredenciales.TextoUsuario</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="cuentaPassword">Contraseña</label>
+                    <input id="cuentaPassword" type="password" class="form-control" maxlength="@ReglasCredenciales.MaxPassword" autocomplete="new-password" @bind="CuentaPassword" />
+                    <div class="form-text">@ReglasCredenciales.TextoPassword</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="cuentaConfirmar">Confirmar contraseña</label>
+                    <input id="cuentaConfirmar" type="password" class="form-control" autocomplete="new-password" @bind="CuentaConfirmar" />
+                </div>
+                <div class="col-12">
+                    <button type="button" class="btn btn-outline-primary" disabled="@habilitando" @onclick="HabilitarCuenta">
+                        @(habilitando ? "Habilitando…" : "Habilitar cuenta")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public int? Id { get; set; }
+    [Parameter] public string? Tipo { get; set; }   // CLINICA_HOSPITAL | PACIENTE_PARTICULAR (solo al editar)
 
     private ClienteViewModel ViewModel { get; set; } = new();
     private string? MensajeOk { get; set; }
+    private string? MensajeError { get; set; }
+    private string? MensajeCuentaOk { get; set; }
+    private string? MensajeCuentaError { get; set; }
+    private int? ClienteCreadoId { get; set; }
+    private string? ClienteCreadoTipo { get; set; }
+    private string CuentaUsuario { get; set; } = "";
+    private string CuentaPassword { get; set; } = "";
+    private string CuentaConfirmar { get; set; } = "";
+    private bool enviando;
+    private bool habilitando;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         MensajeOk = null;
+        MensajeError = null;
+        ClienteCreadoId = null;
         if (Id == null)
         {
             ViewModel = new ClienteViewModel();
             return;
         }
-        var c = DatosClientes.Lista.FirstOrDefault(x => x.Id == Id);
-        if (c == null)
-        {
-            Nav.NavigateTo("/clientes");
-            return;
-        }
-        ViewModel = new ClienteViewModel(c);
+        try { ViewModel = new ClienteViewModel(await Api.ObtenerAsync(Tipo ?? "", Id.Value)); }
+        catch (HttpRequestException ex) { MensajeError = ex.Message; }
     }
 
-    // Solo se ejecuta si el ViewModel es válido (validación de frontend).
-    private void Guardar()
+    // Solo se ejecuta si el ViewModel es válido (ayuda de UX); la BL de Java valida de verdad.
+    private async Task Guardar()
     {
-        // Lab 9: NO se guarda nada.
-        // Siguiente lab: llamar al servicio web de Java (PacienteParticularBL / ClinicaHospitalBL
-        // insert/update) y mostrar el mensaje de BLException si falla.
-        MensajeOk = "Datos válidos (en este laboratorio no se guarda).";
+        MensajeOk = null; MensajeError = null;
+        if (Id != null)
+        {
+            enviando = true;
+            try
+            {
+                await Api.ActualizarAsync(Tipo ?? "", Id.Value, ViewModel.ToRegistro());
+                MensajeOk = "Cliente actualizado.";
+            }
+            catch (HttpRequestException ex) { MensajeError = ex.Message; }
+            enviando = false;
+            return;
+        }
+        enviando = true;
+        try
+        {
+            var usuario = ViewModel.Username.Trim();
+            var creado = await Api.RegistrarAsync(ViewModel.ToRegistro());
+            MensajeOk = $"Cliente «{creado.Nombre}» registrado con su cuenta de acceso. Usuario: {usuario}. ";
+            ClienteCreadoId = creado.IdCliente;
+            ClienteCreadoTipo = creado.TipoCliente;
+            ViewModel = new ClienteViewModel { Tipo = ViewModel.Tipo };
+        }
+        catch (HttpRequestException ex) { MensajeError = ex.Message; }
+        enviando = false;
+    }
+
+    private async Task HabilitarCuenta()
+    {
+        MensajeCuentaOk = null;
+        MensajeCuentaError = null;
+        if (Id == null || string.IsNullOrWhiteSpace(Tipo)) return;
+        if (!ReglasCredenciales.UsuarioValido(CuentaUsuario))
+            MensajeCuentaError = "Usuario inválido. " + ReglasCredenciales.TextoUsuario;
+        else if (!ReglasCredenciales.PasswordValida(CuentaPassword))
+            MensajeCuentaError = "Contraseña inválida. " + ReglasCredenciales.TextoPassword;
+        else if (CuentaPassword != CuentaConfirmar)
+            MensajeCuentaError = "Las contraseñas no coinciden.";
+        if (MensajeCuentaError != null) return;
+
+        habilitando = true;
+        try
+        {
+            await Api.HabilitarCuentaAsync(Tipo, Id.Value, CuentaUsuario.Trim(), CuentaPassword);
+            MensajeCuentaOk = $"Cuenta «{CuentaUsuario.Trim()}» habilitada.";
+            CuentaUsuario = CuentaPassword = CuentaConfirmar = "";
+        }
+        catch (HttpRequestException ex) { MensajeCuentaError = ex.Message; }
+        finally { habilitando = false; }
     }
 }

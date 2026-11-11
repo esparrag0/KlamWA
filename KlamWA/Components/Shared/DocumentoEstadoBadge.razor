@@ -1,18 +1,22 @@
-@* Etiqueta de estado. Sirve para documentos (Pendiente, Validado, Rechazado: mismos nombres que
-   EstadoValidacionDocumento de Java) y para solicitudes (Por revisar, Documentación incompleta,
-   Rechazada · Resubida habilitada, Aprobada: mismos nombres que usa el Rol 4). *@
-<span class="badge @Clase">@Estado</span>
+@* Etiqueta de estado de documentos y solicitudes con los colores del Design System:
+   Pendiente / Por revisar (azul claro), Validado / Aprobada (turquesa), Rechazado / Rechazada (rosa claro).
+   Acepta el código de Java (PENDIENTE, POR_REVISAR...) o el texto ya formateado. *@
+<span class="badge estado-badge @Clase">@Texto</span>
 
 @code {
     [Parameter] public string Estado { get; set; } = "";
 
-    private string Clase => Estado switch
+    private string Texto => Estado switch
     {
-        "Validado" or "Aprobada" or "Completo"     => "text-bg-success",
-        "Rechazado"                                => "text-bg-danger",
-        "Pendiente" or "Documentación incompleta" or "Por adjuntar" or "Por registrar" => "text-bg-warning",
-        "Por revisar"                              => "text-bg-info",
-        _ when Estado.StartsWith("Rechazada")      => "text-bg-danger",
-        _                                          => "text-bg-secondary"
+        "PENDIENTE" => "Pendiente",
+        "VALIDADO" => "Validado",
+        "RECHAZADO" => "Rechazado",
+        "POR_REVISAR" => "Por revisar",
+        "DOCUMENTACION_INCOMPLETA" => "Documentación incompleta",
+        "RECHAZADA" => "Rechazada",
+        "APROBADA" => "Aprobada",
+        _ => Estado
     };
+
+    private string Clase => KlamWA.ViewModels.EstadoSolicitudTexto.Clase(Texto);
 }

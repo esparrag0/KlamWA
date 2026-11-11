@@ -1,0 +1,172 @@
+@page "/cliente/solicitudes/nueva"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using Microsoft.AspNetCore.Components.Authorization
+@using KlamWA.ViewModels
+@inject ISolicitudClienteService Solicitudes
+@inject AuthenticationStateProvider Autenticacion
+
+<PageTitle>Nueva solicitud de cirugía</PageTitle>
+<PageHeader Titulo="Solicitar cirugía" Subtitulo="Registro de solicitud de cirugía" />
+
+@if (creada is not null)
+{
+    <div class="alert alert-success" role="status">
+        Solicitud <strong>SOL-@creada.IdSolicitud.ToString("D4")</strong> registrada. Estado: @EstadoSolicitudTexto.Texto(creada.Estado).
+        <a href="/cliente/solicitudes">Ver mis solicitudes</a>
+    </div>
+}
+@if (error is not null)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<EditForm Model="ViewModel" OnValidSubmit="Enviar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card mb-3" style="max-width:900px">
+        <div class="card-header">Datos de la cirugía</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12"><span class="text-muted">Solicitante:</span> <strong>@usuario</strong></div>
+                <CampoForm Etiqueta="@(ViewModel.ClinicaDestinoObligatoria ? "Clínica u hospital de destino *" : "Clínica u hospital de destino (opcional)")" Para="clinica">
+                    <div class="position-relative">
+                        <input id="clinica" class="form-control" autocomplete="off"
+                               placeholder="Escriba el nombre de la clínica"
+                               value="@textoClinica" @oninput="AlEscribirClinica" />
+                        @if (ViewModel.IdClinica == 0 && sugerencias.Count > 0)
+                        {
+                            <ul class="list-group position-absolute shadow-sm w-100" style="z-index:20">
+                                @foreach (var opcion in sugerencias)
+                                {
+                                    <li class="list-group-item list-group-item-action p-0">
+                                        <button type="button" class="btn btn-link text-start text-decoration-none w-100 px-3 py-2"
+                                                @onclick="() => ElegirClinica(opcion)">@opcion.Nombre</button>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                    @if (ViewModel.IdClinica > 0)
+                    {
+                        <div class="form-text text-success">Clínica elegida: <strong>@textoClinica</strong></div>
+                    }
+                    else if (buscandoClinica)
+                    {
+                        <div class="form-text">Buscando…</div>
+                    }
+                    else if (textoClinica.Trim().Length >= 2 && sugerencias.Count == 0)
+                    {
+                        <div class="form-text">No hay clínicas con ese nombre.</div>
+                    }
+                    else
+                    {
+                        <div class="form-text">Escriba al menos 2 letras y elija una opción de la lista.@(ViewModel.ClinicaDestinoObligatoria ? "" : " Si representa a una clínica, déjelo vacío para usar su propia sede.")</div>
+                    }
+                    <ValidationMessage For="() => ViewModel.IdClinica" />
+                </CampoForm>
+                <CampoForm Etiqueta="@(ViewModel.PacienteObligatorio ? "Nombre del paciente *" : "Nombre del paciente (opcional)")" Para="paciente">
+                    <InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" />
+                    <ValidationMessage For="() => ViewModel.PacienteNombre" />
+                </CampoForm>
+                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
+                    <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
+                    <ValidationMessage For="() => ViewModel.Diagnostico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Procedimiento *" Para="procedimiento">
+                    <InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" />
+                    <ValidationMessage For="() => ViewModel.Procedimiento" />
+                </CampoForm>
+                <CampoForm Etiqueta="Médico *" Para="medico">
+                    <InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" />
+                    <ValidationMessage For="() => ViewModel.Medico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Fecha *" Para="fecha">
+                    <InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" />
+                    <ValidationMessage For="() => ViewModel.Fecha" />
+                </CampoForm>
+                <CampoForm Etiqueta="Hora *" Para="hora">
+                    <InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" />
+                    <ValidationMessage For="() => ViewModel.Hora" />
+                </CampoForm>
+                <CampoForm Etiqueta="Observaciones (opcional)" Columnas="col-12" Para="observaciones">
+                    <InputTextArea id="observaciones" class="form-control" rows="2" @bind-Value="ViewModel.Observaciones" />
+                    <ValidationMessage For="() => ViewModel.Observaciones" />
+                </CampoForm>
+            </div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@enviando">@(enviando ? "Enviando…" : "Enviar solicitud")</button>
+            <a class="btn btn-outline-secondary" href="/cliente/solicitudes">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+<p class="text-muted small">La carga de documentos (receta médica) de esta solicitud se gestiona en el módulo de documentos.</p>
+
+@code {
+    private SolicitudClienteViewModel ViewModel { get; set; } = new();
+    private SolicitudCirugiaDTO? creada;
+    private string usuario = string.Empty;
+    private string? error;
+    private bool enviando;
+
+    // Buscador de clínicas por nombre (el cliente no conoce los ids).
+    private string textoClinica = string.Empty;
+    private List<ClinicaOpcionDTO> sugerencias = [];
+    private bool buscandoClinica;
+
+    private async Task AlEscribirClinica(ChangeEventArgs e)
+    {
+        textoClinica = e.Value?.ToString() ?? string.Empty;
+        ViewModel.IdClinica = 0;   // al escribir de nuevo, la elección anterior ya no vale
+        sugerencias = [];
+        var consultado = textoClinica.Trim();
+        if (consultado.Length < 2) return;
+
+        buscandoClinica = true;
+        try
+        {
+            var resultado = await Solicitudes.BuscarClinicasAsync(consultado);
+            if (consultado != textoClinica.Trim()) return;   // llegó tarde: ya escribió otra cosa
+            sugerencias = resultado;
+            // Si lo escrito coincide exactamente con una clínica, se elige sola.
+            var exacta = resultado.FirstOrDefault(o => string.Equals(o.Nombre, consultado, StringComparison.OrdinalIgnoreCase));
+            if (exacta is not null) ElegirClinica(exacta);
+        }
+        catch (HttpRequestException ex) { error = ex.Message; }
+        finally { buscandoClinica = false; }
+    }
+
+    private void ElegirClinica(ClinicaOpcionDTO opcion)
+    {
+        ViewModel.IdClinica = opcion.IdCliente;
+        textoClinica = opcion.Nombre;
+        sugerencias = [];
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var estado = await Autenticacion.GetAuthenticationStateAsync();
+        usuario = estado.User.Identity?.Name ?? string.Empty;
+        // Un paciente particular puede omitir el nombre del paciente (la BL usa el suyo); una clínica debe indicarlo.
+        ViewModel.PacienteObligatorio = !estado.User.IsInRole("PACIENTE_PARTICULAR");
+        ViewModel.ClinicaDestinoObligatoria = estado.User.IsInRole("PACIENTE_PARTICULAR");
+    }
+
+    // La validación real la hace la BL en Java; aquí se muestra su mensaje tal cual.
+    private async Task Enviar()
+    {
+        enviando = true; creada = null; error = null;
+        try
+        {
+            creada = await Solicitudes.RegistrarAsync(ViewModel.ToDto());
+            ViewModel = new() { PacienteObligatorio = ViewModel.PacienteObligatorio,
+                ClinicaDestinoObligatoria = ViewModel.ClinicaDestinoObligatoria };
+            textoClinica = string.Empty;
+            sugerencias = [];
+        }
+        catch (HttpRequestException ex) { error = ex.Message; }
+        enviando = false;
+    }
+}

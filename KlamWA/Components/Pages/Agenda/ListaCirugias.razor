@@ -1,19 +1,81 @@
 @inject VistaPreviaRol Vista
+@inject ICirugiaService CirugiaSvc
 @page "/agenda/lista"
 @using KlamWA.Components.Shared
+@using KlamWA.Servicios
 
-<PageTitle>Lista de cirugías</PageTitle>
+<PageTitle>@Titulo</PageTitle>
 
-<PageHeader Titulo="Lista de cirugías" Subtitulo="Cirugías asociadas a tu perfil (datos de ejemplo)">
+<PageHeader Titulo="@Titulo" Subtitulo="@Subtitulo">
     @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <a class="btn btn-outline-secondary" href="/agenda">Ver calendario</a> }
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
 </PageHeader>
 
 <FiltrosCirugia OnFiltrar="AplicarFiltros" />
-<TablaCirugias Cirugias="Filas" />
+
+@if (error != null)
+{
+    <div class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+        <span>@error</span>
+        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="Cargar">Reintentar</button>
+    </div>
+}
+else if (cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Cargando cirugías…</p>
+}
+else
+{
+    <TablaCirugias Cirugias="filas" />
+}
 
 @code {
-    private FiltroCirugiaVista filtro = new();
-    private IEnumerable<CirugiaMock> Filas => FiltrosAgenda.Aplicar(DatosAgenda.ParaPerfil(Vista.Perfil.Clave), filtro);
-    private void AplicarFiltros(FiltroCirugiaVista nuevo) => filtro = nuevo;
+    // Cada perfil ve su alcance (lo aplica el backend): administrador e instrumentista, toda la agenda;
+    // vendedor, las cirugías de sus solicitudes; cliente, las suyas.
+    private string Titulo => Vista.Perfil.Clave switch
+    {
+        "instrumentista" => "Mis cirugías",
+        "vendedor" => "Cirugías coordinadas",
+        "cliente" => "Mis cirugías",
+        _ => "Cirugías coordinadas"
+    };
+    private string Subtitulo => Vista.Perfil.Clave switch
+    {
+        "administrador" => "Cirugías registradas, con filtros por fecha, equipo y cliente",
+        "vendedor" => "Cirugías originadas en las solicitudes que registraste",
+        "cliente" => "Cirugías programadas y realizadas para tu cuenta",
+        _ => "Cirugías de la agenda en las que participa el equipo de instrumentación"
+    };
+
+    private FiltroCirugia filtro = new();
+    private List<CirugiaResumenViewModel> filas = new();
+    private bool cargando;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => Cargar();
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        error = null;
+        try
+        {
+            filas = await CirugiaSvc.Buscar(filtro);
+        }
+        catch (ServicioException ex)
+        {
+            error = ex.Message;
+            filas = new();
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private Task AplicarFiltros(FiltroCirugia nuevo)
+    {
+        filtro = nuevo;
+        return Cargar();
+    }
 }

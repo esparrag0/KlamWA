@@ -1,67 +1,169 @@
+@page "/mis-solicitudes/corregir"
 @page "/mis-solicitudes/corregir/{Id:int}"
-@inject NavigationManager Nav;
+@attribute [Authorize(Roles = "VENDEDOR,ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IDocumentoIngresoService DocumentoService
+@inject IJSRuntime JS
+@inject VistaPreviaRol Vista
 
-<PageTitle>Corregir documento</PageTitle>
+<PageTitle>Corregir documento | Klam</PageTitle>
 
 <h3 class="mb-3">Corregir documento</h3>
-<p class="text-muted">SOL-@Id.ToString("000") · Revisión observada por administración</p>
+<p class="text-muted">Documentos presentados con tu sesión autenticada</p>
 
-<div class="alert alert-warning">
-    <div class="fw-bold">@DocumentoObservado rechazada</div>
-    @Motivo Adjunta una copia legible.
+@if (Mensaje is not null) { <div class="alert alert-success" role="status">@Mensaje</div> }
+@if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert">@Error
+        @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="card-header fw-bold">Documentos observados</div>
+    <div class="card-body">
+        @if (Cargando) { <div class="alert alert-info">Consultando documentos...</div> }
+        else if (Vigentes.Count == 0)
+        {
+            <div class="alert alert-info mb-0">No hay documentos presentados por tu usuario para corregir.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>Solicitud</th><th>Documento</th><th>Estado</th><th>Versión</th><th>Motivo</th><th>Resubida</th><th>Archivo</th></tr></thead>
+                    <tbody>
+                        @foreach (var documento in Vigentes)
+                        {
+                            <tr>
+                                <td>SOL-@documento.IdSolicitud?.ToString("000")</td>
+                                <td>@documento.TipoDocumento.Replace('_', ' ')</td>
+                                <td>@documento.EstadoValidacion.Replace('_', ' ')</td>
+                                <td>@documento.Version</td>
+                                <td>@documento.MotivoRechazo</td>
+                                <td>@(documento.HabilitarResubida ? "Autorizada" : "No autorizada")</td>
+                                <td><button type="button" class="btn btn-outline-secondary btn-sm" disabled="@Ocupado" @onclick="() => DescargarAsync(documento.IdDocumento)">Descargar</button></td>
+                            </tr>
+                            @if (documento.EstadoValidacion == "RECHAZADO" && documento.HabilitarResubida)
+                            {
+                                <tr>
+                                    <td colspan="7" class="bg-light">
+                                        <label class="form-label">Nueva versión de @documento.TipoDocumento.Replace('_', ' ')</label>
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <InputFile OnChange="@(e => SeleccionarArchivo(e, documento.IdDocumento))" accept=".pdf,.png,.jpg,.jpeg" />
+                                            <button type="button" class="btn btn-primary btn-sm" disabled="@(Ocupado || Archivo is null || DocumentoSeleccionado != documento.IdDocumento)" @onclick="() => ResubirAsync(documento.IdDocumento)">Resubir documento</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="form-text mb-0">PDF, PNG o JPEG hasta 5 MB. La autorización y la identidad se vuelven a comprobar en Java.</p>
+        }
+    </div>
 </div>
 
-@if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
+@if (Documentos.Count > 0)
+{
+    <div class="card mb-3">
+        <div class="card-header fw-bold">Historial de versiones</div>
+        <div class="card-body">
+            @foreach (var documento in Documentos.OrderByDescending(d => d.FechaCarga))
+            {
+                <div class="border-bottom py-1">SOL-@documento.IdSolicitud?.ToString("000") · @documento.TipoDocumento.Replace('_', ' ') · versión @documento.Version · @documento.EstadoValidacion.Replace('_', ' ')
+                    @if (!string.IsNullOrWhiteSpace(documento.MotivoRechazo)) { <span>· @documento.MotivoRechazo</span> }
+                    <button type="button" class="btn btn-link btn-sm" disabled="@Ocupado" @onclick="() => DescargarAsync(documento.IdDocumento)">Descargar</button>
+                </div>
+            }
+        </div>
+    </div>
+}
 
-<div class="row g-3">
-    <div class="col-lg-7">
-        <div class="card h-100">
-            <div class="card-header fw-bold">Nueva versión del documento</div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">@DocumentoObservado corregida</label>
-                    <InputFile class="form-control" accept=".pdf,.jpg,.jpeg,.png" OnChange="SeleccionarArchivo" />
-                    <div class="form-text">@(archivoSeleccionado is null ? "Seleccione un archivo para la demostración." : $"Seleccionado: {archivoSeleccionado}")</div>
-                </div>
-                <div class="d-flex gap-2">
-                    <button tabindex="2" type="button" class="btn btn-primary" disabled="@string.IsNullOrWhiteSpace(archivoSeleccionado)" @onclick="EnviarDocumento">
-                        Enviar documento corregido
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-5">
-        <div class="card h-100">
-            <div class="card-header fw-bold">Seguimiento</div>
-            <div class="card-body">
-                <p class="mb-0">Versión anterior: Rechazada</p>
-                <p>Nueva versión: Por revisar</p>
-                <p class="small text-muted">La solicitud volverá a revisión tras el envío.</p>
-            </div>
-        </div>
-    </div>
-</div>
+<button type="button" class="btn btn-outline-primary me-2" disabled="@(Cargando || Ocupado)" @onclick="CargarAsync">Actualizar</button>
+<a class="btn btn-outline-secondary" href="@(Vista.Perfil.Clave == "administrador" ? "/solicitudes" : "/mis-solicitudes")">Volver</a>
 
 @code {
-    [Parameter]
-    public int Id { get; set; }
+    [Parameter] public int Id { get; set; }
+    private List<DocumentoIngresoDTO> Documentos { get; set; } = [];
+    private List<DocumentoIngresoDTO> Vigentes => Documentos
+        .GroupBy(d => new { d.IdSolicitud, d.TipoDocumento })
+        .Select(g => g.OrderByDescending(d => d.Version).First())
+        .OrderBy(d => d.IdSolicitud).ThenBy(d => d.TipoDocumento).ToList();
+    private IBrowserFile? Archivo { get; set; }
+    private int? DocumentoSeleccionado { get; set; }
+    private bool Cargando { get; set; }
+    private bool Ocupado { get; set; }
+    private bool RequiereLogin { get; set; }
+    private string? Error { get; set; }
+    private string? Mensaje { get; set; }
 
-    private string DocumentoObservado { get; set; } = "Receta médica";
-    private string Motivo { get; set; } = "";
-    private string? archivoSeleccionado;
-    private string? mensaje;
-    private void SeleccionarArchivo(InputFileChangeEventArgs e) => archivoSeleccionado = e.File.Name;
+    protected override Task OnParametersSetAsync() => CargarAsync();
 
-    protected override void OnParametersSet()
+    private async Task CargarAsync()
     {
-        var solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == Id);
-        if (solicitud is null) { Nav.NavigateTo("/mis-solicitudes"); return; }
-        DocumentoObservado = solicitud.Documentos.FirstOrDefault(d => d.Estado == "Rechazado")?.Tipo ?? "Receta médica";
-        Motivo = solicitud.MotivoRechazo;
+        Cargando = true;
+        Error = null;
+        RequiereLogin = false;
+        try { Documentos = await DocumentoService.ListarPropiosAsync(Id > 0 ? Id : null); }
+        catch (HttpRequestException ex)
+        {
+            Documentos = [];
+            RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
+            Error = ex.Message;
+        }
+        finally { Cargando = false; }
     }
 
-    private void EnviarDocumento() {
-        mensaje = "Archivo seleccionado. No se envió ni reemplazó el documento en esta entrega.";
+    private void SeleccionarArchivo(InputFileChangeEventArgs e, int idDocumento)
+    {
+        Archivo = e.File;
+        DocumentoSeleccionado = idDocumento;
+        Error = null;
+        Mensaje = null;
+    }
+
+    private async Task ResubirAsync(int idDocumento)
+    {
+        if (Archivo is null || DocumentoSeleccionado != idDocumento) return;
+        Ocupado = true;
+        Error = null;
+        Mensaje = null;
+        try
+        {
+            await DocumentoService.ResubirArchivoAsync(idDocumento, Archivo);
+            Archivo = null;
+            DocumentoSeleccionado = null;
+            await CargarAsync();
+            Mensaje = "Nueva versión cargada; queda pendiente de revisión.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException)
+        {
+            RequiereLogin = ex is HttpRequestException http && http.StatusCode == HttpStatusCode.Unauthorized;
+            Error = ex.Message;
+        }
+        finally { Ocupado = false; }
+    }
+
+    private async Task DescargarAsync(int idDocumento)
+    {
+        Ocupado = true;
+        Error = null;
+        try
+        {
+            var archivo = await DocumentoService.DescargarAsync(idDocumento);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JSException)
+        {
+            Error = ex.Message;
+        }
+        finally { Ocupado = false; }
     }
 }

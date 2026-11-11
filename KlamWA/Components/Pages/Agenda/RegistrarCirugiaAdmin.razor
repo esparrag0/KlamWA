@@ -1,0 +1,112 @@
+@page "/agenda/registrar"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.ViewModels
+@inject IRegistroCirugiaService Cirugias
+@inject IGestionClienteService Clientes
+
+<PageTitle>Registrar cirugía</PageTitle>
+<PageHeader Titulo="Registrar cirugía" Subtitulo="Registro directo por el administrador (RF09)" />
+
+@if (registrada is not null)
+{
+    <div class="alert alert-success" role="status">
+        Cirugía <strong>#@registrada.IdCirugia</strong> registrada en estado Programada.
+        <a href="/agenda/cirugia/@registrada.IdCirugia">Ver detalle</a> · <a href="/agenda">Ver calendario</a>
+    </div>
+}
+@if (error is not null)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<EditForm Model="ViewModel" OnValidSubmit="Registrar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="card mb-3" style="max-width:900px">
+        <div class="card-header">Datos de la cirugía</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <CampoForm Etiqueta="Tipo de cliente" Columnas="col-12" Para="tipo-cliente">
+                    <InputSelect id="tipo-cliente" class="form-select" TValue="string" Value="ViewModel.TipoCliente"
+                                 ValueExpression="() => ViewModel.TipoCliente" ValueChanged="TipoClienteCambio">
+                        <option value="CLINICA_HOSPITAL">Clínica / hospital</option>
+                        <option value="PACIENTE_PARTICULAR">Paciente particular</option>
+                    </InputSelect>
+                </CampoForm>
+                <CampoForm Etiqueta="@(ViewModel.TipoCliente == "CLINICA_HOSPITAL" ? "Clínica destino *" : "Paciente particular *")" Columnas="col-12" Para="cliente">
+                    <InputSelect id="cliente" class="form-select" @bind-Value="ViewModel.IdCliente">
+                        <option value="0">-- Seleccione --</option>
+                        @foreach (var c in clientes.Where(x => x.TipoCliente == ViewModel.TipoCliente))
+                        {
+                            <option value="@c.IdCliente">@c.Nombre (@c.Documento)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => ViewModel.IdCliente" />
+                </CampoForm>
+                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
+                    <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
+                    <ValidationMessage For="() => ViewModel.Diagnostico" />
+                </CampoForm>
+                <CampoForm Etiqueta="Tipo de procedimiento *" Para="procedimiento">
+                    <InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.TipoProcedimiento" />
+                    <ValidationMessage For="() => ViewModel.TipoProcedimiento" />
+                </CampoForm>
+                <CampoForm Etiqueta="Médico tratante *" Para="medico">
+                    <InputText id="medico" class="form-control" @bind-Value="ViewModel.Doctor" />
+                    <ValidationMessage For="() => ViewModel.Doctor" />
+                </CampoForm>
+                <CampoForm Etiqueta="Fecha *" Para="fecha">
+                    <InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" />
+                    <ValidationMessage For="() => ViewModel.Fecha" />
+                </CampoForm>
+                <CampoForm Etiqueta="Hora *" Para="hora">
+                    <InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" />
+                    <ValidationMessage For="() => ViewModel.Hora" />
+                </CampoForm>
+                <CampoForm Etiqueta="Fecha y hora de fin (opcional)" Para="fin">
+                    <InputDate id="fin" Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraFin" />
+                    <ValidationMessage For="() => ViewModel.FechaHoraFin" />
+                </CampoForm>
+            </div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@enviando">@(enviando ? "Registrando…" : "Registrar cirugía")</button>
+            <a class="btn btn-outline-secondary" href="/agenda">Cancelar</a>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private RegistroCirugiaAdminViewModel ViewModel { get; set; } = new();
+    private List<ClienteGestionDTO> clientes = [];
+    private CirugiaRegistradaDTO? registrada;
+    private string? error;
+    private bool enviando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { clientes = await Clientes.ListarAsync(); }
+        catch (HttpRequestException ex) { error = ex.Message; }
+    }
+
+    private void TipoClienteCambio(string tipo)
+    {
+        ViewModel.TipoCliente = tipo;
+        ViewModel.IdCliente = 0;   // el id anterior pertenecía al otro tipo de cliente
+    }
+
+    // La validación real (obligatorios, cliente activo, cruces) la hace CirugiaBL; se muestra su mensaje tal cual.
+    private async Task Registrar()
+    {
+        enviando = true; registrada = null; error = null;
+        try
+        {
+            registrada = await Cirugias.RegistrarAsync(ViewModel.ToDto());
+            ViewModel = new() { TipoCliente = ViewModel.TipoCliente };
+        }
+        catch (HttpRequestException ex) { error = ex.Message; }
+        enviando = false;
+    }
+}

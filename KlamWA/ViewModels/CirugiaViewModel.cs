@@ -1,15 +1,12 @@
 using System.ComponentModel.DataAnnotations;
-using KlamWA.Components.Shared;
+using KlamWA.DTOs;
 
 namespace KlamWA.ViewModels;
 
-// Validación de frontend (misma idea que ProductoViewModel de la sesión 17).
-// Refleja las reglas de CirugiaBLImpl.validarDatos (Java). La BL sigue siendo
-// la defensa real: estas anotaciones son solo ayuda de UX.
+// Formulario de cirugía (RF02). Las anotaciones solo ayudan al usuario;
+// las reglas reales (cruces de horario, esterilización, estados) las valida CirugiaBL en Java.
 public class CirugiaViewModel : IValidatableObject
 {
-    public int Id { get; set; }
-
     [Required(ErrorMessage = "El tipo de procedimiento es obligatorio")]
     [StringLength(100, ErrorMessage = "Máximo 100 caracteres")]
     public string TipoProcedimiento { get; set; } = "";
@@ -18,72 +15,61 @@ public class CirugiaViewModel : IValidatableObject
     [StringLength(100, ErrorMessage = "Máximo 100 caracteres")]
     public string Doctor { get; set; } = "";
 
-    [Required(ErrorMessage = "El nombre del paciente es obligatorio")]
-    [StringLength(100, ErrorMessage = "Máximo 100 caracteres")]
-    public string Paciente { get; set; } = "";
-
     [Required(ErrorMessage = "El diagnóstico es obligatorio")]
     [StringLength(300, ErrorMessage = "Máximo 300 caracteres")]
     public string Diagnostico { get; set; } = "";
-
-    [Required(ErrorMessage = "La clínica u hospital es obligatorio")]
-    public string Clinica { get; set; } = "";
 
     [Required(ErrorMessage = "La fecha y hora de inicio es obligatoria")]
     public DateTime? FechaHoraInicio { get; set; }
 
     public DateTime? FechaHoraFin { get; set; }
 
-    [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar un cliente")]
-    public int IdCliente { get; set; }
+    // "TIPO:id" porque los ids de clínicas y pacientes se repiten (CLINICA_HOSPITAL:2)
+    [Required(ErrorMessage = "Debe seleccionar un cliente")]
+    public string ClienteClave { get; set; } = "";
 
     public int IdEquipo { get; set; }    // 0 = ninguno
     public int IdBandeja { get; set; }   // 0 = ninguna
 
-    public string Estado { get; set; } = "Programada";
-
-    [StringLength(200, ErrorMessage = "Máximo 200 caracteres")]
-    public string MotivoCancelacion { get; set; } = "";
-
-    [Range(0, 1_000_000, ErrorMessage = "El precio no puede ser negativo")]
-    public double PrecioPactado { get; set; }
+    // Solo filtra las bandejas del formulario (no se envía)
+    public string Procedimiento { get; set; } = "";
 
     public CirugiaViewModel() { }
 
-    public CirugiaViewModel(CirugiaMock c)
+    public CirugiaViewModel(CirugiaDTO c)
     {
-        Id = c.Id;
-        TipoProcedimiento = c.Procedimiento;
-        Doctor = c.Doctor;
-        Paciente = c.Paciente;
+        TipoProcedimiento = c.TipoProcedimiento;
+        Doctor = c.DoctorNombre;
         Diagnostico = c.Diagnostico;
-        Clinica = c.Clinica;
         FechaHoraInicio = c.Inicio;
         FechaHoraFin = c.Fin;
-        IdCliente = DatosAgenda.Clientes.FirstOrDefault(x => x.Value == c.Cliente).Key;
-        IdEquipo = DatosAgenda.Equipos.FirstOrDefault(x => x.Value == c.Equipo).Key;
-        IdBandeja = DatosAgenda.Bandejas.FirstOrDefault(x => x.Value == c.Bandeja).Key;
-        Estado = c.Estado;
-        MotivoCancelacion = c.MotivoCancelacion;
-        PrecioPactado = c.PrecioCotizacion;
+        ClienteClave = c.IdCliente is int id ? $"{c.TipoCliente}:{id}" : "";
+        IdEquipo = c.IdEquipo ?? 0;
+        IdBandeja = c.IdBandeja ?? 0;
     }
 
-    // Reglas que cruzan campos (equivalentes a las de CirugiaBLImpl)
+    public CirugiaFormDTO ToFormDTO()
+    {
+        string[] partes = ClienteClave.Split(':');
+        return new CirugiaFormDTO
+        {
+            FechaHoraInicio = FechaHoraInicio?.ToString("yyyy-MM-dd'T'HH:mm:ss"),
+            FechaHoraFin = FechaHoraFin?.ToString("yyyy-MM-dd'T'HH:mm:ss"),
+            TipoProcedimiento = TipoProcedimiento,
+            DoctorNombre = Doctor,
+            Diagnostico = Diagnostico,
+            TipoCliente = partes.Length == 2 ? partes[0] : "",
+            IdCliente = partes.Length == 2 && int.TryParse(partes[1], out int id) ? id : 0,
+            IdEquipo = IdEquipo > 0 ? IdEquipo : null,
+            IdBandeja = IdBandeja > 0 ? IdBandeja : null
+        };
+    }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
         if (FechaHoraInicio != null && FechaHoraFin != null && FechaHoraInicio >= FechaHoraFin)
             yield return new ValidationResult(
                 "La fecha y hora de inicio debe ser anterior a la de fin",
                 new[] { nameof(FechaHoraFin) });
-
-        if (Estado == "Culminada" && FechaHoraFin == null)
-            yield return new ValidationResult(
-                "Una cirugía culminada debe tener fecha y hora de fin",
-                new[] { nameof(FechaHoraFin) });
-
-        if (Estado == "Cancelada" && string.IsNullOrWhiteSpace(MotivoCancelacion))
-            yield return new ValidationResult(
-                "Una cirugía cancelada debe tener un motivo de cancelación",
-                new[] { nameof(MotivoCancelacion) });
     }
 }

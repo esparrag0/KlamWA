@@ -1,53 +1,100 @@
 @page "/bitacora-cirugias/detalle/{Id:int}"
-@inject NavigationManager Nav;
+@inject IAuditoriaService Auditoria
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.ViewModels
 
-<PageTitle>Bitácora de cirugías</PageTitle>
+<PageTitle>Detalle del cambio</PageTitle>
 
-<h3 class="mb-3">Detalle del cambio</h3>
-<p class="text-muted">
-    @Registro.Cirugia · @Registro.Accion del @Registro.FechaHora.ToString("dd/MM/yyyy") a las @Registro.FechaHora.ToString("HH:mm")
-</p>
+<PageHeader Titulo="Detalle del cambio"
+            Subtitulo="Valores anteriores y posteriores registrados en la bitácora">
+    <a class="btn btn-outline-secondary" href="/bitacora-cirugias">Volver a bitácora</a>
+</PageHeader>
 
-<div class="alert alert-success">
-    <div class="fw-bold">Responsable: @Registro.Responsable</div>
-    Acción: @Registro.Accion de cirugía · Registro de auditoría
-</div>
+@if (cargando)
+{
+    <p class="text-muted">Cargando…</p>
+}
+else if (error is not null)
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (registro is not null)
+{
+    <div class="alert alert-success">
+        <div class="fw-bold">Responsable: @registro.Responsable</div>
+        Acción: @registro.Accion de la cirugía @registro.Cirugia · @registro.FechaHora.ToString("dd/MM/yyyy HH:mm")
+    </div>
 
-<table class="table table-sm">
-    <thead>
-        <tr>
-            <th>Campo modificado</th>
-            <th>Valor anterior</th>
-            <th>Valor posterior</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (CambioCampoViewModel cambio in Cambios) {
-            <tr>
-                <td>@cambio.Campo</td>
-                <td>@cambio.ValorAnterior</td>
-                <td>@cambio.ValorPosterior</td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<a tabindex="1" class="btn btn-outline-secondary" href="/bitacora-cirugias">Volver a bitácora</a>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>CAMPO MODIFICADO</th>
+                    <th>VALOR ANTERIOR</th>
+                    <th>VALOR POSTERIOR</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (CambioCampoViewModel c in cambios)
+                {
+                    <tr>
+                        <td>@c.Campo</td>
+                        <td>@c.ValorAnterior</td>
+                        <td>@c.ValorPosterior</td>
+                    </tr>
+                }
+                @if (cambios.Count == 0)
+                {
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-3">
+                            Esta entrada no registra diferencias de campos.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
 
 @code {
     [Parameter]
     public int Id { get; set; }
 
-    private RegistroBitacoraViewModel Registro { get; set; } = new();
-    private List<CambioCampoViewModel> Cambios { get; set; } = [];
+    private RegistroBitacoraViewModel? registro;
+    private List<CambioCampoViewModel> cambios = [];
+    private bool cargando = true;
+    private string? error;
 
-    protected override void OnParametersSet() {
-        var registro = DatosBitacora.Registros.FirstOrDefault(r => r.Id == Id);
-        if (registro == null) {
-            Nav.NavigateTo("/bitacora-cirugias");
-            return;
+    protected override async Task OnParametersSetAsync()
+    {
+        cargando = true;
+        error = null;
+        try
+        {
+            AuditoriaDetalleDTO? detalle = await Auditoria.ObtenerAsync(Id);
+            if (detalle is null)
+            {
+                registro = null;
+                error = "No existe la entrada de bitácora solicitada.";
+                return;
+            }
+
+            registro = RegistroBitacoraViewModel.DesdeDTO(detalle);
+            cambios = detalle.Cambios.Select(c => new CambioCampoViewModel
+            {
+                Campo = c.Campo,
+                ValorAnterior = c.ValorAnterior ?? "—",
+                ValorPosterior = c.ValorPosterior ?? "—",
+            }).ToList();
         }
-        Registro = registro;
-        Cambios = DatosBitacora.Cambios(Id).ToList();
+        catch (HttpRequestException ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
     }
 }

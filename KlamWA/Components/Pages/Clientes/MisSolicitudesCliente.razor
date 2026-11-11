@@ -1,0 +1,93 @@
+@page "/cliente/solicitudes"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.ViewModels
+@inject ISolicitudClienteService Solicitudes
+
+<PageTitle>Mis solicitudes</PageTitle>
+<PageHeader Titulo="Solicitudes de cirugía" Subtitulo="Tus solicitudes de cirugía y su estado">
+    <a class="btn btn-primary" href="/cliente/solicitudes/nueva">Nueva solicitud</a>
+</PageHeader>
+
+@if (error is not null)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+@if (solicitudes is null)
+{
+    <p class="text-muted">Cargando solicitudes…</p>
+}
+else if (solicitudes.Count == 0)
+{
+    <EstadoVacio Titulo="Aún no tienes solicitudes" Descripcion="Crea una nueva solicitud de cirugía para verla aquí." />
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N.º</th>
+                    <th>Fecha solicitada</th>
+                    <th>Clínica</th>
+                    <th>Procedimiento</th>
+                    <th>Estado</th>
+                    <th class="acciones">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in solicitudes)
+                {
+                    <tr>
+                        <td class="fw-semibold text-nowrap">@s.Codigo</td>
+                        <td>@s.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@s.ClinicaDestino</td>
+                        <td>@s.TipoProcedimiento</td>
+                        <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
+                        <td class="acciones">
+                            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.IdSolicitud)">
+                                @(abierta == s.IdSolicitud ? "Ocultar detalle" : "Ver detalle")
+                            </button>
+                            <a class="btn btn-sm btn-primary ms-1" href="/cliente/solicitudes/@s.IdSolicitud/documentos">Documentos</a>
+                        </td>
+                    </tr>
+                    @if (abierta == s.IdSolicitud)
+                    {
+                        <tr>
+                            <td colspan="6" class="bg-light">
+                                <div class="p-2">
+                                    <div class="mb-1"><strong>Paciente:</strong> @s.PacienteNombre</div>
+                                    <div class="mb-1"><strong>Médico:</strong> @s.DoctorNombre</div>
+                                    <div class="mb-1"><strong>Diagnóstico:</strong> @s.Diagnostico</div>
+                                    @if (!string.IsNullOrWhiteSpace(s.Observaciones))
+                                    {
+                                        <div class="mb-1"><strong>Observaciones:</strong> @s.Observaciones</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(s.MotivoRechazo))
+                                    {
+                                        <div class="alert alert-danger py-2 mb-0"><strong>Motivo del rechazo:</strong> @s.MotivoRechazo</div>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<SolicitudCirugiaDTO>? solicitudes;
+    private string? error;
+    private int abierta;
+
+    // Solicitudes reales del cliente que inició sesión (siguen ahí al recargar la página).
+    protected override async Task OnInitializedAsync()
+    {
+        try { solicitudes = (await Solicitudes.ListarPropiasAsync()).OrderByDescending(x => x.IdSolicitud).ToList(); }
+        catch (HttpRequestException ex) { error = ex.Message; solicitudes = []; }
+    }
+
+    private void Alternar(int id) => abierta = abierta == id ? 0 : id;
+}

@@ -1,103 +1,339 @@
 @page "/solicitudes/revision/{Id:int}"
-@inject NavigationManager Nav;
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IDocumentoIngresoService DocumentoService
+@inject ISolicitudCirugiaService SolicitudService
+@inject IJSRuntime JS
 
-<PageTitle>Solicitudes de cirugía</PageTitle>
+<PageTitle>Revisión de solicitud | Klam</PageTitle>
 
-<h3 class="mb-3">Revisión de @Solicitud.Codigo</h3>
-<p class="text-muted">@Solicitud.Cliente · Documentos de la atención</p>
+<PageHeader Titulo="@($"Revisión de SOL-{Id:000}")" Subtitulo="Datos de la solicitud y documentos de ingreso">
+    <a class="btn btn-outline-secondary" href="/solicitudes">Volver a solicitudes</a>
+</PageHeader>
 
-@if (AprobacionBloqueada) {
-    <div class="alert alert-warning">
-        <div class="fw-bold">Aprobación bloqueada</div>
-        Falta un documento obligatorio o está pendiente de validación. La solicitud no puede aprobarse hasta completar su revisión.
+@if (Cargando)
+{
+    <div class="alert alert-info">Consultando solicitud...</div>
+}
+else if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        @Error
+        @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+    </div>
+}
+else if (Solicitud is not null)
+{
+    @if (Mensaje is not null)
+    {
+        <div class="alert alert-success" role="status">@Mensaje</div>
+    }
+    @if (ErrorAccion is not null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @ErrorAccion
+            @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+        </div>
+    }
+    <div class="alert @(DocumentacionCompleta ? "alert-success" : "alert-warning")" role="status">
+        @(DocumentacionCompleta
+            ? "La documentación obligatoria está validada."
+            : "La documentación obligatoria aún no está completa o validada.")
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header fw-bold">Documentos de ingreso</div>
+                <div class="card-body">
+                    @if (Documentos.Count == 0)
+                    {
+                        <div class="alert alert-info">Esta solicitud no tiene documentos registrados.</div>
+                    }
+                    else
+                    {
+                        <div>
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light"><tr><th>Documento</th><th>Estado</th><th>Versión</th><th>Fecha de carga</th><th>Observación</th><th class="acciones">Acciones</th></tr></thead>
+                                <tbody>
+                                    @foreach (var documento in Documentos)
+                                    {
+                                        <tr>
+                                            <td class="fw-semibold">@TextoDocumento(documento.TipoDocumento)</td>
+                                            <td>
+                                                <DocumentoEstadoBadge Estado="@documento.EstadoValidacion" />
+                                                @if (documento.EstadoValidacion == "RECHAZADO")
+                                                {
+                                                    <div class="small text-muted mt-1">Resubida @(documento.HabilitarResubida ? "habilitada" : "no habilitada")</div>
+                                                }
+                                            </td>
+                                            <td>v@(documento.Version)</td>
+                                            <td class="text-nowrap">@documento.FechaCarga?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@(string.IsNullOrWhiteSpace(documento.MotivoRechazo) ? "—" : documento.MotivoRechazo)</td>
+                                            <td class="acciones">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm me-1" disabled="@Ocupado" @onclick="() => DescargarAsync(documento.IdDocumento)">Descargar</button>
+                                                @if (documento.EstadoValidacion == "PENDIENTE")
+                                                {
+                                                    <button type="button" class="btn btn-outline-success btn-sm me-1" disabled="@Ocupado" @onclick="() => ValidarAsync(documento.IdDocumento)">Validar</button>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" disabled="@Ocupado" @onclick="() => SeleccionarRechazo(documento.IdDocumento)">Rechazar</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    <ModalConfirmacion Visible="@(DocumentoARechazar is not null)"
+                                       Titulo="Rechazar documento"
+                                       Mensaje="@($"Indique el motivo del rechazo de {TextoDocumentoPorId(DocumentoARechazar)}. El presentador lo verá en su solicitud.")"
+                                       TextoConfirmar="Rechazar documento" Procesando="@Ocupado"
+                                       OnConfirmar="RechazarDocumentoAsync" OnCancelar="CancelarRechazo">
+                        <textarea id="motivo-documento" class="form-control" maxlength="200" rows="3" @bind="MotivoDocumento" placeholder="Motivo del rechazo"></textarea>
+                        <div class="form-check mt-2">
+                            <input id="habilitar-resubida-documento" type="checkbox" class="form-check-input" @bind="HabilitarResubidaDocumento" />
+                            <label for="habilitar-resubida-documento" class="form-check-label">Solicitar nueva carga (habilitar resubida del documento)</label>
+                        </div>
+                        @if (ErrorMotivo is not null) { <div class="text-danger small mt-1">@ErrorMotivo</div> }
+                    </ModalConfirmacion>
+                    @if ((Solicitud.Estado == "POR_REVISAR" || Solicitud.Estado == "DOCUMENTACION_INCOMPLETA") && TiposDisponibles.Count > 0)
+                    {
+                        <div class="border rounded p-3 mt-3">
+                            <label for="tipo-nuevo" class="form-label">Presentar documento pendiente</label>
+                            <select id="tipo-nuevo" class="form-select mb-2" @bind="TipoNuevo">
+                                @foreach (var tipo in TiposDisponibles)
+                                { <option value="@tipo">@TextoDocumento(tipo)</option> }
+                            </select>
+                            <InputFile OnChange="SeleccionarArchivo" accept=".pdf,.png,.jpg,.jpeg" />
+                            <div class="form-text">PDF, PNG o JPEG hasta 5 MB. La carga quedará registrada a nombre de tu usuario administrador.</div>
+                            <button type="button" class="btn btn-primary btn-sm mt-2" disabled="@(Ocupado || ArchivoNuevo is null)" @onclick="RegistrarArchivoAsync">Cargar documento</button>
+                        </div>
+                    }
+                    <div class="form-text mt-2">El historial conserva todas las versiones y decisiones registradas.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header fw-bold">Solicitud y decisión</div>
+                <div class="card-body">
+                    <dl class="row mb-3">
+                        <dt class="col-sm-5">Cliente</dt><dd class="col-sm-7">@Solicitud.Cliente</dd>
+                        <dt class="col-sm-5">Paciente</dt><dd class="col-sm-7">@Solicitud.PacienteNombre</dd>
+                        <dt class="col-sm-5">Procedimiento</dt><dd class="col-sm-7">@Solicitud.TipoProcedimiento</dd>
+                        <dt class="col-sm-5">Fecha solicitada</dt><dd class="col-sm-7">@Solicitud.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</dd>
+                        <dt class="col-sm-5">Estado</dt><dd class="col-sm-7"><DocumentoEstadoBadge Estado="@Solicitud.Estado" /></dd>
+                        @if (!string.IsNullOrWhiteSpace(Solicitud.MotivoRechazo))
+                        {
+                            <dt class="col-sm-5">Motivo de rechazo</dt><dd class="col-sm-7">@Solicitud.MotivoRechazo</dd>
+                        }
+                    </dl>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-success" disabled="@(Ocupado || !DocumentacionCompleta || Solicitud.Estado != "POR_REVISAR")" @onclick="AprobarAsync">Aprobar solicitud</button>
+                        @if (Solicitud.Estado == "POR_REVISAR" || Solicitud.Estado == "DOCUMENTACION_INCOMPLETA")
+                        {
+                            <a class="btn btn-outline-danger" href="/solicitudes/rechazo/@Id">Rechazar solicitud</a>
+                        }
+                    </div>
+                    @if (!DocumentacionCompleta)
+                    {
+                        <div class="form-text mt-2">Primero deben validarse todos los documentos obligatorios.</div>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 }
 
-<div class="row g-3 mb-3">
-    <div class="col-lg-7">
-        <div class="card h-100">
-            <div class="card-header fw-bold">Documentos de ingreso</div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Documento</th>
-                            <th>Estado</th>
-                            <th>Archivo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (DocumentoIngresoViewModel documento in Documentos) {
-                            <tr>
-                                <td>@documento.Documento</td>
-                                <td>@documento.Estado</td>
-                                <td>@(documento.Archivo != "" ? documento.Archivo : "Sin archivo adjunto")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-                <div class="form-text">El documento requerido depende del canal y las condiciones de atención.</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-5">
-        <div class="card h-100">
-            <div class="card-header fw-bold">Decisión administrativa</div>
-            <div class="card-body">
-                <p class="fw-bold mb-0">Paciente @Solicitud.Paciente</p>
-                <p class="fw-bold mb-0">@Solicitud.Procedimiento</p>
-                <p class="fw-bold">@Solicitud.FechaSolicitada.ToString("dd/MM/yyyy HH:mm")</p>
-                <div class="d-flex gap-2">
-                    <button tabindex="1" class="btn btn-success" disabled="@AprobacionBloqueada" @onclick="() => AprobarSolicitud()">
-                        Aprobar solicitud
-                    </button>
-                    <button tabindex="2" class="btn btn-outline-danger" @onclick="() => RechazarSolicitud()">
-                        Rechazar / pedir corrección
-                    </button>
-                </div>
-                <div class="form-text">Revisa los archivos antes de cambiar su estado.</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@if (mensaje is not null) { <div class="alert alert-info mt-3" role="status">@mensaje</div> }
-<a tabindex="3" class="btn btn-outline-secondary" href="/solicitudes">Volver</a>
-<AvisoDemostracion />
+<button type="button" class="btn btn-outline-primary me-2" @onclick="CargarAsync" disabled="@(Cargando || Ocupado)">Actualizar</button>
+<a class="btn btn-outline-secondary me-2" href="/solicitudes">Volver</a>
+<a class="btn btn-outline-secondary" href="/historial-documental?solicitud=@Id">Historial documental</a>
+<a class="btn btn-outline-secondary ms-2" href="/mis-solicitudes/corregir/@Id">Mis documentos para corregir</a>
 
 @code {
-    [Parameter]
-    public int Id { get; set; }
+    [Parameter] public int Id { get; set; }
+    private SolicitudCirugiaDTO? Solicitud { get; set; }
+    private List<DocumentoIngresoDTO> Documentos { get; set; } = [];
+    private List<string> TiposDisponibles =>
+        (Solicitud?.TipoCliente == "CLINICA"
+            ? new[] { "RECETA_MEDICA" }
+            : new[] { "DNI", "RECETA_MEDICA", "COMPROBANTE_PAGO" })
+        .Where(tipo => !Documentos.Any(d => d.TipoDocumento == tipo)).ToList();
+    private IBrowserFile? ArchivoNuevo { get; set; }
+    private string TipoNuevo { get; set; } = "RECETA_MEDICA";
+    private bool DocumentacionCompleta { get; set; }
+    private bool Cargando { get; set; }
+    private bool Ocupado { get; set; }
+    private bool RequiereLogin { get; set; }
+    private string? Error { get; set; }
+    private string? ErrorAccion { get; set; }
+    private string? Mensaje { get; set; }
+    private int? DocumentoARechazar { get; set; }
+    private string MotivoDocumento { get; set; } = "";
+    private bool HabilitarResubidaDocumento { get; set; }
+    private string? ErrorMotivo { get; set; }
 
-    private SolicitudViewModel Solicitud { get; set; } = new();
-    private List<DocumentoIngresoViewModel> Documentos { get; set; } = [];
-    private bool AprobacionBloqueada { get; set; }
+    protected override Task OnParametersSetAsync() => CargarAsync();
 
-    private string? mensaje;
+    private async Task CargarAsync()
+    {
+        Cargando = true;
+        Error = null;
+        ErrorAccion = null;
+        RequiereLogin = false;
+        try
+        {
+            Solicitud = await SolicitudService.ConsultarAsync(Id);
+            Documentos = await DocumentoService.ListarPorSolicitudAsync(Id);
+            DocumentacionCompleta = (await DocumentoService.VerificarDocumentosAsync(Id)).DocumentacionCompleta;
+            if (TiposDisponibles.Count > 0 && !TiposDisponibles.Contains(TipoNuevo)) TipoNuevo = TiposDisponibles[0];
+        }
+        catch (HttpRequestException ex)
+        {
+            Solicitud = null;
+            Error = MostrarError(ex);
+        }
+        catch (TaskCanceledException)
+        {
+            Solicitud = null;
+            Error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+        }
+        finally
+        {
+            Cargando = false;
+        }
+    }
 
-    protected override void OnParametersSet() {
-        SolicitudMock? solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == Id);
-        if (solicitud == null) {
-            Nav.NavigateTo("/solicitudes");
+    private void SeleccionarArchivo(InputFileChangeEventArgs e)
+    {
+        ArchivoNuevo = e.File;
+        ErrorAccion = null;
+    }
+
+    private async Task RegistrarArchivoAsync()
+    {
+        if (ArchivoNuevo is null) return;
+        var archivo = ArchivoNuevo;
+        await EjecutarAccionAsync(() => DocumentoService.RegistrarArchivoAsync(Id, TipoNuevo, archivo),
+            "Documento cargado; queda pendiente de revisión.");
+        if (ErrorAccion is null) ArchivoNuevo = null;
+    }
+
+    private async Task DescargarAsync(int idDocumento)
+    {
+        Ocupado = true;
+        ErrorAccion = null;
+        try
+        {
+            var archivo = await DocumentoService.DescargarAsync(idDocumento);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JSException)
+        {
+            ErrorAccion = ex.Message;
+        }
+        finally { Ocupado = false; }
+    }
+
+    private void SeleccionarRechazo(int idDocumento)
+    {
+        DocumentoARechazar = idDocumento;
+        MotivoDocumento = "";
+        HabilitarResubidaDocumento = false;
+        ErrorMotivo = null;
+        ErrorAccion = null;
+        Mensaje = null;
+    }
+
+    private void CancelarRechazo()
+    {
+        DocumentoARechazar = null;
+        MotivoDocumento = "";
+        HabilitarResubidaDocumento = false;
+        ErrorMotivo = null;
+    }
+
+    private async Task ValidarAsync(int idDocumento) =>
+        await EjecutarAccionAsync(() => DocumentoService.ValidarAsync(idDocumento), "Documento validado.");
+
+    private async Task RechazarDocumentoAsync()
+    {
+        if (DocumentoARechazar is null) return;
+        if (string.IsNullOrWhiteSpace(MotivoDocumento) || MotivoDocumento.Trim().Length > 200)
+        {
+            ErrorMotivo = "Escribe un motivo de hasta 200 caracteres.";
             return;
         }
-        Solicitud = DatosClientes.ParaRevision(solicitud);
-        Documentos = solicitud.Documentos.Select(d => new DocumentoIngresoViewModel
+        var id = DocumentoARechazar.Value;
+        var motivo = MotivoDocumento.Trim();
+        var habilitarResubida = HabilitarResubidaDocumento;
+        await EjecutarAccionAsync(() => DocumentoService.RechazarAsync(id, motivo, habilitarResubida), "Documento rechazado.");
+        if (ErrorAccion is null) CancelarRechazo();
+    }
+
+    private async Task AprobarAsync() =>
+        await EjecutarAccionAsync(() => SolicitudService.AprobarAsync(Id), "Solicitud aprobada.");
+
+    private async Task EjecutarAccionAsync(Func<Task> accion, string confirmacion)
+    {
+        Ocupado = true;
+        ErrorAccion = null;
+        Mensaje = null;
+        ErrorMotivo = null;
+        try
         {
-            Documento = d.Tipo, Estado = d.Estado, Archivo = d.Archivo
-        }).ToList();
-
-        string[] obligatorios = solicitud.IdCliente == 4
-            ? ["DNI", "Receta médica", DatosClientes.ComprobantePago]
-            : ["Receta médica"];
-        AprobacionBloqueada = obligatorios.Any(tipo =>
-            !Documentos.Any(d => d.Documento == tipo && d.Estado == "Validado"));
+            await accion();
+            await CargarAsync();
+            if (Error is null) Mensaje = confirmacion;
+        }
+        catch (HttpRequestException ex)
+        {
+            ErrorAccion = MostrarError(ex);
+        }
+        catch (IOException ex)
+        {
+            ErrorAccion = ex.Message;
+        }
+        catch (TaskCanceledException)
+        {
+            ErrorAccion = "La operación tardó demasiado. Actualiza para comprobar su estado.";
+        }
+        finally
+        {
+            Ocupado = false;
+        }
     }
 
-    private void AprobarSolicitud() =>
-        mensaje = "Aprobación de demostración. El estado de la solicitud no cambió.";
-
-    private void RechazarSolicitud() {
-        Nav.NavigateTo($"/solicitudes/rechazo/{Id}");
+    private string MostrarError(HttpRequestException ex)
+    {
+        RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
+        return ex.StatusCode switch
+        {
+            HttpStatusCode.BadRequest => $"Datos no válidos: {ex.Message}",
+            HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
+            HttpStatusCode.Forbidden => "No tienes permiso de administrador para esta acción.",
+            HttpStatusCode.NotFound => "La solicitud o el documento ya no existe.",
+            HttpStatusCode.Conflict => $"No se puede completar la operación: {ex.Message}",
+            HttpStatusCode.InternalServerError => $"Error del servidor: {ex.Message}",
+            _ => ex.Message
+        };
     }
+
+    private static string TextoDocumento(string? tipo) => tipo switch
+    {
+        "DNI" => "DNI del paciente",
+        "RECETA_MEDICA" => "Receta médica",
+        "ORDEN_COMPRA" => "Orden de compra",
+        "COMPROBANTE_PAGO" => "Comprobante de pago",
+        _ => tipo?.Replace('_', ' ') ?? ""
+    };
+
+    private string TextoDocumentoPorId(int? id) =>
+        TextoDocumento(Documentos.FirstOrDefault(d => d.IdDocumento == id)?.TipoDocumento).ToLowerInvariant() is { Length: > 0 } t
+            ? $"«{t}»" : "este documento";
 }

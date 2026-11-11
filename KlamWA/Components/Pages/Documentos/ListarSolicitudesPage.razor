@@ -1,76 +1,140 @@
 @page "/solicitudes"
-@inject NavigationManager Nav;
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject ISolicitudCirugiaService SolicitudService
 
-@using Microsoft.AspNetCore.Components.QuickGrid
+<PageTitle>Solicitudes de cirugía | Klam</PageTitle>
 
-<PageTitle>Solicitudes de cirugía</PageTitle>
+<PageHeader Titulo="Solicitudes de cirugía" Subtitulo="Revisa la documentación y decide sobre las solicitudes recibidas">
+    <button type="button" class="btn btn-outline-secondary" @onclick="CargarAsync" disabled="@Cargando">Actualizar</button>
+</PageHeader>
 
-<div class="d-flex justify-content-between mb-3">
-    <h3 class="mb-3">Solicitudes de cirugía</h3>
-
-
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+                <label for="buscar-solicitud" class="form-label small mb-1">Buscar</label>
+                <input id="buscar-solicitud" class="form-control form-control-sm" placeholder="Número, cliente, paciente o procedimiento" @bind="Busqueda" @bind:event="oninput" @bind:after="() => Pagina = 1" />
+            </div>
+            <div class="col-md-4">
+                <label for="estado-solicitud" class="form-label small mb-1">Estado</label>
+                <select id="estado-solicitud" class="form-select form-select-sm" @bind="EstadoFiltro" @bind:after="() => Pagina = 1">
+                    <option value="">Todos</option>
+                    @foreach (var estado in Solicitudes.Select(s => s.Estado).Distinct().Order())
+                    {
+                        <option value="@estado">@EstadoSolicitudTexto.Texto(estado)</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="row mb-3">
-    <div class="col">
-        <label class="form-label">Buscar</label>
-        <input tabindex="1" class="form-control" placeholder="Código, paciente o cliente..." @bind="Filtro" />
-    </div>
-    <div class="col">
-        <label class="form-label">Estado</label>
-        <select tabindex="2" class="form-select" @bind="FiltroEstado">
-            <option value="">Todas las solicitudes</option>
-            @foreach (string estado in Estados) {
-                <option value="@estado">@estado</option>
-            }
-        </select>
-    </div>
-</div>
-
-@if (!Solicitudes.Any()) {
-    <div class="alert alert-info">No hay solicitudes registradas.</div>
+@if (Cargando)
+{
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando solicitudes…</p>
 }
-else {
-    <QuickGrid Items="Solicitudes" Pagination="Paginacion" Class="table table-striped table-hover">
-        <PropertyColumn Title="Solicitud" Property="s => s.Codigo" Sortable="true" />
-        <PropertyColumn Title="Cliente / Paciente" Property="@(s => s.Cliente + " · " + s.Paciente)" Sortable="true" />
-        <PropertyColumn Title="Procedimiento" Property="s => s.Procedimiento" Sortable="true" />
-        <PropertyColumn Title="Fecha solicitada" Property="s => s.FechaSolicitada" Format="dd/MM/yyyy HH:mm"
-                        Sortable="true" />
-        <PropertyColumn Title="Estado" Property="s => s.Estado" Sortable="true" />
-        <TemplateColumn Title="Acciones">
-            <button class="btn btn-primary btn-sm" @onclick="() => RevisarSolicitud(context.Id)">
-                Revisar
-            </button>
-            <button class="btn btn-outline-primary btn-sm" @onclick="() => VerHistorial(context.Id)">
-                Historial
-            </button>
-        </TemplateColumn>
-    </QuickGrid>
-    <Paginator State="Paginacion"></Paginator>
+else if (Error is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        @Error
+        @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+    </div>
+}
+else
+{
+    @* Tabla a ancho completo sin scroll horizontal: código, solicitante, fecha, estado y acciones;
+       el diagnóstico y los documentos se ven en «Revisar». *@
+    <table class="table table-hover align-middle tabla-solicitudes">
+        <thead class="table-light">
+            <tr>
+                <th>Solicitud</th>
+                <th>Cliente</th>
+                <th class="d-none d-lg-table-cell">Paciente</th>
+                <th class="d-none d-md-table-cell">Procedimiento</th>
+                <th>Fecha solicitada</th>
+                <th>Estado</th>
+                <th class="acciones">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in PaginaActual)
+            {
+                <tr>
+                    <td class="fw-semibold text-nowrap">@s.Codigo</td>
+                    <td>@s.Cliente</td>
+                    <td class="d-none d-lg-table-cell">@s.PacienteNombre</td>
+                    <td class="d-none d-md-table-cell">@s.TipoProcedimiento</td>
+                    <td class="text-nowrap">@s.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
+                    <td class="acciones">
+                        <a class="btn btn-sm btn-primary" href="/solicitudes/revision/@s.IdSolicitud">Revisar</a>
+                        <a class="btn btn-sm btn-outline-primary ms-1" href="/historial-documental?solicitud=@s.IdSolicitud">Historial</a>
+                    </td>
+                </tr>
+            }
+            @if (Filtradas.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay solicitudes para los filtros seleccionados.</td></tr>
+            }
+        </tbody>
+    </table>
+    <Paginacion Total="Filtradas.Count" PorPagina="PorPagina" @bind-Pagina="Pagina" />
 }
 
 @code {
-    private IQueryable<SolicitudViewModel> Solicitudes { get; set; } = Enumerable.Empty<SolicitudViewModel>().AsQueryable();
-    private string Filtro { get; set; } = string.Empty;
-    private string FiltroEstado { get; set; } = string.Empty;
-    private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
+    private List<SolicitudCirugiaDTO> Solicitudes { get; set; } = [];
+    private string Busqueda { get; set; } = "";
+    private string EstadoFiltro { get; set; } = "";
+    private string? Error { get; set; }
+    private bool Cargando { get; set; }
+    private bool RequiereLogin { get; set; }
+    private const int PorPagina = 10;
+    private int Pagina { get; set; } = 1;
+    private IEnumerable<SolicitudCirugiaDTO> PaginaActual => Filtradas.Skip((Pagina - 1) * PorPagina).Take(PorPagina);
 
-    private string[] Estados { get; } = [
-        "Por revisar",
-        "Documentación incompleta",
-        "Rechazada · Resubida habilitada",
-        "Aprobada"
-    ];
+    private List<SolicitudCirugiaDTO> Filtradas => Solicitudes.Where(s =>
+        (string.IsNullOrEmpty(EstadoFiltro) || s.Estado == EstadoFiltro) &&
+        (string.IsNullOrWhiteSpace(Busqueda) ||
+         s.Codigo.Contains(Busqueda, StringComparison.OrdinalIgnoreCase) ||
+         s.Cliente.Contains(Busqueda, StringComparison.OrdinalIgnoreCase) ||
+         s.PacienteNombre.Contains(Busqueda, StringComparison.OrdinalIgnoreCase) ||
+         s.TipoProcedimiento.Contains(Busqueda, StringComparison.OrdinalIgnoreCase)))
+        .OrderByDescending(s => s.IdSolicitud)
+        .ToList();
 
-    protected override void OnInitialized() =>
-        Solicitudes = DatosClientes.Solicitudes.Select(DatosClientes.ParaRevision).AsQueryable();
+    protected override Task OnInitializedAsync() => CargarAsync();
 
-    private void RevisarSolicitud(int id) {
-        Nav.NavigateTo($"/solicitudes/revision/{id}");
-    }
 
-    private void VerHistorial(int id) {
-        Nav.NavigateTo($"/historial-documental?solicitud={id}");
+    private async Task CargarAsync()
+    {
+        Cargando = true;
+        Error = null;
+        RequiereLogin = false;
+        try
+        {
+            Solicitudes = await SolicitudService.ListarAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
+            Error = ex.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
+                HttpStatusCode.Forbidden => "No tienes permiso para consultar las solicitudes.",
+                _ => ex.Message
+            };
+        }
+        catch (TaskCanceledException)
+        {
+            Error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+        }
+        finally
+        {
+            Cargando = false;
+        }
     }
 }

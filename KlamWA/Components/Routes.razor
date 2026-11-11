@@ -1,6 +1,31 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+@using Microsoft.AspNetCore.Components.Authorization
+
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        @if (routeData.PageType == typeof(Pages.Acceso.Login)
+            || routeData.PageType == typeof(Pages.Error)
+            || routeData.PageType == typeof(Pages.NotFound))
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.AccesoLayout)" />
+        }
+        else
+        {
+            <AuthorizeView>
+                <Authorized>
+                    <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                        <NotAuthorized Context="sinPermiso">
+                            <LayoutView Layout="typeof(Layout.AccesoLayout)">
+                                <p>No tienes permiso para ver esta página.</p>
+                                <a href="/inicio">Volver al inicio</a>
+                            </LayoutView>
+                        </NotAuthorized>
+                    </AuthorizeRouteView>
+                </Authorized>
+                <NotAuthorized Context="sinPermiso">
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeView>
+        }
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
