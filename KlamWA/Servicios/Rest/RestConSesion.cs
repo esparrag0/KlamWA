@@ -17,7 +17,9 @@ public sealed class RestConSesion(HttpClient client, AuthenticationStateProvider
         using var respuesta = await client.SendAsync(peticion);
         if (!respuesta.IsSuccessStatusCode)
         {
-            string mensaje = $"El servidor respondió {(int)respuesta.StatusCode}.";
+            string mensaje = (int)respuesta.StatusCode == 404
+                ? $"El backend no tiene el servicio {peticion.RequestUri?.AbsolutePath} (404). Verifique que esté desplegada la versión actual del backend."
+                : $"El servidor respondió {(int)respuesta.StatusCode}.";
             try {
                 using var json = JsonDocument.Parse(await respuesta.Content.ReadAsStringAsync());
                 if (json.RootElement.TryGetProperty("error", out var error)) mensaje = error.GetString() ?? mensaje;

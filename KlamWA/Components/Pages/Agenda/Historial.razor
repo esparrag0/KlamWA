@@ -2,13 +2,37 @@
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "PACIENTE_PARTICULAR,CLINICA_HOSPITAL")]
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize(Roles = "ADMINISTRADOR,PACIENTE_PARTICULAR,CLINICA_HOSPITAL")]
 @inject ICirugiaConsultaService Consulta
+@inject IClienteService ClienteSvc
+@inject VistaPreviaRol Vista
 
-<PageTitle>Mis cirugías anteriores</PageTitle>
-<PageHeader Titulo="Mis cirugías anteriores" Subtitulo="Cirugías culminadas y canceladas">
-    <a class="btn btn-outline-secondary" href="/agenda">Volver a la agenda</a>
+@* RF10: el cliente ve su historial; el administrador lo consulta eligiendo un cliente. *@
+<PageTitle>@Titulo</PageTitle>
+<PageHeader Titulo="@Titulo" Subtitulo="Cirugías culminadas y canceladas">
+    <a class="btn btn-outline-secondary" href="@(EsAdmin ? "/agenda" : "/agenda/lista")">@(EsAdmin ? "Volver a la agenda" : "Ver mis cirugías")</a>
 </PageHeader>
+
+@if (EsAdmin)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label for="historial-cliente" class="form-label small mb-1">Cliente</label>
+                    <select id="historial-cliente" class="form-select form-select-sm" @bind="clienteElegido" @bind:after="CargarDeCliente">
+                        <option value="">-- Seleccione un cliente --</option>
+                        @foreach (var c in clientes)
+                        {
+                            <option value="@($"{c.Tipo}|{c.Id}")">@c.Nombre (@(c.Tipo == "CLINICA_HOSPITAL" ? "clínica" : "particular"))</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @if (error is not null)
 {
@@ -18,26 +42,32 @@ else if (cargando)
 {
     <div class="card p-4 text-center text-muted">Cargando historial...</div>
 }
+else if (EsAdmin && clienteElegido == "")
+{
+    <EstadoVacio Titulo="Elige un cliente" Descripcion="Selecciona una clínica o un paciente particular para ver sus cirugías culminadas y canceladas." />
+}
 else
 {
     <div class="table-responsive">
         <table class="table table-hover align-middle">
-            <thead class="table-light"><tr><th>FECHA</th><th>INICIO</th><th>FIN</th><th>PROCEDIMIENTO</th><th>DOCTOR</th><th>MOTIVO DE CANCELACIÓN</th><th>ESTADO</th></tr></thead>
+            <thead class="table-light"><tr><th>Código</th><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Procedimiento</th><th>Doctor</th><th>Motivo de cancelación</th><th>Estado</th><th class="acciones">Acciones</th></tr></thead>
             <tbody>
                 @foreach (CirugiaHistorialDTO c in historial)
                 {
                     <tr>
+                        <td class="fw-semibold text-nowrap">CIR-@c.IdCirugia.ToString("000")</td>
                         <td>@c.FechaHoraInicio.ToString("dd/MM/yyyy")</td>
                         <td>@c.FechaHoraInicio.ToString("HH:mm")</td>
                         <td>@(c.FechaHoraFin is { } fin ? fin.ToString("HH:mm") : "—")</td>
                         <td>@c.TipoProcedimiento</td><td>@c.DoctorNombre</td>
                         <td>@(c.MotivoCancelacion ?? "—")</td>
                         <td><EstadoBadge Estado="@EtiquetaEstado(c.Estado)" /></td>
+                        <td class="acciones"><a class="btn btn-sm btn-outline-primary" href="/agenda/cirugia/@c.IdCirugia">Ver detalle</a></td>
                     </tr>
                 }
                 @if (historial.Count == 0)
                 {
-                    <tr><td colspan="7" class="text-center text-muted py-4">No hay cirugías culminadas ni canceladas.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted py-4">No hay cirugías culminadas ni canceladas.</td></tr>
                 }
             </tbody>
         </table>
@@ -48,10 +78,34 @@ else
     private bool cargando = true;
     private string? error;
     private List<CirugiaHistorialDTO> historial = [];
+    private List<ClienteOpcionViewModel> clientes = [];
+    private string clienteElegido = "";
+
+    private bool EsAdmin => Vista.Perfil.Clave == "administrador";
+    private string Titulo => EsAdmin ? "Historial de cirugías por cliente" : "Mis cirugías anteriores";
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        try { historial = await Consulta.HistorialClienteAsync(); }
+        Vista.Establecer((await AuthenticationStateTask).User);
+        try
+        {
+            if (EsAdmin) clientes = await ClienteSvc.Listar();
+            else historial = await Consulta.HistorialClienteAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { cargando = false; }
+    }
+
+    private async Task CargarDeCliente()
+    {
+        error = null;
+        historial = [];
+        if (clienteElegido == "") return;
+        var partes = clienteElegido.Split('|');
+        cargando = true;
+        try { historial = await Consulta.HistorialDeClienteAsync(partes[0], int.Parse(partes[1])); }
         catch (Exception ex) { error = ex.Message; }
         finally { cargando = false; }
     }

@@ -4,9 +4,9 @@
 @using KlamWA.Components.Shared
 @using KlamWA.Servicios
 
-<PageTitle>Lista de cirugías</PageTitle>
+<PageTitle>@Titulo</PageTitle>
 
-<PageHeader Titulo="Cirugías coordinadas" Subtitulo="Cirugías registradas, con filtros por fecha, equipo y cliente">
+<PageHeader Titulo="@Titulo" Subtitulo="@Subtitulo">
     @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <a class="btn btn-outline-secondary" href="/agenda">Ver calendario</a> }
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
 </PageHeader>
@@ -30,6 +30,23 @@ else
 }
 
 @code {
+    // Cada perfil ve su alcance (lo aplica el backend): administrador e instrumentista, toda la agenda;
+    // vendedor, las cirugías de sus solicitudes; cliente, las suyas.
+    private string Titulo => Vista.Perfil.Clave switch
+    {
+        "instrumentista" => "Mis cirugías",
+        "vendedor" => "Cirugías que coordino",
+        "cliente" => "Mis cirugías",
+        _ => "Cirugías coordinadas"
+    };
+    private string Subtitulo => Vista.Perfil.Clave switch
+    {
+        "administrador" => "Cirugías registradas, con filtros por fecha, equipo y cliente",
+        "vendedor" => "Cirugías originadas en las solicitudes que registraste",
+        "cliente" => "Cirugías programadas y realizadas para tu cuenta",
+        _ => "Cirugías de la agenda en las que participa el equipo de instrumentación"
+    };
+
     private FiltroCirugia filtro = new();
     private List<CirugiaResumenViewModel> filas = new();
     private bool cargando;
