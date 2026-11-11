@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @implements IDisposable
+@using Microsoft.AspNetCore.Components.Authorization
 @inject VistaPreviaRol Vista
 @inject NavigationManager Nav
 
@@ -10,15 +11,6 @@
         <header class="app-topbar">
             <a class="topbar-brand" href="/inicio">BIOKLAM</a>
             <div class="topbar-actions">
-                <div class="role-preview">
-                    <label for="vista-rol">Vista según rol</label>
-                    <select id="vista-rol" class="form-select form-select-sm" value="@Vista.Perfil.Clave" @onchange="CambiarVista">
-                        @foreach (var perfil in DatosAcceso.Perfiles)
-                        {
-                            <option value="@perfil.Clave">@perfil.Nombre</option>
-                        }
-                    </select>
-                </div>
                 @if (Vista.Perfil.Clave is "administrador" or "instrumentista")
                 {
                     <a class="header-bell" href="@($"/notificaciones/{Vista.Perfil.Clave}")" aria-label="Ver notificaciones, 2 sin leer de ejemplo">
@@ -32,7 +24,7 @@
             @if (PaginaPermitida) { @Body }
             else
             {
-                <EstadoVacio Titulo="Pantalla no disponible en este perfil" Descripcion="Usa las opciones del menú correspondientes a tu perfil de demostración." />
+                <EstadoVacio Titulo="Pantalla no disponible en este perfil" Descripcion="Usa las opciones del menú correspondientes a tu cuenta." />
                 <a class="btn btn-outline-primary" href="/inicio">Volver al inicio</a>
             }
         </main>
@@ -44,23 +36,39 @@
 </div>
 
 @code {
-    // Restricción visual de la maqueta; no sustituye permisos del backend.
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
     private bool PaginaPermitida
     {
         get
         {
             var ruta = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
             bool Es(string prefijo) => ruta == prefijo || ruta.StartsWith(prefijo + "/", StringComparison.OrdinalIgnoreCase);
+            if (ruta.StartsWith("/inicio/", StringComparison.OrdinalIgnoreCase))
+                return ruta.Equals($"/inicio/{Vista.Perfil.Clave}", StringComparison.OrdinalIgnoreCase);
+            if (Es("/notificaciones"))
+            {
+                if (Vista.Perfil.Clave is not ("administrador" or "instrumentista")) return false;
+                if (ruta.StartsWith("/notificaciones/detalle/", StringComparison.OrdinalIgnoreCase))
+                {
+                    var idTexto = ruta["/notificaciones/detalle/".Length..];
+                    return int.TryParse(idTexto, out var id)
+                        && DatosAcceso.Aviso(id)?.Perfil == Vista.Perfil.Clave;
+                }
+                return ruta == "/notificaciones"
+                    || ruta.Equals($"/notificaciones/{Vista.Perfil.Clave}", StringComparison.OrdinalIgnoreCase);
+            }
             if (ruta.Contains("/orden-compra", StringComparison.OrdinalIgnoreCase))
                 return Vista.Perfil.Clave is "cliente" or "administrador";
             if (ruta.Contains("/revisar-oc", StringComparison.OrdinalIgnoreCase) || ruta.Contains("/rechazar-oc", StringComparison.OrdinalIgnoreCase))
                 return Vista.Perfil.Clave == "administrador";
+            if (ruta == "/agenda") return Vista.Perfil.Clave is "administrador" or "instrumentista";
             if (Es("/agenda/historial")) return Vista.Perfil.Clave is "administrador" or "cliente";
             if (Es("/agenda/nueva") || Es("/agenda/editar") || Es("/agenda/eliminar")
                 || Es("/bitacora-cirugias") || Es("/historial-documental") || Es("/usuarios")
-                || Es("/clientes") || Es("/solicitudes")
-                || Es("/reportes") || Es("/inventario"))
+                || Es("/clientes") || Es("/solicitudes") || Es("/reportes") || Es("/inventario"))
                 return Vista.Perfil.Clave == "administrador";
+            if (Es("/mis-solicitudes/corregir")) return Vista.Perfil.Clave is "administrador" or "vendedor";
             if (Es("/mis-solicitudes")) return Vista.Perfil.Clave is "cliente" or "vendedor";
             if (ruta == "/cotizaciones") return Vista.Perfil.Clave == "administrador";
             if (Es("/cotizaciones/cliente")) return Vista.Perfil.Clave == "cliente";
@@ -68,15 +76,13 @@
             return true;
         }
     }
-    protected override void OnInitialized() => Vista.Cambio += Actualizar;
-    private void Actualizar() => _ = InvokeAsync(StateHasChanged);
-    private void CambiarVista(ChangeEventArgs e)
+
+    protected override async Task OnInitializedAsync()
     {
-        if (DatosAcceso.Perfil(e.Value?.ToString()) is { } perfil)
-        {
-            Vista.Mostrar(perfil);
-            Nav.NavigateTo($"/inicio/{perfil.Clave}");
-        }
+        Vista.Cambio += Actualizar;
+        Vista.Establecer((await AuthenticationStateTask).User);
     }
+
+    private void Actualizar() => _ = InvokeAsync(StateHasChanged);
     public void Dispose() => Vista.Cambio -= Actualizar;
 }

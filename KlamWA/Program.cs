@@ -1,14 +1,24 @@
 using KlamWA.Components;
+using KlamWA.Seguridad;
 using KlamWA.Servicios;
 using KlamWA.Servicios.Rest;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
 builder.Services.AddScoped<KlamWA.ViewModels.VistaPreviaRol>();
+builder.Services.AddSeguridad(builder.Configuration);
+builder.Services.AddHttpClient<IDocumentoIngresoService, DocumentoIngresoService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<IClienteService, ClienteService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<ISolicitudCirugiaService, SolicitudCirugiaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<IAuditoriaService, AuditoriaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<ICirugiaConsultaService, CirugiaConsultaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 
 // Servicios REST del backend Java (RF02 cirugías, RF13 plantillas de bandejas)
 builder.Services.AddScoped<ICirugiaService, CirugiaService>();
@@ -16,20 +26,20 @@ builder.Services.AddScoped<IBandejaService, BandejaService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+app.MapSesionEndpoints();
 
 app.Run();

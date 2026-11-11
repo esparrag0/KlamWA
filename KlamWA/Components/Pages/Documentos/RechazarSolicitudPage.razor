@@ -1,67 +1,136 @@
 @page "/solicitudes/rechazo/{Id:int}"
-@inject NavigationManager Nav;
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using System.Net
+@using KlamWA.Servicios
+@inject ISolicitudCirugiaService SolicitudService
 
-<PageTitle>Solicitudes de cirugía</PageTitle>
+<PageTitle>Rechazar solicitud | Klam</PageTitle>
 
-<h3 class="mb-3">Rechazar o solicitar corrección</h3>
+<h3 class="mb-1">Rechazar solicitud</h3>
 <p class="text-muted">SOL-@Id.ToString("000") · Comunica el motivo al solicitante</p>
 
-@if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
-<EditForm Model="ViewModel" OnValidSubmit="ConfirmarRechazo">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="mb-3">
-        <label class="form-label">Documento observado</label>
-        <InputSelect tabindex="1" class="form-select" @bind-Value="ViewModel.DocumentoObservado">
-            @foreach (string documento in Documentos) {
-                <option value="@documento">@documento</option>
+<div class="card">
+    <div class="card-body">
+        @if (Cargando)
+        {
+            <div class="alert alert-info">Consultando solicitud...</div>
+        }
+        else if (Error is not null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @Error
+                @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+            </div>
+        }
+        else
+        {
+            <p><strong>Cliente:</strong> @Cliente</p>
+            <p><strong>Estado:</strong> @Estado.Replace('_', ' ')</p>
+            @if (Confirmado)
+            {
+                <div class="alert alert-success" role="status">La solicitud fue rechazada y el motivo quedó registrado.</div>
             }
-        </InputSelect>
+            else
+            {
+                <label for="motivo-solicitud" class="form-label">Motivo del rechazo</label>
+                <textarea id="motivo-solicitud" class="form-control" rows="4" maxlength="200" @bind="Motivo"></textarea>
+                @if (ErrorMotivo is not null) { <div class="text-danger small mt-1">@ErrorMotivo</div> }
+                @if (ErrorAccion is not null)
+                {
+                    <div class="alert alert-danger mt-3" role="alert">
+                        @ErrorAccion
+                        @if (RequiereLogin) { <a href="/login" class="alert-link ms-2">Iniciar sesión</a> }
+                    </div>
+                }
+                <button type="button" class="btn btn-danger mt-3" disabled="@(Ocupado || (Estado != "POR_REVISAR" && Estado != "DOCUMENTACION_INCOMPLETA"))" @onclick="RechazarAsync">
+                    Confirmar rechazo
+                </button>
+            }
+        }
+        <a class="btn btn-outline-secondary ms-2 mt-3" href="/solicitudes/revision/@Id">Volver a la revisión</a>
     </div>
-    <div class="mb-3">
-        <label class="form-label">Motivo / Mensaje para el solicitante</label>
-        <InputText tabindex="2" class="form-control" @bind-Value="ViewModel.Motivo" />
-        <ValidationMessage For="() => ViewModel.Motivo" />
-    </div>
-    <div class="form-check mb-3">
-        <InputCheckbox tabindex="3" class="form-check-input" @bind-Value="ViewModel.HabilitarResubida" />
-        <label class="form-check-label">Habilitar nueva carga del documento</label>
-    </div>
-
-    @if (ViewModel.HabilitarResubida) {
-        <div class="alert alert-warning">
-            <div class="fw-bold">El solicitante podrá corregir el archivo</div>
-            El mensaje aparecerá junto al documento rechazado.
-        </div>
-    }
-
-    <button tabindex="4" type="submit" class="btn btn-primary">
-        @(ViewModel.HabilitarResubida ? "Confirmar rechazo y habilitar resubida" : "Confirmar rechazo")
-    </button>
-    <a tabindex="5" class="btn btn-outline-secondary" href="/solicitudes/revision/@Id">Cancelar</a>
-</EditForm>
+</div>
 
 @code {
-    [Parameter]
-    public int Id { get; set; }
+    [Parameter] public int Id { get; set; }
+    private string Cliente { get; set; } = "";
+    private string Estado { get; set; } = "";
+    private string Motivo { get; set; } = "";
+    private string? Error { get; set; }
+    private string? ErrorAccion { get; set; }
+    private string? ErrorMotivo { get; set; }
+    private bool Cargando { get; set; }
+    private bool Ocupado { get; set; }
+    private bool Confirmado { get; set; }
+    private bool RequiereLogin { get; set; }
 
-    private RechazoViewModel ViewModel { get; set; } = new();
-
-    private string[] Documentos { get; set; } = [];
-    private string? mensaje;
-
-    protected override void OnParametersSet() {
-        var solicitud = DatosClientes.Solicitudes.FirstOrDefault(s => s.Id == Id);
-        if (solicitud is null) { Nav.NavigateTo("/solicitudes"); return; }
-        Documentos = solicitud.Documentos.Select(d => d.Tipo).ToArray();
-        ViewModel = new RechazoViewModel {
-            DocumentoObservado = solicitud.Documentos.FirstOrDefault(d => d.Estado != "Validado")?.Tipo
-                ?? Documentos.FirstOrDefault() ?? "Receta médica"
-        };
+    protected override async Task OnParametersSetAsync()
+    {
+        Cargando = true;
+        Error = null;
+        try
+        {
+            var solicitud = await SolicitudService.ConsultarAsync(Id);
+            Cliente = solicitud.Cliente;
+            Estado = solicitud.Estado;
+        }
+        catch (HttpRequestException ex)
+        {
+            Error = MostrarError(ex);
+        }
+        catch (TaskCanceledException)
+        {
+            Error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+        }
+        finally
+        {
+            Cargando = false;
+        }
     }
 
-    private void ConfirmarRechazo() {
-        mensaje = "Rechazo de demostración. El estado de la solicitud no cambió.";
+    private async Task RechazarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Motivo) || Motivo.Trim().Length > 200)
+        {
+            ErrorMotivo = "Escribe un motivo de hasta 200 caracteres.";
+            return;
+        }
+        Ocupado = true;
+        ErrorAccion = null;
+        ErrorMotivo = null;
+        try
+        {
+            await SolicitudService.RechazarAsync(Id, Motivo.Trim());
+            Confirmado = true;
+            Estado = "RECHAZADA";
+        }
+        catch (HttpRequestException ex)
+        {
+            ErrorAccion = MostrarError(ex);
+        }
+        catch (TaskCanceledException)
+        {
+            ErrorAccion = "La operación tardó demasiado. Vuelve a la revisión para comprobar su estado.";
+        }
+        finally
+        {
+            Ocupado = false;
+        }
+    }
+
+    private string MostrarError(HttpRequestException ex)
+    {
+        RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
+        return ex.StatusCode switch
+        {
+            HttpStatusCode.BadRequest => $"Datos no válidos: {ex.Message}",
+            HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
+            HttpStatusCode.Forbidden => "No tienes permiso de administrador para esta acción.",
+            HttpStatusCode.NotFound => "La solicitud ya no existe.",
+            HttpStatusCode.Conflict => $"No se puede rechazar la solicitud: {ex.Message}",
+            HttpStatusCode.InternalServerError => $"Error del servidor: {ex.Message}",
+            _ => ex.Message
+        };
     }
 }
