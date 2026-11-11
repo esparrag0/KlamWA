@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @using Microsoft.AspNetCore.Components.Authorization
+@inject KlamWA.Servicios.AvisosSinLeer Avisos
 @inject VistaPreviaRol Vista
 @inject NavigationManager Nav
 
@@ -11,10 +12,10 @@
         <header class="app-topbar">
             <a class="topbar-brand" href="/inicio">BIOKLAM</a>
             <div class="topbar-actions">
-                @if (Vista.Perfil.Clave is "administrador" or "instrumentista")
+                @if (TieneBandeja)
                 {
-                    <a class="header-bell" href="@($"/notificaciones/{Vista.Perfil.Clave}")" aria-label="Ver notificaciones, 2 sin leer de ejemplo">
-                        <Icono Nombre="campana" /><span class="notification-dot"></span>
+                    <a class="header-bell" href="/notificaciones" aria-label="@($"Ver notificaciones, {Avisos.Cantidad ?? 0} sin leer")">
+                        <Icono Nombre="campana" />@if (Avisos.Cantidad > 0) { <span class="notification-dot"></span> }
                     </a>
                 }
                 <span class="avatar avatar-sm" aria-label="@Vista.Perfil.Persona">@Vista.Perfil.Iniciales</span>
@@ -48,13 +49,10 @@
                 return ruta.Equals($"/inicio/{Vista.Perfil.Clave}", StringComparison.OrdinalIgnoreCase);
             if (Es("/notificaciones"))
             {
-                if (Vista.Perfil.Clave is not ("administrador" or "instrumentista")) return false;
+                if (!TieneBandeja) return false;
+                // El backend solo entrega los avisos propios de la sesión (los ajenos responden 403).
                 if (ruta.StartsWith("/notificaciones/detalle/", StringComparison.OrdinalIgnoreCase))
-                {
-                    var idTexto = ruta["/notificaciones/detalle/".Length..];
-                    return int.TryParse(idTexto, out var id)
-                        && DatosAcceso.Aviso(id)?.Perfil == Vista.Perfil.Clave;
-                }
+                    return int.TryParse(ruta["/notificaciones/detalle/".Length..], out _);
                 return ruta == "/notificaciones"
                     || ruta.Equals($"/notificaciones/{Vista.Perfil.Clave}", StringComparison.OrdinalIgnoreCase);
             }
@@ -77,12 +75,21 @@
         }
     }
 
+    // RF12: bandeja de avisos internos del personal (los clientes no reciben avisos).
+    private bool TieneBandeja => Vista.Perfil.Clave is "administrador" or "instrumentista" or "vendedor";
+
     protected override async Task OnInitializedAsync()
     {
         Vista.Cambio += Actualizar;
+        Avisos.Cambio += Actualizar;
         Vista.Establecer((await AuthenticationStateTask).User);
+        if (TieneBandeja) await Avisos.ActualizarAsync();
     }
 
     private void Actualizar() => _ = InvokeAsync(StateHasChanged);
-    public void Dispose() => Vista.Cambio -= Actualizar;
+    public void Dispose()
+    {
+        Vista.Cambio -= Actualizar;
+        Avisos.Cambio -= Actualizar;
+    }
 }

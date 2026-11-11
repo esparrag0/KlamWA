@@ -3,6 +3,8 @@
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @inject INotificacionService NotificacionService
+@inject VistaPreviaRol Vista
+@inject AvisosSinLeer Contador
 
 <PageTitle>Notificaciones | Klam</PageTitle>
 <div class="breadcrumb-line">Espacio de trabajo <span>/</span> Notificaciones</div>
@@ -34,7 +36,15 @@
 
 @if (desconocido)
 {
-    <EstadoVacio Titulo="Bandeja no disponible" Descripcion="Selecciona la bandeja de administrador o instrumentista." Enlace="/notificaciones" TextoEnlace="Ir a notificaciones" />
+    <EstadoVacio Titulo="Bandeja no disponible" Descripcion="Esta ruta no corresponde a tu bandeja de notificaciones." Enlace="/notificaciones" TextoEnlace="Ir a mi bandeja" />
+}
+else if (errorCarga)
+{
+    @* Si no se pudo cargar, no se muestra «Estás al día»: no sabemos si hay avisos. *@
+    <div class="card p-4 text-center">
+        <p class="text-muted mb-3">No se pudo mostrar tu bandeja en este momento.</p>
+        <div><button type="button" class="btn btn-outline-primary" @onclick="CargarNotificaciones">Reintentar</button></div>
+    </div>
 }
 else if (vacia || (!cargando && avisos.Count == 0))
 {
@@ -126,6 +136,7 @@ else
     private bool vacia;
     private bool desconocido;
     private bool cargando = true;
+    private bool errorCarga;
     private bool procesando;
     private string? mensajeOk;
     private string? mensajeError;
@@ -134,8 +145,9 @@ else
     protected override async Task OnParametersSetAsync()
     {
         vacia = Rol == "sin-avisos";
-        desconocido = Rol is not null and not "administrador" and not "instrumentista" and not "sin-avisos";
-        perfil = "instrumentista";
+        // La bandeja siempre es la del usuario de la sesión; /notificaciones/{rol} se acepta solo si coincide.
+        perfil = Vista.Perfil.Clave;
+        desconocido = Rol is not null && Rol != "sin-avisos" && Rol != perfil;
 
         if (!vacia && !desconocido)
         {
@@ -150,14 +162,17 @@ else
     private async Task CargarNotificaciones()
     {
         cargando = true;
+        errorCarga = false;
         mensajeError = null;
         try
         {
             avisos = await NotificacionService.ListarAsync();
+            await Contador.ActualizarAsync();
         }
         catch (Exception ex)
         {
             avisos = [];
+            errorCarga = true;
             mensajeError = "No se pudieron cargar las notificaciones: " + ex.Message;
         }
         finally
@@ -176,6 +191,7 @@ else
             var item = avisos.FirstOrDefault(a => a.Id == id);
             if (item != null) item.Leida = true;
             mensajeOk = "Aviso marcado como leído.";
+            await Contador.ActualizarAsync();
         }
         catch (Exception ex)
         {
@@ -196,6 +212,7 @@ else
             int marcadas = await NotificacionService.MarcarTodasLeidasAsync();
             foreach (var a in avisos) a.Leida = true;
             mensajeOk = $"Se marcaron {marcadas} notificaciones como leídas.";
+            await Contador.ActualizarAsync();
         }
         catch (Exception ex)
         {
