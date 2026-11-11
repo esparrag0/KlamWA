@@ -25,6 +25,12 @@ public static class HttpUtils
         using var respuesta = await Enviar(() => Http.PostAsJsonAsync(url, payload));
     }
 
+    /// POST sin cuerpo (acciones como marcar leído o registrar un retorno).
+    public static async Task DoPost(string url)
+    {
+        using var respuesta = await Enviar(() => Http.PostAsync(url, null));
+    }
+
     public static async Task<TResponse> DoPut<TRequest, TResponse>(string url, TRequest payload)
     {
         using var respuesta = await Enviar(() => Http.PutAsJsonAsync(url, payload));

@@ -59,6 +59,37 @@ public class CirugiaService : ICirugiaService
         }
     }
 
+    // ------------------------------------------------------------------ RF02 (rol 5)
+
+    public async Task<CirugiaDTO?> ObtenerAsync(int id)
+    {
+        try
+        {
+            return await HttpUtils.DoGet<CirugiaDTO>($"{_baseUrl}/{id}");
+        }
+        catch (ServicioException ex) when (ex.EsNoEncontrado)
+        {
+            return null;
+        }
+    }
+
+    public Task<OpcionesCirugiaDTO> OpcionesAsync() =>
+        HttpUtils.DoGet<OpcionesCirugiaDTO>($"{_baseUrl}/opciones");
+
+    public Task<CirugiaDTO> RegistrarAsync(CirugiaFormDTO cirugia) =>
+        HttpUtils.DoPost<CirugiaFormDTO, CirugiaDTO>(_baseUrl, cirugia);
+
+    public Task<CirugiaDTO> ModificarAsync(int id, CirugiaFormDTO cirugia) =>
+        HttpUtils.DoPut<CirugiaFormDTO, CirugiaDTO>($"{_baseUrl}/{id}", cirugia);
+
+    public Task<CirugiaDTO> CambiarEstadoAsync(int id, string estado) =>
+        HttpUtils.DoPost<AccionCirugiaDTO, CirugiaDTO>($"{_baseUrl}/{id}/estado", new AccionCirugiaDTO { Estado = estado });
+
+    public Task<CirugiaDTO> CancelarAsync(int id, string motivo) =>
+        HttpUtils.DoPost<AccionCirugiaDTO, CirugiaDTO>($"{_baseUrl}/{id}/cancelacion", new AccionCirugiaDTO { Motivo = motivo });
+
+    public Task EliminarAsync(int id) => HttpUtils.DoDelete($"{_baseUrl}/{id}");
+
     // ------------------------------------------------------------------
 
     private static void Agregar(Dictionary<string, string?> parametros, string nombre, string? valor)

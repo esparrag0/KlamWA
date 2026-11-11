@@ -27,9 +27,25 @@ else
 {
     <PageHeader Titulo="@("Cirugía #" + c.Id)" Subtitulo="@c.Procedimiento">
         <EstadoBadge Estado="@c.Estado" />
-        @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a><a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a> }
+        @if (EsAdmin && c.EstadoCodigo != "CANCELADA")
+        {
+            <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a>
+        }
+        @if (EsAdmin)
+        {
+            <a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a>
+        }
         <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
     </PageHeader>
+
+    @if (mensajeOk != null)
+    {
+        <div class="alert alert-success">@mensajeOk</div>
+    }
+    @if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
 
     <div class="row g-3">
         <div class="col-lg-8">
@@ -79,6 +95,24 @@ else
                     </div>
                 }
             </div>
+            @* RF02 (rol 5): cambio de estado y cancelación, con confirmación *@
+            @if (EsAdmin && c.EstadoCodigo is "PROGRAMADA" or "EN_PROCESO")
+            {
+                <div class="card mt-3">
+                    <div class="card-header">Estado de la cirugía</div>
+                    <div class="card-body d-flex flex-wrap gap-2">
+                        @if (c.EstadoCodigo == "PROGRAMADA")
+                        {
+                            <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("EN_PROCESO")'>Iniciar cirugía</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("FINALIZADA")'>Marcar como culminada</button>
+                        }
+                        <button type="button" class="btn btn-outline-danger" @onclick="PedirCancelacion">Cancelar cirugía</button>
+                    </div>
+                </div>
+            }
         </div>
         @if (Vista.Perfil.Clave is "administrador" or "cliente") {
         <div class="col-lg-4">
@@ -169,17 +203,52 @@ else
         </div>
     }
     </div>
+
+    <ModalConfirmacion Visible="@(estadoPendiente != null)"
+                       Titulo="Cambiar estado"
+                       Mensaje="@($"¿Confirma pasar la cirugía #{c.Id} a «{TextoEstado(estadoPendiente)}»?")"
+                       TextoConfirmar="Confirmar" ClaseConfirmar="btn-primary" Procesando="@procesando"
+                       OnConfirmar="ConfirmarCambioEstado" OnCancelar="() => estadoPendiente = null" />
+
+    <ModalConfirmacion Visible="@mostrarCancelacion"
+                       Titulo="Cancelar cirugía"
+                       Mensaje="La cirugía quedará cancelada y su bandeja se liberará. Indique el motivo:"
+                       TextoConfirmar="Cancelar cirugía" Procesando="@procesando"
+                       OnConfirmar="ConfirmarCancelacion" OnCancelar="() => mostrarCancelacion = false">
+        <textarea class="form-control" rows="3" maxlength="200" @bind="motivo" placeholder="Motivo de la cancelación"></textarea>
+        @if (errorModal != null)
+        {
+            <div class="text-danger small mt-2">@errorModal</div>
+        }
+    </ModalConfirmacion>
 }
 
 @code {
     [Parameter] public int Id { get; set; }
+    [SupplyParameterFromQuery(Name = "guardado")] public int? Guardado { get; set; }
     private CirugiaDetalleViewModel? c;
     private CierreCirugiaMock? cierre;
     private bool esClinica;
     private bool cargando;
     private string? error;
 
-    protected override Task OnParametersSetAsync() => Cargar();
+    // RF02 (rol 5): acciones sobre la cirugía
+    private bool procesando;
+    private string? mensajeOk;
+    private string? mensajeError;
+    private string? estadoPendiente;
+    private bool mostrarCancelacion;
+    private string motivo = "";
+    private string? errorModal;
+
+    private bool EsAdmin => Vista.Perfil.Clave == "administrador";
+
+    protected override Task OnParametersSetAsync()
+    {
+        mensajeError = null;
+        mensajeOk = Guardado == 1 ? "La cirugía se guardó correctamente." : null;
+        return Cargar();
+    }
 
     private async Task Cargar()
     {
@@ -207,4 +276,77 @@ else
             cargando = false;
         }
     }
+
+    private void PedirCambioEstado(string estado)
+    {
+        mensajeOk = null;
+        mensajeError = null;
+        estadoPendiente = estado;
+    }
+
+    private async Task ConfirmarCambioEstado()
+    {
+        if (c == null || estadoPendiente == null)
+        {
+            return;
+        }
+        procesando = true;
+        try
+        {
+            await CirugiaSvc.CambiarEstadoAsync(c.Id, estadoPendiente);
+            await Cargar();
+            mensajeOk = $"La cirugía ahora está «{c?.Estado}».";
+        }
+        catch (ServicioException ex)
+        {
+            mensajeError = ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+            estadoPendiente = null;
+        }
+    }
+
+    private void PedirCancelacion()
+    {
+        mensajeOk = null;
+        mensajeError = null;
+        errorModal = null;
+        motivo = "";
+        mostrarCancelacion = true;
+    }
+
+    private async Task ConfirmarCancelacion()
+    {
+        if (c == null)
+        {
+            return;
+        }
+        procesando = true;
+        errorModal = null;
+        try
+        {
+            await CirugiaSvc.CancelarAsync(c.Id, motivo);
+            mostrarCancelacion = false;
+            await Cargar();
+            mensajeOk = "La cirugía se canceló.";
+        }
+        catch (ServicioException ex)
+        {
+            // p. ej. "Debe indicar el motivo de la cancelación" (validado en la BL)
+            errorModal = ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
+
+    private static string TextoEstado(string? estado) => estado switch
+    {
+        "EN_PROCESO" => "En curso",
+        "FINALIZADA" => "Culminada",
+        _ => estado ?? ""
+    };
 }
