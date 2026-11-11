@@ -5,6 +5,7 @@
     <table class="table table-hover align-middle">
         <thead class="table-light">
             <tr>
+                <th>Código</th>
                 <th>Fecha</th>
                 <th>Inicio</th>
                 <th>Fin</th>
@@ -13,13 +14,14 @@
                 <th>Doctor</th>
                 @if (MostrarMotivo) { <th>Motivo cancelación</th> }
                 <th>Estado</th>
-                <th></th>
+                <th class="acciones">Acciones</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var c in Cirugias)
             {
                 <tr>
+                    <td class="fw-semibold text-nowrap">CIR-@c.Id.ToString("000")</td>
                     <td>@c.Inicio.ToString("dd/MM/yyyy")</td>
                     <td>@c.Inicio.ToString("HH:mm")</td>
                     <td>@(c.Fin?.ToString("HH:mm") ?? "—")</td>
@@ -28,8 +30,8 @@
                     <td>@c.Doctor</td>
                     @if (MostrarMotivo) { <td>@c.MotivoCancelacion</td> }
                     <td><EstadoBadge Estado="@c.Estado" /></td>
-                    <td class="text-end text-nowrap">
-                        <a class="btn btn-sm btn-outline-primary" href="/agenda/cirugia/@c.Id">Detalle</a>
+                    <td class="acciones">
+                        <a class="btn btn-sm btn-outline-primary" href="/agenda/cirugia/@c.Id">Ver detalle</a>
                         @if (BotonCierre(c) is { } accion)
                         {
                             <a class="btn btn-sm btn-primary ms-1" href="@accion.Href">@accion.Texto</a>
@@ -39,7 +41,7 @@
             }
             @if (!Cirugias.Any())
             {
-                <tr><td colspan="9" class="text-center text-muted py-4">No hay cirugías para mostrar.</td></tr>
+                <tr><td colspan="@(MostrarMotivo ? 10 : 9)" class="text-center text-muted py-4">No hay cirugías para mostrar.</td></tr>
             }
         </tbody>
     </table>

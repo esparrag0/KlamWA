@@ -6,7 +6,7 @@
 
 <PageTitle>Lista de cirugías</PageTitle>
 
-<PageHeader Titulo="Lista de cirugías" Subtitulo="Cirugías registradas, con filtros por fecha, equipo y cliente">
+<PageHeader Titulo="Cirugías coordinadas" Subtitulo="Cirugías registradas, con filtros por fecha, equipo y cliente">
     @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <a class="btn btn-outline-secondary" href="/agenda">Ver calendario</a> }
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
 </PageHeader>
