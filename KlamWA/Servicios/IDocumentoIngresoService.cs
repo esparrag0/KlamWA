@@ -14,4 +14,7 @@ public interface IDocumentoIngresoService
     Task<VerificacionDocumentosDTO> VerificarDocumentosAsync(int idSolicitud);
     Task ValidarAsync(int idDocumento);
     Task RechazarAsync(int idDocumento, string motivo, bool habilitarResubida);
+
+    /// <summary>Documentos obligatorios y versión vigente de cada uno (cliente dueño, vendedor o administrador).</summary>
+    Task<RequisitosDocumentosDTO> RequisitosAsync(int idSolicitud);
 }

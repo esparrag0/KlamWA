@@ -1,6 +1,6 @@
 namespace KlamWA.ViewModels;
 
-// Texto y color de los estados de una solicitud, según el estándar visual del equipo.
+// Texto y color de los estados de solicitudes y documentos, según el Design System del equipo.
 public static class EstadoSolicitudTexto
 {
     public static string Texto(string? estado) => estado switch
@@ -12,11 +12,13 @@ public static class EstadoSolicitudTexto
         _ => estado ?? string.Empty
     };
 
-    public static string Clase(string? estado) => estado switch
+    // Acepta el código (APROBADA) o el texto (Aprobada). Clases definidas en klam-design-system.css.
+    public static string Clase(string? estado) => (estado ?? "").ToUpperInvariant().Replace(' ', '_') switch
     {
-        "APROBADA" => "text-bg-success",
-        "RECHAZADA" => "text-bg-danger",
-        "DOCUMENTACION_INCOMPLETA" => "text-bg-warning",
-        _ => "text-bg-primary"
+        "APROBADA" or "VALIDADO" or "COMPLETO" => "estado-validado",
+        "RECHAZADA" or "RECHAZADO" or "DOCUMENTACION_INCOMPLETA" or "DOCUMENTACIÓN_INCOMPLETA" => "estado-rechazado",
+        var e when e.StartsWith("RECHAZADA") => "estado-rechazado",
+        "POR_REVISAR" or "PENDIENTE" or "POR_ADJUNTAR" or "POR_REGISTRAR" => "estado-pendiente",
+        _ => "estado-neutro"
     };
 }

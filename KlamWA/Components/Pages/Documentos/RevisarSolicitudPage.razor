@@ -12,8 +12,9 @@
 
 <PageTitle>Revisión de solicitud | Klam</PageTitle>
 
-<h3 class="mb-1">Revisión de SOL-@Id.ToString("000")</h3>
-<p class="text-muted mb-3">Datos de la solicitud y documentos de ingreso</p>
+<PageHeader Titulo="@($"Revisión de SOL-{Id:000}")" Subtitulo="Datos de la solicitud y documentos de ingreso">
+    <a class="btn btn-outline-secondary" href="/solicitudes">Volver a solicitudes</a>
+</PageHeader>
 
 @if (Cargando)
 {
@@ -46,8 +47,8 @@ else if (Solicitud is not null)
     </div>
 
     <div class="row g-3 mb-3">
-        <div class="col-lg-7">
-            <div class="card h-100">
+        <div class="col-12">
+            <div class="card">
                 <div class="card-header fw-bold">Documentos de ingreso</div>
                 <div class="card-body">
                     @if (Documentos.Count == 0)
@@ -56,25 +57,25 @@ else if (Solicitud is not null)
                     }
                     else
                     {
-                        <div class="table-responsive">
-                            <table class="table table-sm align-middle">
-                                <thead><tr><th>Documento</th><th>Estado</th><th>Versión</th><th>Fecha de carga</th><th>Observación</th><th>Acciones</th></tr></thead>
+                        <div>
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light"><tr><th>Documento</th><th>Estado</th><th>Versión</th><th>Fecha de carga</th><th>Observación</th><th class="acciones">Acciones</th></tr></thead>
                                 <tbody>
                                     @foreach (var documento in Documentos)
                                     {
                                         <tr>
-                                            <td>@documento.TipoDocumento.Replace('_', ' ')</td>
+                                            <td class="fw-semibold">@TextoDocumento(documento.TipoDocumento)</td>
                                             <td>
-                                                @documento.EstadoValidacion.Replace('_', ' ')
+                                                <DocumentoEstadoBadge Estado="@documento.EstadoValidacion" />
                                                 @if (documento.EstadoValidacion == "RECHAZADO")
                                                 {
-                                                    <div class="small text-muted">Resubida: @(documento.HabilitarResubida ? "autorizada" : "no autorizada")</div>
+                                                    <div class="small text-muted mt-1">Resubida @(documento.HabilitarResubida ? "habilitada" : "no habilitada")</div>
                                                 }
                                             </td>
-                                            <td>@documento.Version</td>
-                                            <td>@documento.FechaCarga?.ToString("dd/MM/yyyy HH:mm")</td>
-                                            <td>@documento.MotivoRechazo</td>
-                                            <td>
+                                            <td>v@(documento.Version)</td>
+                                            <td class="text-nowrap">@documento.FechaCarga?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@(string.IsNullOrWhiteSpace(documento.MotivoRechazo) ? "—" : documento.MotivoRechazo)</td>
+                                            <td class="acciones">
                                                 <button type="button" class="btn btn-outline-secondary btn-sm me-1" disabled="@Ocupado" @onclick="() => DescargarAsync(documento.IdDocumento)">Descargar</button>
                                                 @if (documento.EstadoValidacion == "PENDIENTE")
                                                 {
@@ -88,29 +89,25 @@ else if (Solicitud is not null)
                             </table>
                         </div>
                     }
-                    @if (DocumentoARechazar is not null)
-                    {
-                        <div class="border rounded p-3 mt-3">
-                            <label for="motivo-documento" class="form-label">Motivo del rechazo del documento @DocumentoARechazar</label>
-                            <textarea id="motivo-documento" class="form-control" maxlength="200" rows="3" @bind="MotivoDocumento"></textarea>
-                            <div class="form-check mt-2">
-                                <input id="habilitar-resubida-documento" type="checkbox" class="form-check-input" @bind="HabilitarResubidaDocumento" />
-                                <label for="habilitar-resubida-documento" class="form-check-label">Habilitar resubida del documento</label>
-                            </div>
-                            @if (ErrorMotivo is not null) { <div class="text-danger small mt-1">@ErrorMotivo</div> }
-                            <div class="d-flex gap-2 mt-2">
-                                <button type="button" class="btn btn-danger btn-sm" disabled="@Ocupado" @onclick="RechazarDocumentoAsync">Confirmar rechazo</button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@Ocupado" @onclick="CancelarRechazo">Cancelar</button>
-                            </div>
+                    <ModalConfirmacion Visible="@(DocumentoARechazar is not null)"
+                                       Titulo="Rechazar documento"
+                                       Mensaje="@($"Indique el motivo del rechazo de {TextoDocumentoPorId(DocumentoARechazar)}. El presentador lo verá en su solicitud.")"
+                                       TextoConfirmar="Rechazar documento" Procesando="@Ocupado"
+                                       OnConfirmar="RechazarDocumentoAsync" OnCancelar="CancelarRechazo">
+                        <textarea id="motivo-documento" class="form-control" maxlength="200" rows="3" @bind="MotivoDocumento" placeholder="Motivo del rechazo"></textarea>
+                        <div class="form-check mt-2">
+                            <input id="habilitar-resubida-documento" type="checkbox" class="form-check-input" @bind="HabilitarResubidaDocumento" />
+                            <label for="habilitar-resubida-documento" class="form-check-label">Solicitar nueva carga (habilitar resubida del documento)</label>
                         </div>
-                    }
+                        @if (ErrorMotivo is not null) { <div class="text-danger small mt-1">@ErrorMotivo</div> }
+                    </ModalConfirmacion>
                     @if ((Solicitud.Estado == "POR_REVISAR" || Solicitud.Estado == "DOCUMENTACION_INCOMPLETA") && TiposDisponibles.Count > 0)
                     {
                         <div class="border rounded p-3 mt-3">
                             <label for="tipo-nuevo" class="form-label">Presentar documento pendiente</label>
                             <select id="tipo-nuevo" class="form-select mb-2" @bind="TipoNuevo">
                                 @foreach (var tipo in TiposDisponibles)
-                                { <option value="@tipo">@tipo.Replace('_', ' ')</option> }
+                                { <option value="@tipo">@TextoDocumento(tipo)</option> }
                             </select>
                             <InputFile OnChange="SeleccionarArchivo" accept=".pdf,.png,.jpg,.jpeg" />
                             <div class="form-text">PDF, PNG o JPEG hasta 5 MB. La carga quedará registrada a nombre de tu usuario administrador.</div>
@@ -121,8 +118,8 @@ else if (Solicitud is not null)
                 </div>
             </div>
         </div>
-        <div class="col-lg-5">
-            <div class="card h-100">
+        <div class="col-12">
+            <div class="card">
                 <div class="card-header fw-bold">Solicitud y decisión</div>
                 <div class="card-body">
                     <dl class="row mb-3">
@@ -130,7 +127,7 @@ else if (Solicitud is not null)
                         <dt class="col-sm-5">Paciente</dt><dd class="col-sm-7">@Solicitud.PacienteNombre</dd>
                         <dt class="col-sm-5">Procedimiento</dt><dd class="col-sm-7">@Solicitud.TipoProcedimiento</dd>
                         <dt class="col-sm-5">Fecha solicitada</dt><dd class="col-sm-7">@Solicitud.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</dd>
-                        <dt class="col-sm-5">Estado</dt><dd class="col-sm-7">@Solicitud.Estado.Replace('_', ' ')</dd>
+                        <dt class="col-sm-5">Estado</dt><dd class="col-sm-7"><DocumentoEstadoBadge Estado="@Solicitud.Estado" /></dd>
                         @if (!string.IsNullOrWhiteSpace(Solicitud.MotivoRechazo))
                         {
                             <dt class="col-sm-5">Motivo de rechazo</dt><dd class="col-sm-7">@Solicitud.MotivoRechazo</dd>
@@ -326,4 +323,17 @@ else if (Solicitud is not null)
             _ => ex.Message
         };
     }
+
+    private static string TextoDocumento(string? tipo) => tipo switch
+    {
+        "DNI" => "DNI del paciente",
+        "RECETA_MEDICA" => "Receta médica",
+        "ORDEN_COMPRA" => "Orden de compra",
+        "COMPROBANTE_PAGO" => "Comprobante de pago",
+        _ => tipo?.Replace('_', ' ') ?? ""
+    };
+
+    private string TextoDocumentoPorId(int? id) =>
+        TextoDocumento(Documentos.FirstOrDefault(d => d.IdDocumento == id)?.TipoDocumento).ToLowerInvariant() is { Length: > 0 } t
+            ? $"«{t}»" : "este documento";
 }

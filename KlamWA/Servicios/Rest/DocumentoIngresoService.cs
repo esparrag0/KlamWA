@@ -20,6 +20,11 @@ public sealed class DocumentoIngresoService(
             client, idSolicitud is > 0 ? $"documentos/solicitud/{idSolicitud}/propios" : "documentos/propios",
             await tokens.ObtenerAsync(autenticacion)) ?? [];
 
+    public async Task<RequisitosDocumentosDTO> RequisitosAsync(int idSolicitud) =>
+        await HttpUtils.DoGetAutenticado<RequisitosDocumentosDTO>(
+            client, $"documentos/solicitud/{idSolicitud}/requisitos", await tokens.ObtenerAsync(autenticacion))
+        ?? new RequisitosDocumentosDTO { IdSolicitud = idSolicitud };
+
     public Task RegistrarArchivoAsync(int idSolicitud, string tipoDocumento, IBrowserFile archivo) =>
         EnviarArchivoAsync($"documentos/solicitud/{idSolicitud}/archivo", archivo, tipoDocumento);
 

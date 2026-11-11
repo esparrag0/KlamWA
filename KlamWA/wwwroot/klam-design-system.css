@@ -41,3 +41,15 @@ html, body { background: var(--klam-fondo); color: var(--klam-texto); }
 /* ---- Formularios: etiqueta encima, error debajo ---- */
 .form-label { color: var(--klam-texto); margin-bottom: .25rem; }
 .validation-message, .invalid-feedback { color: var(--klam-peligro); font-size: .85rem; }
+
+/* ---- Estados de documentos y solicitudes (colores fijos del Design System) ---- */
+.estado-badge { font-weight: 600; font-size: .75rem; padding: .35em .6em; border-radius: 6px; }
+.estado-pendiente { background-color: #DBEAFE; color: #1E40AF; }   /* Pendiente / Por revisar */
+.estado-validado  { background-color: #CCFBF1; color: #115E59; }   /* Validado / Aprobada */
+.estado-rechazado { background-color: #FFE4E6; color: #9F1239; }   /* Rechazado / Rechazada */
+.estado-neutro    { background-color: #E5E7EB; color: #374151; }
+
+/* Tabla de solicitudes: ancho completo, sin scroll horizontal; texto largo se ajusta en varias líneas */
+.tabla-solicitudes { width: 100%; table-layout: auto; }
+.tabla-solicitudes td { white-space: normal; word-break: break-word; }
+.tabla-solicitudes td.acciones, .tabla-solicitudes td.text-nowrap { white-space: nowrap; }

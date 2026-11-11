@@ -1,0 +1,25 @@
+@* Paginación simple para tablas: «N registros · Página X de Y» con anterior/siguiente. *@
+@if (Total > 0)
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 small text-muted">
+        <span>@Total @(Total == 1 ? "registro" : "registros")</span>
+        @if (Paginas > 1)
+        {
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(Pagina <= 1)" @onclick="() => Ir(Pagina - 1)">Anterior</button>
+                <span>Página @Pagina de @Paginas</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(Pagina >= Paginas)" @onclick="() => Ir(Pagina + 1)">Siguiente</button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int Total { get; set; }
+    [Parameter] public int PorPagina { get; set; } = 10;
+    [Parameter] public int Pagina { get; set; } = 1;
+    [Parameter] public EventCallback<int> PaginaChanged { get; set; }
+
+    private int Paginas => Math.Max(1, (int)Math.Ceiling(Total / (double)PorPagina));
+    private Task Ir(int pagina) => PaginaChanged.InvokeAsync(Math.Clamp(pagina, 1, Paginas));
+}

@@ -1,26 +1,39 @@
 @page "/historial-documental"
 @attribute [Authorize(Roles = "ADMINISTRADOR")]
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.QuickGrid
 @using System.Net
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @inject IDocumentoIngresoService DocumentoService
+@inject ISolicitudCirugiaService SolicitudService
 
 <PageTitle>Historial documental</PageTitle>
 
-<h3 class="mb-3">Historial documental</h3>
-<p class="text-muted">Versiones y cambios de estado de los documentos de una solicitud</p>
+<PageHeader Titulo="Historial documental" Subtitulo="Versiones y cambios de estado de los documentos de una solicitud" />
 
-<div class="d-flex align-items-center gap-2 mb-3">
-    <label for="historial-solicitud" class="text-nowrap">Solicitud:</label>
-    <input id="historial-solicitud" type="number" min="1" class="form-control" @bind="IdOperacion" />
-    <button type="button" class="btn btn-primary" disabled="@(IdOperacion <= 0 || Cargando)" @onclick="ActualizarAsync">Consultar</button>
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+                <label for="historial-solicitud" class="form-label small mb-1">Solicitud</label>
+                <select id="historial-solicitud" class="form-select form-select-sm" @bind="IdOperacion" @bind:after="ActualizarAsync">
+                    <option value="0">-- Seleccione una solicitud --</option>
+                    @foreach (var s in Solicitudes)
+                    {
+                        <option value="@s.IdSolicitud">@s.Codigo · @s.Cliente · @s.TipoProcedimiento</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(IdOperacion <= 0 || Cargando)" @onclick="ActualizarAsync">Actualizar</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @if (Cargando)
 {
-    <div class="alert alert-info">Consultando historial...</div>
+    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando historial…</p>
 }
 else if (Error is not null)
 {
@@ -28,32 +41,58 @@ else if (Error is not null)
 }
 else if (IdOperacion <= 0)
 {
-    <div class="alert alert-info">Ingresa el número de una solicitud para consultar su historial.</div>
-}
-else if (Registros.Count == 0)
-{
-    <div class="alert alert-info">No hay documentos registrados para esta solicitud.</div>
+    <EstadoVacio Titulo="Elige una solicitud" Descripcion="Selecciona una solicitud para ver las versiones de sus documentos." Enlace="/solicitudes" TextoEnlace="Ir a solicitudes" />
 }
 else
 {
-    <QuickGrid Items="Registros.AsQueryable()" Pagination="Paginacion" Class="table table-striped table-hover">
-        <PropertyColumn Title="Fecha y hora" Property="r => r.FechaHora" Format="dd/MM/yyyy HH:mm" Sortable="true" />
-        <PropertyColumn Title="Documento" Property="r => r.Documento" Sortable="true" />
-        <PropertyColumn Title="Versión" Property="r => r.Version" Sortable="true" />
-        <PropertyColumn Title="Responsable" Property="r => r.Responsable" Sortable="true" />
-        <PropertyColumn Title="Estado" Property="r => r.Estado" />
-        <PropertyColumn Title="Motivo de rechazo" Property="r => r.MotivoRechazo" />
-        <TemplateColumn Title="Resubida autorizada" Context="r">@(r.HabilitarResubida ? "Sí" : "No")</TemplateColumn>
-        <PropertyColumn Title="Referencia" Property="r => r.Referencia" />
-    </QuickGrid>
-    <Paginator State="Paginacion" />
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr><th>Fecha y hora</th><th>Documento</th><th>Versión</th><th class="d-none d-lg-table-cell">Responsable</th><th>Estado</th><th>Motivo de rechazo</th><th>Resubida</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Registros.Skip((Pagina - 1) * PorPagina).Take(PorPagina))
+            {
+                <tr>
+                    <td class="text-nowrap">@r.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@TextoDocumento(r.Documento)</td>
+                    <td>v@(r.Version)</td>
+                    <td class="d-none d-lg-table-cell">@(r.Responsable ?? "—")</td>
+                    <td><DocumentoEstadoBadge Estado="@r.Estado" /></td>
+                    <td>@(string.IsNullOrWhiteSpace(r.MotivoRechazo) ? "—" : r.MotivoRechazo)</td>
+                    <td>@(r.Estado == "RECHAZADO" ? (r.HabilitarResubida ? "Habilitada" : "No habilitada") : "—")</td>
+                </tr>
+            }
+            @if (Registros.Count == 0)
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay documentos registrados para esta solicitud.</td></tr>
+            }
+        </tbody>
+    </table>
+    <Paginacion Total="Registros.Count" PorPagina="PorPagina" @bind-Pagina="Pagina" />
 }
 
 @code {
     [SupplyParameterFromQuery(Name = "solicitud")] public int? IdSolicitud { get; set; }
     private List<HistorialDocumentoDTO> Registros { get; set; } = [];
     private int IdOperacion { get; set; }
-    private PaginationState Paginacion { get; } = new() { ItemsPerPage = 5 };
+    private const int PorPagina = 10;
+    private int Pagina { get; set; } = 1;
+    private List<SolicitudCirugiaDTO> Solicitudes { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { Solicitudes = (await SolicitudService.ListarAsync()).OrderByDescending(x => x.IdSolicitud).ToList(); }
+        catch (HttpRequestException) { /* el error se mostrará al consultar */ }
+    }
+
+    private static string TextoDocumento(string tipo) => tipo switch
+    {
+        "DNI" => "DNI",
+        "RECETA_MEDICA" => "Receta médica",
+        "ORDEN_COMPRA" => "Orden de compra",
+        "COMPROBANTE_PAGO" => "Comprobante de pago",
+        _ => tipo
+    };
     private bool Cargando { get; set; }
     private string? Error { get; set; }
     private bool RequiereLogin { get; set; }
@@ -74,6 +113,7 @@ else
         Error = null;
         RequiereLogin = false;
         Registros = [];
+        Pagina = 1;
         try
         {
             Registros = await DocumentoService.ConsultarHistorialAsync(IdOperacion);

@@ -29,15 +29,15 @@ else if (solicitudes.Count == 0)
 else
 {
     <div class="table-responsive"><table class="table table-hover align-middle">
-        <thead class="table-light"><tr><th>N.º</th><th>Fecha solicitada</th><th>Cliente</th><th>Clínica</th><th>Procedimiento</th><th>Médico</th><th>Estado</th><th></th></tr></thead>
+        <thead class="table-light"><tr><th>N.º</th><th>Fecha solicitada</th><th>Cliente</th><th>Clínica</th><th>Procedimiento</th><th>Médico</th><th>Estado</th><th class="acciones">Acciones</th></tr></thead>
         <tbody>
         @foreach (var s in solicitudes)
         {
             <tr>
-                <td>@s.Codigo</td><td>@s.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</td>
+                <td class="fw-semibold text-nowrap">@s.Codigo</td><td>@s.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</td>
                 <td>@s.Cliente</td><td>@s.ClinicaDestino</td><td>@s.TipoProcedimiento</td><td>@s.DoctorNombre</td>
                 <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
-                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.IdSolicitud)">@(abierta == s.IdSolicitud ? "Ocultar detalle" : "Ver detalle")</button></td>
+                <td class="acciones"><button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.IdSolicitud)">@(abierta == s.IdSolicitud ? "Ocultar detalle" : "Ver detalle")</button><a class="btn btn-sm btn-primary ms-1" href="/mis-solicitudes/@s.IdSolicitud/documentos">Documentos</a></td>
             </tr>
             @if (abierta == s.IdSolicitud)
             {

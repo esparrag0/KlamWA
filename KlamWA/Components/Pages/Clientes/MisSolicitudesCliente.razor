@@ -32,22 +32,23 @@ else
                     <th>Clínica</th>
                     <th>Procedimiento</th>
                     <th>Estado</th>
-                    <th></th>
+                    <th class="acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var s in solicitudes)
                 {
                     <tr>
-                        <td>SOL-@s.IdSolicitud.ToString("D4")</td>
+                        <td class="fw-semibold text-nowrap">@s.Codigo</td>
                         <td>@s.FechaHoraSolicitada.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@s.ClinicaDestino</td>
                         <td>@s.TipoProcedimiento</td>
-                        <td><span class="badge @EstadoSolicitudTexto.Clase(s.Estado)">@EstadoSolicitudTexto.Texto(s.Estado)</span></td>
-                        <td class="text-end text-nowrap">
+                        <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
+                        <td class="acciones">
                             <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => Alternar(s.IdSolicitud)">
                                 @(abierta == s.IdSolicitud ? "Ocultar detalle" : "Ver detalle")
                             </button>
+                            <a class="btn btn-sm btn-primary ms-1" href="/cliente/solicitudes/@s.IdSolicitud/documentos">Documentos</a>
                         </td>
                     </tr>
                     @if (abierta == s.IdSolicitud)

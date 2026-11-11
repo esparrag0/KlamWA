@@ -38,3 +38,12 @@ public sealed class VerificacionDocumentosDTO
 {
     public bool DocumentacionCompleta { get; set; }
 }
+
+/// Respuesta de GET documentos/solicitud/{id}/requisitos
+public sealed class RequisitosDocumentosDTO
+{
+    public int IdSolicitud { get; set; }
+    public string? EstadoSolicitud { get; set; }
+    public List<string> Obligatorios { get; set; } = [];
+    public List<DocumentoIngresoDTO> Documentos { get; set; } = [];
+}
