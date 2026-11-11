@@ -15,8 +15,16 @@ public sealed class ClienteService(HttpClient client, AuthenticationStateProvide
     {
         var ruta = string.IsNullOrWhiteSpace(tipoCliente) ? "clientes" :
             QueryHelpers.AddQueryString("clientes", "tipoCliente", tipoCliente);
-        var datos = await HttpUtilsAutenticado.DoGet<List<ClienteDTO>>(client, ruta, await TokenAsync()) ?? [];
-        return datos.Select(CirugiaMapeo.ToOpcion).ToList();
+        try
+        {
+            var datos = await HttpUtilsAutenticado.DoGet<List<ClienteDTO>>(client, ruta, await TokenAsync()) ?? [];
+            return datos.Select(CirugiaMapeo.ToOpcion).ToList();
+        }
+        catch (HttpRequestException ex)
+        {
+            // Mismo tipo de error que los demás servicios de la agenda (RestConSesion): las pantallas lo muestran.
+            throw new ServicioException(ex.Message, (int?)ex.StatusCode, ex);
+        }
     }
 
     public async Task<List<ClienteBusquedaDTO>> BuscarParticularAsync(string dni) =>

@@ -1,8 +1,12 @@
 @using KlamWA.Servicios
 @inject IClienteService ClienteSvc
 @inject IEquipoService EquipoSvc
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
 
 @* Filtros de cirugías (RF17): fechas, maquinaria, tipo de cliente, cliente y estado. Los catálogos vienen del backend. *@
+@if (esAdministrador)
+{
 <div class="card mb-3">
     <div class="card-body">
         <div class="row g-2 align-items-end">
@@ -56,6 +60,7 @@
         }
     </div>
 </div>
+}
 
 @code {
     private const string Clinica = "CLINICA_HOSPITAL";
@@ -63,6 +68,8 @@
     private static readonly string[] Estados = { "Programada", "En curso", "Culminada", "Cancelada" };
 
     [Parameter] public EventCallback<FiltroCirugia> OnFiltrar { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+    private bool esAdministrador;
 
     private DateTime? desde;
     private DateTime? hasta;
@@ -81,12 +88,21 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // RF17: los filtros son del administrador (el backend solo le permite /equipos y la lista filtrada).
+        // Se lee el rol de la sesión, no del perfil visual, para no depender del orden de carga del layout.
+        var usuario = (await AuthenticationStateTask).User;
+        esAdministrador = usuario.FindFirst(ClaimTypes.Role)?.Value == "ADMINISTRADOR";
+        if (!esAdministrador) return;
         try
         {
             clientes = await ClienteSvc.Listar();
             equipos = await EquipoSvc.Listar();
         }
         catch (ServicioException ex)
+        {
+            errorCatalogos = ex.Message;
+        }
+        catch (HttpRequestException ex)
         {
             errorCatalogos = ex.Message;
         }
