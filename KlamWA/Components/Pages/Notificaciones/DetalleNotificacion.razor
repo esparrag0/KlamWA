@@ -2,11 +2,12 @@
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @inject INotificacionService NotificacionService
+@inject AvisosSinLeer Contador
 
 <PageTitle>Detalle de notificación | Klam</PageTitle>
 <div class="breadcrumb-line"><a href="/notificaciones">Notificaciones</a><span>/</span>Detalle del aviso</div>
 <PageHeader Titulo="Detalle de notificación" Subtitulo="Información del evento y su destinatario.">
-    <a class="btn btn-outline-secondary" href="@($"/notificaciones/{aviso?.Perfil ?? "administrador"}")">
+    <a class="btn btn-outline-secondary" href="/notificaciones">
         <Icono Nombre="volver" Tamano="17" /> Volver a la bandeja
     </a>
 </PageHeader>
@@ -106,6 +107,7 @@ else
             await NotificacionService.MarcarLeidaAsync(Id);
             aviso.Leida = true;
             mensajeOk = "Aviso marcado como leído.";
+            await Contador.ActualizarAsync();
         }
         catch (Exception ex)
         {

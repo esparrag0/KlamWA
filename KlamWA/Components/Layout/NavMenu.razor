@@ -1,3 +1,5 @@
+@inject KlamWA.Servicios.AvisosSinLeer Avisos
+@implements IDisposable
 <div class="sidebar-brand">
     <a href="@($"/inicio/{Perfil.Clave}")" aria-label="Klam, ir al inicio"><img src="img/klam-wordmark-blanco.svg" alt="Klam" /></a>
     <button class="mobile-toggle" type="button" aria-label="Abrir o cerrar menú" aria-controls="menu-principal" aria-expanded="@abierto.ToString().ToLowerInvariant()" @onclick="() => abierto = !abierto"><Icono Nombre="menu" /></button>
@@ -6,9 +8,9 @@
     <nav aria-label="Navegación principal" @onclick="() => abierto = false">
         <div class="nav-section">Principal</div>
         <NavLink class="nav-link" href="/inicio"><Icono Nombre="inicio" /> Inicio</NavLink>
-        @if (Perfil.Clave is "administrador" or "instrumentista")
+        @if (Perfil.Clave is "administrador" or "instrumentista" or "vendedor")
         {
-            <NavLink class="nav-link" href="/notificaciones"><Icono Nombre="campana" /> Notificaciones <span class="nav-count">2</span></NavLink>
+            <NavLink class="nav-link" href="/notificaciones"><Icono Nombre="campana" /> Notificaciones @if (Avisos.Cantidad > 0) { <span class="nav-count">@Avisos.Cantidad</span> }</NavLink>
         }
         <div class="nav-section">Agenda y cirugías</div>
         @if (Perfil.Clave is "administrador" or "instrumentista") { <NavLink class="nav-link" href="/agenda" Match="NavLinkMatch.All"><Icono Nombre="calendario" /> Calendario</NavLink> }
@@ -75,4 +77,8 @@
 @code {
     [Parameter, EditorRequired] public PerfilVista Perfil { get; set; } = DatosAcceso.Perfiles[0];
     private bool abierto;
+
+    protected override void OnInitialized() => Avisos.Cambio += Refrescar;
+    private void Refrescar() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => Avisos.Cambio -= Refrescar;
 }

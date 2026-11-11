@@ -15,6 +15,7 @@ builder.Services.AddScoped<ICirugiaService, CirugiaService>();
 builder.Services.AddScoped<IEquipoService, EquipoService>();
 builder.Services.AddScoped<IBandejaService, BandejaService>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<AvisosSinLeer>();
 builder.Services.AddScoped<IDespachoService, DespachoService>();
 builder.Services.AddHttpClient<IDocumentoIngresoService, DocumentoIngresoService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
