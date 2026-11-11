@@ -18,7 +18,7 @@
         @MensajeOk
         @if (ClienteCreadoId != null)
         {
-            <a href="/clientes/editar/@ClienteCreadoTipo/@ClienteCreadoId#acceso">Habilitar cuenta de acceso</a>
+            <a href="/clientes/editar/@ClienteCreadoTipo/@ClienteCreadoId#acceso">Agregar otra cuenta de acceso</a>
         }
     </div>
 }
@@ -104,6 +104,27 @@
                         </div>
                     </div>
                 }
+                @if (Id == null)
+                {
+                    <div class="col-12"><hr class="my-1" /><strong>Acceso a la plataforma</strong>
+                        <div class="form-text">Todo cliente se registra con su usuario y contraseña; sin ellos no se puede guardar.</div>
+                    </div>
+                    <CampoForm Etiqueta="Usuario *">
+                        <InputText class="form-control" maxlength="@ReglasCredenciales.MaxUsuario" autocomplete="off" @bind-Value="ViewModel.Username" />
+                        <div class="form-text">@ReglasCredenciales.TextoUsuario</div>
+                        <ValidationMessage For="() => ViewModel.Username" />
+                    </CampoForm>
+                    <div class="col-md-6"></div>
+                    <CampoForm Etiqueta="Contraseña *">
+                        <InputText type="password" class="form-control" maxlength="@ReglasCredenciales.MaxPassword" autocomplete="new-password" @bind-Value="ViewModel.Password" />
+                        <div class="form-text">@ReglasCredenciales.TextoPassword</div>
+                        <ValidationMessage For="() => ViewModel.Password" />
+                    </CampoForm>
+                    <CampoForm Etiqueta="Confirmar contraseña *">
+                        <InputText type="password" class="form-control" autocomplete="new-password" @bind-Value="ViewModel.ConfirmarPassword" />
+                        <ValidationMessage For="() => ViewModel.ConfirmarPassword" />
+                    </CampoForm>
+                }
             </div>
         </div>
         <div class="card-footer">
@@ -118,7 +139,7 @@
     <div id="acceso" class="card mt-3" style="max-width:900px">
         <div class="card-header">Habilitar cuenta de acceso</div>
         <div class="card-body">
-            <p class="text-muted">El cliente comercial puede existir sin cuenta. Esta acción habilita el acceso por separado.</p>
+            <p class="text-muted">Todo cliente se registra con su cuenta de acceso. Aquí puedes agregar otra cuenta con otro usuario y contraseña.</p>
             @if (MensajeCuentaOk != null)
             {
                 <div class="alert alert-success" role="status">@MensajeCuentaOk</div>
@@ -202,8 +223,9 @@
         enviando = true;
         try
         {
+            var usuario = ViewModel.Username.Trim();
             var creado = await Api.RegistrarAsync(ViewModel.ToRegistro());
-            MensajeOk = $"Cliente «{creado.Nombre}» registrado sin cuenta de acceso. ";
+            MensajeOk = $"Cliente «{creado.Nombre}» registrado con su cuenta de acceso. Usuario: {usuario}. ";
             ClienteCreadoId = creado.IdCliente;
             ClienteCreadoTipo = creado.TipoCliente;
             ViewModel = new ClienteViewModel { Tipo = ViewModel.Tipo };

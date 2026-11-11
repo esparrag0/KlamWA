@@ -54,7 +54,7 @@ public class SolicitudClienteViewModel : IValidatableObject
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
         if (ClinicaDestinoObligatoria && IdClinica <= 0)
-            yield return new ValidationResult("Indique la clínica u hospital de destino", new[] { nameof(IdClinica) });
+            yield return new ValidationResult("Escriba el nombre de la clínica u hospital y elija una opción de la lista", new[] { nameof(IdClinica) });
         if (PacienteObligatorio && string.IsNullOrWhiteSpace(PacienteNombre))
             yield return new ValidationResult("El nombre del paciente es obligatorio", new[] { nameof(PacienteNombre) });
     }

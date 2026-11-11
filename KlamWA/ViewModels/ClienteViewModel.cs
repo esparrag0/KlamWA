@@ -13,6 +13,11 @@ public class ClienteViewModel : IValidatableObject
     public int Id { get; set; }
     public bool Activo { get; set; } = true;
 
+    // Credenciales (RF01): todo cliente se registra con su usuario y contraseña. Solo en el alta (Id = 0).
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string ConfirmarPassword { get; set; } = "";
+
     public string Tipo { get; set; } = DatosClientes.Particular;
 
     [Required(ErrorMessage = "El nombre es obligatorio")]
@@ -85,11 +90,26 @@ public class ClienteViewModel : IValidatableObject
         Ruc = Tipo == DatosClientes.Particular ? null : Ruc,
         TieneConsignacion = TieneConsignacion,
         PeriodoCredito = Tipo == DatosClientes.Particular ? null : PeriodoCredito,
-        Activo = Activo
+        Activo = Activo,
+        Username = Username.Trim(),
+        Password = Password
     };
 
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
+        if (Id == 0)
+        {
+            if (!ReglasCredenciales.UsuarioValido(Username))
+                yield return new ValidationResult(
+                    "Usuario inválido. " + ReglasCredenciales.TextoUsuario, new[] { nameof(Username) });
+            if (!ReglasCredenciales.PasswordValida(Password))
+                yield return new ValidationResult(
+                    "Contraseña inválida. " + ReglasCredenciales.TextoPassword, new[] { nameof(Password) });
+            if (Password != ConfirmarPassword)
+                yield return new ValidationResult(
+                    "Las contraseñas no coinciden", new[] { nameof(ConfirmarPassword) });
+        }
+
         if (!string.IsNullOrWhiteSpace(Email) && (!Email.Contains('@') || !Email.Contains('.')))
             yield return new ValidationResult(
                 "El correo de contacto tiene un formato inválido", new[] { nameof(Email) });

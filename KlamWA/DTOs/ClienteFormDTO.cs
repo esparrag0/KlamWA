@@ -15,4 +15,6 @@ public sealed class ClienteFormDTO
     public string? PeriodoCredito { get; set; }
     public string? Dni { get; set; }
     public bool PagoConfirmado { get; set; }
+    public string Username { get; set; } = string.Empty;   // solo en el alta (obligatorio)
+    public string Password { get; set; } = string.Empty;   // solo en el alta (obligatorio)
 }

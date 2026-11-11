@@ -7,4 +7,7 @@ public interface ISolicitudClienteService
 {
     Task<SolicitudCirugiaDTO> RegistrarAsync(RegistrarSolicitudDTO solicitud);
     Task<List<SolicitudCirugiaDTO>> ListarPropiasAsync();
+
+    // Buscador de clínicas por nombre (el cliente no conoce los ids): devuelve hasta 10 coincidencias.
+    Task<List<ClinicaOpcionDTO>> BuscarClinicasAsync(string texto);
 }
