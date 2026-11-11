@@ -17,4 +17,9 @@ public sealed class SolicitudClienteService(
     public async Task<List<SolicitudCirugiaDTO>> ListarPropiasAsync() =>
         await HttpUtilsAutenticado.DoGet<List<SolicitudCirugiaDTO>>(
             client, "cliente/solicitudes", await tokens.ObtenerAsync(autenticacion)) ?? [];
+
+    public async Task<List<ClinicaOpcionDTO>> BuscarClinicasAsync(string texto) =>
+        await HttpUtilsAutenticado.DoGet<List<ClinicaOpcionDTO>>(
+            client, $"cliente/solicitudes/clinicas?nombre={Uri.EscapeDataString(texto)}",
+            await tokens.ObtenerAsync(autenticacion)) ?? [];
 }
