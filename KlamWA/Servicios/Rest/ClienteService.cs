@@ -1,4 +1,6 @@
 using KlamWA.DTOs;
+using KlamWA.ViewModels;
+using Microsoft.AspNetCore.WebUtilities;
 using KlamWA.Seguridad;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -8,6 +10,14 @@ public sealed class ClienteService(HttpClient client, AuthenticationStateProvide
     SesionTokenStore tokens) : IClienteService
 {
     private Task<string> TokenAsync() => tokens.ObtenerAsync(autenticacion);
+
+    public async Task<List<ClienteOpcionViewModel>> Listar(string? tipoCliente = null)
+    {
+        var ruta = string.IsNullOrWhiteSpace(tipoCliente) ? "clientes" :
+            QueryHelpers.AddQueryString("clientes", "tipoCliente", tipoCliente);
+        var datos = await HttpUtilsAutenticado.DoGet<List<ClienteDTO>>(client, ruta, await TokenAsync()) ?? [];
+        return datos.Select(CirugiaMapeo.ToOpcion).ToList();
+    }
 
     public async Task<List<ClienteBusquedaDTO>> BuscarParticularAsync(string dni) =>
         await HttpUtils.DoGetAutenticado<List<ClienteBusquedaDTO>>(client,

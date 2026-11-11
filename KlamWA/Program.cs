@@ -9,6 +9,13 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddScoped<KlamWA.ViewModels.VistaPreviaRol>();
 builder.Services.AddSeguridad(builder.Configuration);
+builder.Services.AddHttpClient<RestConSesion>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddScoped<ICirugiaService, CirugiaService>();
+builder.Services.AddScoped<IEquipoService, EquipoService>();
+builder.Services.AddScoped<IBandejaService, BandejaService>();
+builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<IDespachoService, DespachoService>();
 builder.Services.AddHttpClient<IDocumentoIngresoService, DocumentoIngresoService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<IClienteService, ClienteService>(client =>

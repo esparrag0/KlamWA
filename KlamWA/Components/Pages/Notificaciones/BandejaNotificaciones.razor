@@ -1,45 +1,209 @@
 @page "/notificaciones"
 @page "/notificaciones/{Rol}"
-@inject VistaPreviaRol Vista
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject INotificacionService NotificacionService
 
 <PageTitle>Notificaciones | Klam</PageTitle>
 <div class="breadcrumb-line">Espacio de trabajo <span>/</span> Notificaciones</div>
 <PageHeader Titulo="Notificaciones" Subtitulo="Mantente al tanto de las solicitudes y la programación quirúrgica.">
-    <BotonDemo Clase="btn-outline-secondary" Mensaje="Acción visual. Los avisos de ejemplo mantienen su estado de lectura."><Icono Nombre="check" Tamano="17" /> Marcar todas como leídas</BotonDemo>
+    @if (avisos.Any(a => !a.Leida))
+    {
+        <button type="button" class="btn btn-outline-secondary" @onclick="MarcarTodasLeidas" disabled="@procesando">
+            <Icono Nombre="check" Tamano="17" /> Marcar todas como leídas
+        </button>
+    }
 </PageHeader>
-<nav class="view-tabs" aria-label="Bandeja de notificaciones"><a href="/notificaciones" class="active" aria-current="page"><Icono Nombre="campana" Tamano="17" /> Mi bandeja</a></nav>
+
+<nav class="view-tabs" aria-label="Bandeja de notificaciones"><a href="/notificaciones" class="active">Mi bandeja</a></nav>
+
+@if (mensajeOk != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @mensajeOk
+        <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeOk = null"></button>
+    </div>
+}
+@if (mensajeError != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @mensajeError
+        <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
+    </div>
+}
+
 @if (desconocido)
 {
-    <EstadoVacio Titulo="Bandeja no disponible" Descripcion="Selecciona la bandeja de administrador o instrumentista." Enlace="/notificaciones/administrador" TextoEnlace="Ir a notificaciones" />
+    <EstadoVacio Titulo="Bandeja no disponible" Descripcion="Selecciona la bandeja de administrador o instrumentista." Enlace="/notificaciones" TextoEnlace="Ir a notificaciones" />
 }
-else if (vacia)
+else if (vacia || (!cargando && avisos.Count == 0))
 {
-    <EstadoVacio Icono="campana" Titulo="Estás al día" Descripcion="Cuando haya nuevas notificaciones, las encontrarás en este espacio." Enlace="/notificaciones/administrador" TextoEnlace="Volver a la bandeja de ejemplo" />
+    <EstadoVacio Icono="campana" Titulo="Estás al día" Descripcion="Cuando haya nuevas notificaciones, las encontrarás en este espacio." Enlace="/notificaciones" TextoEnlace="Volver a la bandeja" />
+}
+else if (cargando)
+{
+    <div class="card p-4 text-center text-muted">Cargando notificaciones...</div>
 }
 else
 {
-    <div class="row g-4"><div class="col-xl-8"><section class="card"><div class="section-heading"><h2>Bandeja de @perfil <span class="count-label">3</span></h2><EtiquetaEstado Texto="2 sin leer" Tono="teal" /></div>
-        @foreach (var n in avisos)
-        {
-            <article class="notification-row @(n.Leida ? "" : "is-unread")"><span class="notification-symbol"><Icono Nombre="@(perfil == "administrador" ? "lista" : "calendario")" Tamano="23" /></span><div class="notification-content"><div class="notification-meta"><span>@n.Categoria</span><time>@n.Fecha</time></div><h2><a href="@($"/notificaciones/detalle/{n.Id}")">@n.Titulo</a></h2><p>@n.Mensaje</p><div class="notification-bottom"><EtiquetaEstado Texto="@(n.Leida ? "Leída" : "Sin leer")" Tono="@(n.Leida ? "neutral" : "teal")" /><a href="@($"/notificaciones/detalle/{n.Id}")">Ver detalle <Icono Nombre="flecha" Tamano="15" /></a></div></div></article>
-        }
-        <div class="table-footer"><span>3 notificaciones de ejemplo</span><span>Octubre 2026</span></div></section></div>
-        <div class="col-xl-4"><aside class="card notification-aside"><span class="stat-icon"><Icono Nombre="campana" Tamano="24" /></span><h2>Tus canales de aviso</h2><p>@(perfil == "administrador" ? "Las nuevas solicitudes se presentan en el panel y en una vista de correo." : "Las nuevas cirugías se presentan en el panel de coordinación.")</p><div class="channel-row"><Icono Nombre="campana" Tamano="18" /><span>Panel de notificaciones</span><EtiquetaEstado Texto="Visual" Tono="teal" /></div>@if(perfil == "administrador") { <div class="channel-row"><Icono Nombre="correo" Tamano="18" /><span>Correo electrónico</span><EtiquetaEstado Texto="Visual" Tono="neutral" /></div> }<p class="field-help mt-3 mb-0">Avisos ilustrativos. No se envían correos ni notificaciones push.</p></aside></div></div>
+    var sinLeer = avisos.Count(a => !a.Leida);
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <section class="card">
+                <div class="section-heading">
+                    <h2>Bandeja de @perfil <span class="count-label">@avisos.Count</span></h2>
+                    @if (sinLeer > 0)
+                    {
+                        <EtiquetaEstado Texto="@($"{sinLeer} sin leer")" Tono="teal" />
+                    }
+                    else
+                    {
+                        <EtiquetaEstado Texto="Al día" Tono="neutral" />
+                    }
+                </div>
+                @foreach (var n in avisos)
+                {
+                    <article class="notification-row @(n.Leida ? "" : "is-unread")">
+                        <span class="notification-symbol">
+                            <Icono Nombre="@(n.Categoria.Contains("cirugía", StringComparison.OrdinalIgnoreCase) ? "calendario" : (perfil == "administrador" ? "lista" : "calendario"))" Tamano="23" />
+                        </span>
+                        <div class="notification-content">
+                            <div class="notification-meta">
+                                <span>@n.Categoria</span>
+                                <time>@n.FechaTexto</time>
+                            </div>
+                            <h2><a href="@($"/notificaciones/detalle/{n.Id}")">@n.Titulo</a></h2>
+                            <p>@n.Mensaje</p>
+                            <div class="notification-bottom">
+                                <EtiquetaEstado Texto="@(n.Leida ? "Leída" : "Sin leer")" Tono="@(n.Leida ? "neutral" : "teal")" />
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (!n.Leida)
+                                    {
+                                        <button class="btn btn-sm btn-link text-decoration-none p-0" @onclick="() => MarcarLeida(n.Id)" disabled="@procesando">
+                                            Marcar leída
+                                        </button>
+                                        <span class="text-muted">·</span>
+                                    }
+                                    <a href="@($"/notificaciones/detalle/{n.Id}")">Ver detalle <Icono Nombre="flecha" Tamano="15" /></a>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                }
+                <div class="table-footer">
+                    <span>@avisos.Count notificaciones</span>
+                    <span>@DateTime.Now.ToString("MMMM yyyy")</span>
+                </div>
+            </section>
+        </div>
+        <div class="col-xl-4">
+            <aside class="card notification-aside">
+                <span class="stat-icon"><Icono Nombre="campana" Tamano="24" /></span>
+                <h2>Tus canales de aviso</h2>
+                <p>@(perfil == "administrador" ? "Las nuevas solicitudes se presentan en el panel y en una vista de correo." : "Las nuevas cirugías se presentan en el panel de coordinación.")</p>
+                <div class="channel-row">
+                    <Icono Nombre="campana" Tamano="18" />
+                    <span>Panel de notificaciones</span>
+                    <EtiquetaEstado Texto="Activo" Tono="teal" />
+                </div>
+                @if (perfil == "administrador")
+                {
+                    <div class="channel-row">
+                        <Icono Nombre="correo" Tamano="18" />
+                        <span>Correo electrónico</span>
+                        <EtiquetaEstado Texto="Informativo" Tono="neutral" />
+                    </div>
+                }
+                <p class="field-help mt-3 mb-0">Avisos automáticos generados por el backend al registrar cirugías y solicitudes.</p>
+            </aside>
+        </div>
+    </div>
 }
-<AvisoDemostracion />
 
 @code {
     [Parameter] public string? Rol { get; set; }
     private string perfil = "administrador";
     private bool vacia;
     private bool desconocido;
-    private IReadOnlyList<NotificacionVista> avisos = DatosAcceso.AvisosAdministrador;
-    protected override void OnParametersSet()
+    private bool cargando = true;
+    private bool procesando;
+    private string? mensajeOk;
+    private string? mensajeError;
+    private List<NotificacionDTO> avisos = [];
+
+    protected override async Task OnParametersSetAsync()
     {
         vacia = Rol == "sin-avisos";
         desconocido = Rol is not null and not "administrador" and not "instrumentista" and not "sin-avisos";
-        perfil = Rol is "administrador" or "instrumentista" ? Rol : Vista.Perfil.Clave == "instrumentista" ? "instrumentista" : "administrador";
-        avisos = perfil == "instrumentista" ? DatosAcceso.AvisosInstrumentista : DatosAcceso.AvisosAdministrador;
+        perfil = "instrumentista";
 
+        if (!vacia && !desconocido)
+        {
+            await CargarNotificaciones();
+        }
+        else
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task CargarNotificaciones()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            avisos = await NotificacionService.ListarAsync();
+        }
+        catch (Exception ex)
+        {
+            avisos = [];
+            mensajeError = "No se pudieron cargar las notificaciones: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task MarcarLeida(int id)
+    {
+        procesando = true;
+        mensajeError = null;
+        try
+        {
+            await NotificacionService.MarcarLeidaAsync(id);
+            var item = avisos.FirstOrDefault(a => a.Id == id);
+            if (item != null) item.Leida = true;
+            mensajeOk = "Aviso marcado como leído.";
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Error al marcar aviso: " + ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
+
+    private async Task MarcarTodasLeidas()
+    {
+        procesando = true;
+        mensajeError = null;
+        try
+        {
+            int marcadas = await NotificacionService.MarcarTodasLeidasAsync();
+            foreach (var a in avisos) a.Leida = true;
+            mensajeOk = $"Se marcaron {marcadas} notificaciones como leídas.";
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Error al marcar notificaciones: " + ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+        }
     }
 }

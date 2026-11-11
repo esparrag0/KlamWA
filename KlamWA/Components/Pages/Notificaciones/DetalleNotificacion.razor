@@ -1,27 +1,119 @@
 @page "/notificaciones/detalle/{Id:int}"
-@inject VistaPreviaRol Vista
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject INotificacionService NotificacionService
 
 <PageTitle>Detalle de notificación | Klam</PageTitle>
 <div class="breadcrumb-line"><a href="/notificaciones">Notificaciones</a><span>/</span>Detalle del aviso</div>
-<PageHeader Titulo="Detalle de notificación" Subtitulo="Información del evento y su destinatario."><a class="btn btn-outline-secondary" href="@($"/notificaciones/{aviso?.Perfil ?? "administrador"}")"><Icono Nombre="volver" Tamano="17" /> Volver a la bandeja</a></PageHeader>
-@if (aviso is null)
+<PageHeader Titulo="Detalle de notificación" Subtitulo="Información del evento y su destinatario.">
+    <a class="btn btn-outline-secondary" href="@($"/notificaciones/{aviso?.Perfil ?? "administrador"}")">
+        <Icono Nombre="volver" Tamano="17" /> Volver a la bandeja
+    </a>
+</PageHeader>
+
+@if (cargando)
 {
-    <EstadoVacio Enlace="/notificaciones" TextoEnlace="Volver a notificaciones" />
+    <div class="card p-4 text-center text-muted">Cargando aviso...</div>
+}
+else if (aviso is null)
+{
+    <EstadoVacio Titulo="Notificación no encontrada" Descripcion="@(mensajeError ?? "No se encontró el aviso solicitado.")" Enlace="/notificaciones" TextoEnlace="Volver a notificaciones" />
 }
 else
 {
-    <section class="card detail-card"><div class="notification-detail-title"><span class="notification-symbol"><Icono Nombre="campana" Tamano="26" /></span><div><EtiquetaEstado Texto="@(aviso.Leida ? "Leída" : "Sin leer")" Tono="@(aviso.Leida ? "neutral" : "teal")" /><h2>@aviso.Titulo</h2><p>@aviso.Fecha</p></div></div><div class="notification-message">@aviso.Mensaje</div><dl class="detail-grid"><div><dt>Destinatario</dt><dd>@aviso.Destinatario</dd></div><div><dt>Perfil</dt><dd>@DatosAcceso.Perfil(aviso.Perfil)?.Nombre</dd></div><div><dt>Tipo de aviso</dt><dd>@aviso.Categoria</dd></div><div><dt>Canal</dt><dd>@(aviso.Perfil == "administrador" ? "Panel y correo (vista de ejemplo)" : "Panel de notificaciones")</dd></div></dl>
-        <div class="card-actions"><BotonDemo Clase="btn-outline-secondary" Mensaje="Acción de muestra. El estado de lectura no cambia.">Marcar como leída</BotonDemo>@if(aviso.Enlace is not null) { <a class="btn btn-primary" href="@aviso.Enlace">Ver cirugía <Icono Nombre="flecha" Tamano="17" /></a> }</div>
-    </section>
-    @if(aviso.Perfil == "administrador")
+    @if (mensajeOk != null)
     {
-        <section class="card detail-card mt-4"><div class="section-heading"><h2><Icono Nombre="correo" Tamano="18" /> Vista del correo</h2><span>Sin envío</span></div><div class="p-4"><p class="field-help">PARA: @aviso.Destinatario · ASUNTO: @aviso.Titulo</p><p>Hola, @aviso.Destinatario.Split(' ')[0]:</p><p>@aviso.Mensaje</p><p class="text-muted small mb-0">Equipo de coordinación · BIOKLAM</p></div></section>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @mensajeOk
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeOk = null"></button>
+        </div>
     }
-    <AvisoDemostracion />
+    @if (mensajeError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @mensajeError
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <section class="card detail-card">
+        <div class="notification-detail-title">
+            <span class="notification-symbol"><Icono Nombre="campana" Tamano="26" /></span>
+            <div>
+                <EtiquetaEstado Texto="@(aviso.Leida ? "Leída" : "Sin leer")" Tono="@(aviso.Leida ? "neutral" : "teal")" />
+                <h2>@aviso.Titulo</h2>
+                <p>@aviso.FechaTexto</p>
+            </div>
+        </div>
+        <div class="notification-message">@aviso.Mensaje</div>
+        <dl class="detail-grid">
+            <div><dt>Destinatario</dt><dd>@aviso.Destinatario</dd></div>
+            <div><dt>Perfil</dt><dd>@aviso.Perfil</dd></div>
+            <div><dt>Tipo de aviso</dt><dd>@aviso.Categoria</dd></div>
+            <div><dt>Canal</dt><dd>Panel de notificaciones</dd></div>
+        </dl>
+        <div class="card-actions">
+            @if (!aviso.Leida)
+            {
+                <button type="button" class="btn btn-outline-secondary" @onclick="MarcarLeida" disabled="@procesando">
+                    <Icono Nombre="check" Tamano="17" /> Marcar como leída
+                </button>
+            }
+            @if (aviso.IdCirugia != null)
+            {
+                <a class="btn btn-primary" href="@($"/agenda/cirugia/{aviso.IdCirugia}")">
+                    Ver cirugía <Icono Nombre="flecha" Tamano="17" />
+                </a>
+            }
+        </div>
+    </section>
 }
 
 @code {
     [Parameter] public int Id { get; set; }
-    private NotificacionVista? aviso;
-    protected override void OnParametersSet() { aviso = DatosAcceso.Aviso(Id) is { } encontrado && encontrado.Perfil == Vista.Perfil.Clave ? encontrado : null; }
+    private NotificacionDTO? aviso;
+    private bool cargando = true;
+    private bool procesando;
+    private string? mensajeOk;
+    private string? mensajeError;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            aviso = await NotificacionService.ObtenerAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            aviso = null;
+            mensajeError = "No se pudo recuperar la notificación: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task MarcarLeida()
+    {
+        if (aviso == null) return;
+        procesando = true;
+        mensajeError = null;
+        try
+        {
+            await NotificacionService.MarcarLeidaAsync(Id);
+            aviso.Leida = true;
+            mensajeOk = "Aviso marcado como leído.";
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Error al marcar aviso: " + ex.Message;
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
 }
