@@ -6,7 +6,7 @@
 
 <PageTitle>Agenda de cirugías</PageTitle>
 
-<PageHeader Titulo="Agenda de cirugías" Subtitulo="Calendario mensual">
+<PageHeader Titulo="Calendario de cirugías" Subtitulo="Consulta la programación quirúrgica y el detalle de cada día">
     @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
     <a class="btn btn-outline-secondary" href="/agenda/lista">Ver lista</a>
     @if (Vista.Perfil.Clave is "administrador" or "cliente") { <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a> }
@@ -23,51 +23,96 @@
     </div>
 }
 
-<div class="d-flex align-items-center gap-2 mb-2">
-    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="MesAnterior" aria-label="Mes anterior">‹</button>
-    <h5 class="mb-0">@mes.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))</h5>
-    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="MesSiguiente" aria-label="Mes siguiente">›</button>
-    @if (cargando) { <span class="spinner-border spinner-border-sm text-secondary" role="status" aria-label="Cargando"></span> }
-</div>
-<div class="table-responsive">
-    <table class="table table-bordered calendario">
-        <thead class="table-light">
-            <tr><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr>
-        </thead>
-        <tbody>
-            @for (int sem = 0; sem < 6; sem++)
-            {
-                <tr>
-                    @for (int d = 0; d < 7; d++)
+<div class="agenda-grid">
+    <section class="calendar-surface" aria-label="Calendario mensual de cirugías">
+        <div class="calendar-toolbar">
+            <button type="button" class="month-button" @onclick="MesAnterior" aria-label="Mes anterior">‹</button>
+            <h2>@mes.ToString("MMMM yyyy", Cultura)</h2>
+            <button type="button" class="month-button" @onclick="MesSiguiente" aria-label="Mes siguiente">›</button>
+            <button type="button" class="today-button" @onclick="IrAHoy">Hoy</button>
+            @if (cargando) { <span class="spinner-border spinner-border-sm text-secondary" role="status" aria-label="Cargando"></span> }
+        </div>
+        <div class="table-responsive calendar-scroll">
+            <table class="table calendario">
+                <thead><tr><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr></thead>
+                <tbody>
+                    @for (int sem = 0; sem < 6; sem++)
                     {
-                        var dia = InicioCuadricula.AddDays(sem * 7 + d);
-                        <td class="@(dia.Month == mes.Month ? "" : "fuera-de-mes")">
-                            <div class="numero @(dia.Date == DateTime.Today ? "hoy" : "")">@dia.Day</div>
-                            @if (dia.Month == mes.Month)
+                        <tr>
+                            @for (int d = 0; d < 7; d++)
                             {
-                                @foreach (var c in porDia[dia.Date])
-                                {
-                                    <a href="/agenda/cirugia/@c.Id" class="evento"
-                                       title="@c.Cliente · @c.Doctor · @c.Equipo"
-                                       style="background-color:@DatosAgenda.Color(c.Estado); color:@DatosAgenda.ColorTexto(c.Estado)">
-                                        @c.Inicio.ToString("HH:mm") @c.Procedimiento
-                                    </a>
-                                }
+                                var dia = InicioCuadricula.AddDays(sem * 7 + d);
+                                <td class="@(dia.Month == mes.Month ? "" : "fuera-de-mes") @(dia.Date == diaSeleccionado.Date ? "seleccionado" : "")"
+                                    @onclick="() => Seleccionar(dia)">
+                                    <button type="button" class="day-number @(dia.Date == DateTime.Today ? "hoy" : "")"
+                                            aria-label="@($"Seleccionar {dia.ToString("D", Cultura)}")"
+                                            aria-pressed="@(dia.Date == diaSeleccionado.Date)"
+                                            @onclick="() => Seleccionar(dia)" @onclick:stopPropagation="true">@dia.Day</button>
+                                    @if (dia.Month == mes.Month)
+                                    {
+                                        @foreach (var c in porDia[dia.Date].Take(2))
+                                        {
+                                            <a href="/agenda/cirugia/@c.Id" class="evento @ClaseEstado(c)"
+                                               title="@c.Cliente · @c.Doctor">
+                                                @c.Inicio.ToString("HH:mm") @c.Procedimiento
+                                            </a>
+                                        }
+                                        @if (porDia[dia.Date].Count() > 2)
+                                        {
+                                            <span class="more-events">+@(porDia[dia.Date].Count() - 2) más</span>
+                                        }
+                                    }
+                                </td>
                             }
-                        </td>
+                        </tr>
                     }
-                </tr>
-            }
-        </tbody>
-    </table>
+                </tbody>
+            </table>
+        </div>
+        @if (!cargando && error == null && !cirugiasDelMes.Any())
+        {
+            <p class="calendar-empty">No hay cirugías en este mes con los filtros elegidos.</p>
+        }
+    </section>
+
+    <aside class="day-panel" aria-label="Cirugías del día seleccionado">
+        <div class="day-panel-header">
+            <span class="panel-icon"><Icono Nombre="calendario" Tamano="21" /></span>
+            <div><h2>@diaSeleccionado.ToString("dddd, d 'de' MMMM 'de' yyyy", Cultura)</h2>
+                <p>@CirugiasDelDia.Count @(CirugiasDelDia.Count == 1 ? "cirugía" : "cirugías")</p></div>
+        </div>
+        @if (cargando)
+        {
+            <p class="day-empty">Cargando cirugías…</p>
+        }
+        else if (CirugiasDelDia.Count == 0)
+        {
+            <div class="day-empty"><Icono Nombre="calendario" Tamano="28" />
+                <strong>Sin cirugías programadas</strong>
+                <span>No hay procedimientos para esta fecha con los filtros actuales.</span></div>
+        }
+        else
+        {
+            <div class="day-list">
+                @foreach (var c in CirugiasDelDia)
+                {
+                    <a href="/agenda/cirugia/@c.Id" class="surgery-card @ClaseEstado(c)">
+                        <div class="card-top"><strong>@c.Inicio.ToString("HH:mm")@(c.Fin is { } fin ? $" – {fin:HH:mm}" : "")</strong><span class="status-pill">@c.Estado</span></div>
+                        <h3>@c.Procedimiento</h3>
+                        <p><span>Cliente</span> @(string.IsNullOrWhiteSpace(c.Cliente) ? "—" : c.Cliente)</p>
+                        <p><span>Médico</span> @(string.IsNullOrWhiteSpace(c.Doctor) ? "—" : c.Doctor)</p>
+                        <span class="detail-link">Ver detalle →</span>
+                    </a>
+                }
+            </div>
+        }
+    </aside>
 </div>
-@if (!cargando && error == null && !cirugiasDelMes.Any())
-{
-    <p class="text-muted text-center">No hay cirugías en este mes con los filtros elegidos.</p>
-}
 
 @code {
+    private static readonly System.Globalization.CultureInfo Cultura = new("es-PE");
     private DateTime mes = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime diaSeleccionado = DateTime.Today;
     private FiltroCirugia filtro = new();
     private List<CirugiaResumenViewModel> cirugiasDelMes = new();
     private ILookup<DateTime, CirugiaResumenViewModel> porDia =
@@ -76,6 +121,8 @@
     private string? error;
 
     private DateTime InicioCuadricula => mes.AddDays(-(((int)mes.DayOfWeek + 6) % 7));
+    private List<CirugiaResumenViewModel> CirugiasDelDia =>
+        porDia[diaSeleccionado.Date].OrderBy(c => c.Inicio).ToList();
 
     protected override Task OnInitializedAsync() => Cargar();
 
@@ -85,7 +132,6 @@
         error = null;
         try
         {
-            // El rango del mes se cruza con el rango (opcional) de los filtros.
             var primero = mes;
             var ultimo = mes.AddMonths(1).AddDays(-1);
             var desde = filtro.Desde is { } d && d.Date > primero ? d.Date : primero;
@@ -106,12 +152,20 @@
         }
     }
 
-    private Task AplicarFiltros(FiltroCirugia nuevo)
+    private void Seleccionar(DateTime dia)
     {
-        filtro = nuevo;
-        return Cargar();
+        if (dia.Month == mes.Month && dia.Year == mes.Year) diaSeleccionado = dia.Date;
     }
-
-    private Task MesAnterior() { mes = mes.AddMonths(-1); return Cargar(); }
-    private Task MesSiguiente() { mes = mes.AddMonths(1); return Cargar(); }
+    private Task AplicarFiltros(FiltroCirugia nuevo) { filtro = nuevo; return Cargar(); }
+    private Task MesAnterior() { mes = mes.AddMonths(-1); diaSeleccionado = mes; return Cargar(); }
+    private Task MesSiguiente() { mes = mes.AddMonths(1); diaSeleccionado = mes; return Cargar(); }
+    private Task IrAHoy() { mes = new(DateTime.Today.Year, DateTime.Today.Month, 1); diaSeleccionado = DateTime.Today; return Cargar(); }
+    private static string ClaseEstado(CirugiaResumenViewModel c) => c.EstadoCodigo switch
+    {
+        "PROGRAMADA" => "state-scheduled",
+        "EN_PROCESO" => "state-progress",
+        "FINALIZADA" => "state-finished",
+        "CANCELADA" => "state-cancelled",
+        _ => "state-scheduled"
+    };
 }
