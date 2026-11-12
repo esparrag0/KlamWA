@@ -15,10 +15,17 @@
                 @if (TieneBandeja)
                 {
                     <a class="header-bell" href="/notificaciones" aria-label="@($"Ver notificaciones, {Avisos.Cantidad ?? 0} sin leer")">
-                        <Icono Nombre="campana" />@if (Avisos.Cantidad > 0) { <span class="notification-dot"></span> }
+                        <Icono Nombre="campana" Tamano="20" />@if (Avisos.Cantidad > 0) { <span class="notification-count">@Avisos.Cantidad</span> }
                     </a>
                 }
-                <span class="avatar avatar-sm" aria-label="@Vista.Perfil.Persona">@Vista.Perfil.Iniciales</span>
+                <details class="profile-menu">
+                    <summary aria-label="Opciones de la cuenta"><span class="avatar avatar-sm">@Vista.Perfil.Iniciales</span><span class="profile-name">@Vista.Perfil.Persona</span><span class="profile-chevron" aria-hidden="true"></span></summary>
+                    <div class="profile-dropdown">
+                        <span class="profile-caption">Cuenta de @Vista.Perfil.Persona</span>
+                        <a href="/cuenta/password"><Icono Nombre="usuarios" Tamano="17" /> Cambiar contraseña</a>
+                        <form method="post" action="/cuenta/logout"><AntiforgeryToken /><button type="submit"><Icono Nombre="salir" Tamano="17" /> Cerrar sesión</button></form>
+                    </div>
+                </details>
             </div>
         </header>
         <main id="contenido" class="app-content" tabindex="-1">

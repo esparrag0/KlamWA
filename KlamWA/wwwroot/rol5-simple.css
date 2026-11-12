@@ -1,7 +1,7 @@
 
 html, body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; background: #fff; color: #212529; }
 .app-shell { display: flex; min-height: 100vh; }
-.app-sidebar { width: 280px; flex-shrink: 0; min-height: 100vh; background: #0b3c49; color: white; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.app-sidebar { width: 260px; flex-shrink: 0; min-height: 100vh; background: #0b3c49; color: white; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .app-topbar { height: 3.5rem; padding: .5rem 1.5rem; background: #f7f7f7; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .topbar-brand { color: #5c636a; font-size: .9rem; text-decoration: none; }

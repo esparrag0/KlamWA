@@ -1,84 +1,149 @@
-@inject KlamWA.Servicios.AvisosSinLeer Avisos
+@inject NavigationManager Nav
 @implements IDisposable
+
 <div class="sidebar-brand">
     <a href="@($"/inicio/{Perfil.Clave}")" aria-label="Klam, ir al inicio"><img src="img/klam-wordmark-blanco.svg" alt="Klam" /></a>
-    <button class="mobile-toggle" type="button" aria-label="Abrir o cerrar menú" aria-controls="menu-principal" aria-expanded="@abierto.ToString().ToLowerInvariant()" @onclick="() => abierto = !abierto"><Icono Nombre="menu" /></button>
+    <button class="mobile-toggle" type="button" aria-label="Abrir o cerrar menú" aria-controls="menu-principal"
+            aria-expanded="@abierto.ToString().ToLowerInvariant()" @onclick="AlternarMovil"><Icono Nombre="menu" /></button>
 </div>
 <div id="menu-principal" class="sidebar-body @(abierto ? "is-open" : "")">
-    <nav aria-label="Navegación principal" @onclick="() => abierto = false">
-        <div class="nav-section">Principal</div>
-        <NavLink class="nav-link" href="/inicio"><Icono Nombre="inicio" /> Inicio</NavLink>
-        @if (Perfil.Clave is "administrador" or "instrumentista" or "vendedor")
+    <nav aria-label="Navegación principal" @onclick="CerrarMovil">
+        <NavLink class="nav-group-link" href="@($"/inicio/{Perfil.Clave}")"><Icono Nombre="inicio" Tamano="19" /> Inicio</NavLink>
+
+        <button type="button" class="nav-group-button @(seccionAbierta == "cirugias" ? "is-expanded" : "")"
+                aria-expanded="@(seccionAbierta == "cirugias")" aria-controls="nav-cirugias" @onclick:stopPropagation="true"
+                @onclick='() => Alternar("cirugias")'><Icono Nombre="calendario" Tamano="19" /> Cirugías <span class="nav-chevron"></span></button>
+        @if (seccionAbierta == "cirugias")
         {
-            <NavLink class="nav-link" href="/notificaciones"><Icono Nombre="campana" /> Notificaciones @if (Avisos.Cantidad > 0) { <span class="nav-count">@Avisos.Cantidad</span> }</NavLink>
+            <div id="nav-cirugias" class="nav-submenu">
+                @if (Perfil.Clave is "administrador" or "instrumentista") { <NavLink href="/agenda" Match="NavLinkMatch.All">Calendario</NavLink> }
+                <NavLink href="/agenda/lista">@(Perfil.Clave == "vendedor" ? "Cirugías coordinadas" : Perfil.Clave is "instrumentista" or "cliente" ? "Mis cirugías" : "Lista de cirugías")</NavLink>
+                @if (Perfil.Clave is "administrador" or "cliente") { <NavLink href="/agenda/historial">@(Perfil.Clave == "cliente" ? "Mis cirugías anteriores" : "Historial")</NavLink> }
+            </div>
         }
-        <div class="nav-section">Agenda y cirugías</div>
-        @if (Perfil.Clave is "administrador" or "instrumentista") { <NavLink class="nav-link" href="/agenda" Match="NavLinkMatch.All"><Icono Nombre="calendario" /> Calendario</NavLink> }
-        <NavLink class="nav-link" href="/agenda/lista"><Icono Nombre="lista" /> @(Perfil.Clave == "vendedor" ? "Cirugías coordinadas" : Perfil.Clave is "instrumentista" or "cliente" ? "Mis cirugías" : "Lista de cirugías")</NavLink>
+
+        @if (Perfil.Clave is "administrador" or "vendedor" or "cliente")
+        {
+            <button type="button" class="nav-group-button @(seccionAbierta == "solicitudes" ? "is-expanded" : "")"
+                    aria-expanded="@(seccionAbierta == "solicitudes")" aria-controls="nav-solicitudes" @onclick:stopPropagation="true"
+                    @onclick='() => Alternar("solicitudes")'><Icono Nombre="lista" Tamano="19" /> Solicitudes y documentos <span class="nav-chevron"></span></button>
+            @if (seccionAbierta == "solicitudes")
+            {
+                <div id="nav-solicitudes" class="nav-submenu">
+                    @if (Perfil.Clave == "administrador")
+                    {
+                        <NavLink href="/solicitudes">Revisar solicitudes</NavLink>
+                        <NavLink href="/historial-documental">Historial documental</NavLink>
+                    }
+                    @if (Perfil.Clave == "vendedor")
+                    {
+                        <NavLink href="/mis-solicitudes" Match="NavLinkMatch.All">Mis solicitudes</NavLink>
+                        <NavLink href="/mis-solicitudes/nueva">Nueva solicitud</NavLink>
+                    }
+                    @if (Perfil.Clave == "cliente")
+                    {
+                        <NavLink href="/cliente/solicitudes" Match="NavLinkMatch.All">Mis solicitudes</NavLink>
+                        <NavLink href="/cliente/solicitudes/nueva">Nueva solicitud</NavLink>
+                    }
+                </div>
+            }
+        }
+
         @if (Perfil.Clave == "administrador")
         {
-            <NavLink class="nav-link" href="/agenda/nueva"><Icono Nombre="mas" /> Nueva cirugía</NavLink>
+            <button type="button" class="nav-group-button @(seccionAbierta == "inventario" ? "is-expanded" : "")"
+                    aria-expanded="@(seccionAbierta == "inventario")" aria-controls="nav-inventario" @onclick:stopPropagation="true"
+                    @onclick='() => Alternar("inventario")'><Icono Nombre="lista" Tamano="19" /> Inventario y logística <span class="nav-chevron"></span></button>
+            @if (seccionAbierta == "inventario")
+            {
+                <div id="nav-inventario" class="nav-submenu">
+                    <NavLink href="/inventario/despachos">Despachos y retornos</NavLink>
+                    <NavLink href="/inventario/consumos">Consumos</NavLink>
+                    <NavLink href="/inventario/plantillas">Plantillas de bandejas</NavLink>
+                </div>
+            }
+            <button type="button" class="nav-group-button @(seccionAbierta == "clientes" ? "is-expanded" : "")"
+                    aria-expanded="@(seccionAbierta == "clientes")" aria-controls="nav-clientes" @onclick:stopPropagation="true"
+                    @onclick='() => Alternar("clientes")'><Icono Nombre="usuarios" Tamano="19" /> Clientes <span class="nav-chevron"></span></button>
+            @if (seccionAbierta == "clientes")
+            {
+                <div id="nav-clientes" class="nav-submenu"><NavLink href="/clientes" Match="NavLinkMatch.All">Lista de clientes</NavLink></div>
+            }
         }
-        @if (Perfil.Clave is "administrador" or "cliente") { <NavLink class="nav-link" href="/agenda/historial"><Icono Nombre="reloj" /> @(Perfil.Clave == "cliente" ? "Mis cirugías anteriores" : "Historial")</NavLink> }
+
+        @if (Perfil.Clave is "administrador" or "cliente")
+        {
+            <button type="button" class="nav-group-button @(seccionAbierta == "cotizaciones" ? "is-expanded" : "")"
+                    aria-expanded="@(seccionAbierta == "cotizaciones")" aria-controls="nav-cotizaciones" @onclick:stopPropagation="true"
+                    @onclick='() => Alternar("cotizaciones")'><Icono Nombre="lista" Tamano="19" /> Cotizaciones <span class="nav-chevron"></span></button>
+            @if (seccionAbierta == "cotizaciones")
+            {
+                <div id="nav-cotizaciones" class="nav-submenu">
+                    @if (Perfil.Clave == "administrador") { <NavLink href="/cotizaciones" Match="NavLinkMatch.All">Cotizaciones</NavLink> }
+                    else { <NavLink href="/cotizaciones/cliente">Mis cotizaciones</NavLink> }
+                </div>
+            }
+        }
+
         @if (Perfil.Clave == "administrador")
         {
-            <div class="nav-section">Administración</div>
-            <NavLink class="nav-link" href="/usuarios"><Icono Nombre="usuarios" /> Usuarios</NavLink>
-        }
-        @if (Perfil.Clave == "administrador")
-        {
-            <div class="nav-section">Cotizaciones</div>
-            <NavLink class="nav-link" href="/cotizaciones" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Cotizaciones</NavLink>
-            <div class="nav-section">Reportes</div>
-            <NavLink class="nav-link" href="/reportes/consumo"><Icono Nombre="lista" /> Uso de insumos</NavLink>
-            <NavLink class="nav-link" href="/reportes/comparativo"><Icono Nombre="flecha" /> Despacho y consumo</NavLink>
-        }
-        @if (Perfil.Clave == "cliente")
-        {
-            <div class="nav-section">Cotizaciones</div>
-            <NavLink class="nav-link" href="/cotizaciones/cliente"><Icono Nombre="lista" /> Mis cotizaciones</NavLink>
-        }
-        @if (Perfil.Clave == "administrador")
-        {
-            <div class="nav-section">Documentación</div>
-            <NavLink class="nav-link" href="/solicitudes"><Icono Nombre="lista" /> Revisar solicitudes</NavLink>
-            <NavLink class="nav-link" href="/historial-documental"><Icono Nombre="reloj" /> Historial documental</NavLink>
-        }
-        @if (Perfil.Clave == "administrador") { <NavLink class="nav-link" href="/bitacora-cirugias"><Icono Nombre="reloj" /> Bitácora de cirugías</NavLink> }
-        @if (Perfil.Clave == "administrador")
-        {
-            <div class="nav-section">Inventario y logística</div>
-            <NavLink class="nav-link" href="/inventario/despachos"><Icono Nombre="flecha" /> Despachos y retornos</NavLink>
-            <NavLink class="nav-link" href="/inventario/consumos"><Icono Nombre="lista" /> Consumos</NavLink>
-            <NavLink class="nav-link" href="/inventario/plantillas"><Icono Nombre="lista" /> Plantillas de bandejas</NavLink>
-        }
-        @if (Perfil.Clave == "administrador")
-        {
-            <div class="nav-section">Clientes</div>
-            <NavLink class="nav-link" href="/clientes" Match="NavLinkMatch.All"><Icono Nombre="usuarios" /> Lista de clientes</NavLink>
-            <NavLink class="nav-link" href="/clientes/nuevo"><Icono Nombre="mas" /> Nuevo cliente</NavLink>
-        }
-        @if (Perfil.Clave == "cliente")
-        {
-            <div class="nav-section">Solicitudes de cirugía</div>
-            <NavLink class="nav-link" href="/cliente/solicitudes" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Mis solicitudes</NavLink>
-            <NavLink class="nav-link" href="/cliente/solicitudes/nueva"><Icono Nombre="mas" /> Nueva solicitud</NavLink>
-        }
-        @if (Perfil.Clave == "vendedor")
-        {
-            <div class="nav-section">Solicitudes de cirugía</div>
-            <NavLink class="nav-link" href="/mis-solicitudes" Match="NavLinkMatch.All"><Icono Nombre="lista" /> Mis solicitudes</NavLink>
-            <NavLink class="nav-link" href="/mis-solicitudes/nueva"><Icono Nombre="mas" /> Nueva solicitud</NavLink>
+            <button type="button" class="nav-group-button @(seccionAbierta == "reportes" ? "is-expanded" : "")"
+                    aria-expanded="@(seccionAbierta == "reportes")" aria-controls="nav-reportes" @onclick:stopPropagation="true"
+                    @onclick='() => Alternar("reportes")'><Icono Nombre="lista" Tamano="19" /> Reportes <span class="nav-chevron"></span></button>
+            @if (seccionAbierta == "reportes")
+            {
+                <div id="nav-reportes" class="nav-submenu">
+                    <NavLink href="/reportes/consumo">Uso de insumos</NavLink>
+                    <NavLink href="/reportes/comparativo">Despacho y consumo</NavLink>
+                </div>
+            }
+            <button type="button" class="nav-group-button @(seccionAbierta == "administracion" ? "is-expanded" : "")"
+                    aria-expanded="@(seccionAbierta == "administracion")" aria-controls="nav-administracion" @onclick:stopPropagation="true"
+                    @onclick='() => Alternar("administracion")'><Icono Nombre="escudo" Tamano="19" /> Administración <span class="nav-chevron"></span></button>
+            @if (seccionAbierta == "administracion")
+            {
+                <div id="nav-administracion" class="nav-submenu">
+                    <NavLink href="/usuarios">Usuarios</NavLink>
+                    <NavLink href="/bitacora-cirugias">Bitácora de cirugías</NavLink>
+                </div>
+            }
         }
     </nav>
-    <div class="sidebar-bottom"><a class="exit-link" href="/cuenta/password"><Icono Nombre="usuarios" Tamano="18" /> Cambiar contraseña</a><form method="post" action="/cuenta/logout"><AntiforgeryToken /><button type="submit" class="exit-link"><Icono Nombre="salir" Tamano="18" /> Cerrar sesión</button></form></div>
 </div>
 
 @code {
     [Parameter, EditorRequired] public PerfilVista Perfil { get; set; } = DatosAcceso.Perfiles[0];
     private bool abierto;
+    private string? seccionAbierta;
 
-    protected override void OnInitialized() => Avisos.Cambio += Refrescar;
-    private void Refrescar() => _ = InvokeAsync(StateHasChanged);
-    public void Dispose() => Avisos.Cambio -= Refrescar;
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += UbicacionCambiada;
+        ExpandirRuta();
+    }
+
+    private void UbicacionCambiada(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs args) =>
+        _ = InvokeAsync(() => { ExpandirRuta(); abierto = false; StateHasChanged(); });
+
+    private void ExpandirRuta()
+    {
+        var ruta = new Uri(Nav.Uri).AbsolutePath.ToLowerInvariant();
+        seccionAbierta = ruta switch
+        {
+            var r when r.StartsWith("/usuarios") || r.StartsWith("/bitacora-cirugias") => "administracion",
+            var r when r.StartsWith("/reportes") => "reportes",
+            var r when r.StartsWith("/cotizaciones") => "cotizaciones",
+            var r when r.StartsWith("/clientes") => "clientes",
+            var r when r.StartsWith("/inventario") => "inventario",
+            var r when r.StartsWith("/solicitudes") || r.StartsWith("/mis-solicitudes") ||
+                       r.StartsWith("/cliente/solicitudes") || r.StartsWith("/historial-documental") => "solicitudes",
+            var r when r.StartsWith("/agenda") => "cirugias",
+            _ => null
+        };
+    }
+
+    private void Alternar(string seccion) => seccionAbierta = seccionAbierta == seccion ? null : seccion;
+    private void AlternarMovil() => abierto = !abierto;
+    private void CerrarMovil() => abierto = false;
+    public void Dispose() => Nav.LocationChanged -= UbicacionCambiada;
 }
