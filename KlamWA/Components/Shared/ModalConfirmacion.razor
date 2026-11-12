@@ -1,0 +1,57 @@
+@using Microsoft.AspNetCore.Components.Web
+
+@if (Visible)
+{
+    <div class="confirm-backdrop" role="presentation" @onclick="Cerrar">
+        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="@Titulo" tabindex="-1"
+             @ref="dialogo" @onkeydown="TeclaPresionada" @onclick:stopPropagation="true">
+            <button type="button" class="confirm-close" aria-label="Cerrar" disabled="@Procesando" @onclick="Cerrar">×</button>
+            @if (EsDestructivo)
+            {
+                <div class="confirm-icon" aria-hidden="true"><Icono Nombre="eliminar" Tamano="30" /></div>
+            }
+            <h2 class="confirm-title">@Titulo</h2>
+            <p class="confirm-message">@Mensaje</p>
+            @if (ChildContent is not null)
+            {
+                <div class="confirm-extra">@ChildContent</div>
+            }
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-outline-secondary" disabled="@Procesando" @onclick="Cerrar">Cancelar</button>
+                <button type="button" class="btn @ClaseConfirmar" disabled="@Procesando" @onclick="OnConfirmar">@TextoConfirmar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string Titulo { get; set; } = "Confirmar acción";
+    [Parameter] public string Mensaje { get; set; } = "";
+    [Parameter] public string TextoConfirmar { get; set; } = "Confirmar";
+    [Parameter] public string ClaseConfirmar { get; set; } = "btn-danger";
+    [Parameter] public bool Procesando { get; set; }
+    [Parameter] public EventCallback OnConfirmar { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private ElementReference dialogo;
+    private bool enfocado;
+    private bool EsDestructivo => ClaseConfirmar.Contains("danger", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Visible && !enfocado)
+        {
+            enfocado = true;
+            await dialogo.FocusAsync();
+        }
+        else if (!Visible)
+        {
+            enfocado = false;
+        }
+    }
+
+    private Task Cerrar() => Procesando ? Task.CompletedTask : OnCancelar.InvokeAsync();
+    private Task TeclaPresionada(KeyboardEventArgs e) => e.Key == "Escape" ? Cerrar() : Task.CompletedTask;
+}

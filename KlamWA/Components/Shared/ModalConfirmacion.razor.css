@@ -1,0 +1,13 @@
+.confirm-backdrop{position:fixed;inset:0;z-index:1050;display:grid;place-items:center;padding:1rem;background:rgba(12,35,48,.55)}
+.confirm-dialog{position:relative;width:min(100%,540px);padding:2.25rem 2rem 1.75rem;background:#fff;border:1px solid #e7edf0;border-radius:22px;box-shadow:0 24px 65px rgba(10,38,50,.22);text-align:center;outline:none}
+.confirm-close{position:absolute;top:1rem;right:1rem;border:0;background:transparent;color:#6c7e8b;font-size:1.8rem;line-height:1;cursor:pointer}
+.confirm-close:hover{color:#163b48}
+.confirm-icon{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 1.25rem;border-radius:18px;background:#fff0f1;color:#cf1d2c}
+.confirm-title{margin:0;color:#122c3b;font-size:1.45rem;font-weight:700;line-height:1.3}
+.confirm-message{margin:1rem 0 1.75rem;color:#526679;line-height:1.55}
+.confirm-extra{text-align:left;margin-bottom:1.5rem}
+.confirm-actions{display:flex;justify-content:flex-end;gap:.75rem;padding-top:1.25rem;border-top:1px solid #e8eef1}
+.confirm-actions .btn{min-width:120px;padding:.65rem 1rem;border-radius:10px;font-weight:600}
+.confirm-actions .btn-danger{background:#cc1324;border-color:#cc1324}
+.confirm-actions .btn-danger:hover{background:#a90d1b;border-color:#a90d1b}
+@media(max-width:480px){.confirm-dialog{padding:2rem 1.25rem 1.25rem}.confirm-actions{flex-direction:column-reverse}.confirm-actions .btn{width:100%}}
