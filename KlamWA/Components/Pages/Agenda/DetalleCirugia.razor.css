@@ -28,9 +28,20 @@
 .surgery-main dl dt { color: #31525d; }
 .surgery-main dl dd { color: #173946; }
 .surgery-aside .card-body { font-size: .84rem; }
+.surgery-status .card-header .klam-icon { color: #087888; }
+.status-content { display: flex; align-items: center; gap: .8rem; }
+.status-icon { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: .75rem; background: #e5f5f3; color: #087888; }
+.status-copy { min-width: 0; }
+.status-copy p { margin: .35rem 0 0; color: #526b73; line-height: 1.45; }
+.status-copy .status-reason { color: #9b3037; }
+.status-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e4edef; }
+.status-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; flex: 1 1 auto; border-radius: .5rem; font-size: .82rem; font-weight: 600; }
+.status-actions .btn-primary { background: #087888; border-color: #087888; }
+.status-actions .btn-primary:hover { background: #065e6b; border-color: #065e6b; }
 .closing-links { display: flex; flex-direction: column; gap: .35rem; }
 .closing-links a { display: block; padding: .55rem .65rem; border: 1px solid #d2e5e5; border-radius: .4rem; color: #087280; font-size: .8rem; font-weight: 600; text-decoration: none; }
 .closing-links a:hover { background: #e8f6f5; }
 @media (max-width: 1100px) { .surgery-content { grid-template-columns: minmax(0, 1fr) 290px; } .surgery-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .surgery-summary > div:nth-child(2) { border-right: 0; } }
 @media (max-width: 900px) { .surgery-content { grid-template-columns: 1fr; } .surgery-heading { flex-wrap: wrap; } .heading-actions { width: 100%; margin-left: 0; } }
 @media (max-width: 600px) { .surgery-summary { grid-template-columns: 1fr; } .surgery-summary > div { border-right: 0; border-bottom: 1px solid #dce7e9; } .surgery-summary > div:last-child { border-bottom: 0; } .heading-title h1 { font-size: 1.25rem; } }
+@media (max-width: 600px) { .status-actions { flex-direction: column; } .status-actions .btn { width: 100%; } }
