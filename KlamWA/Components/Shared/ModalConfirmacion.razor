@@ -1,21 +1,24 @@
-@* Confirmación para acciones críticas (cancelar, eliminar, cerrar un proceso) *@
+@using Microsoft.AspNetCore.Components.Web
+
 @if (Visible)
 {
-    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" style="background-color: rgba(15, 23, 42, 0.45);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@Titulo</h5>
-                    <button type="button" class="btn-close" aria-label="Cerrar" @onclick="OnCancelar"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-2">@Mensaje</p>
-                    @ChildContent
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="OnCancelar" disabled="@Procesando">Volver</button>
-                    <button type="button" class="btn @ClaseConfirmar" @onclick="OnConfirmar" disabled="@Procesando">@TextoConfirmar</button>
-                </div>
+    <div class="confirm-backdrop" role="presentation" @onclick="Cerrar">
+        <div class="confirm-dialog" role="dialog" aria-modal="true" aria-label="@Titulo" tabindex="-1"
+             @ref="dialogo" @onkeydown="TeclaPresionada" @onclick:stopPropagation="true">
+            <button type="button" class="confirm-close" aria-label="Cerrar" disabled="@Procesando" @onclick="Cerrar">×</button>
+            @if (EsDestructivo)
+            {
+                <div class="confirm-icon" aria-hidden="true"><Icono Nombre="eliminar" Tamano="30" /></div>
+            }
+            <h2 class="confirm-title">@Titulo</h2>
+            <p class="confirm-message">@Mensaje</p>
+            @if (ChildContent is not null)
+            {
+                <div class="confirm-extra">@ChildContent</div>
+            }
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-outline-secondary" disabled="@Procesando" @onclick="Cerrar">Cancelar</button>
+                <button type="button" class="btn @ClaseConfirmar" disabled="@Procesando" @onclick="OnConfirmar">@TextoConfirmar</button>
             </div>
         </div>
     </div>
@@ -31,4 +34,24 @@
     [Parameter] public EventCallback OnConfirmar { get; set; }
     [Parameter] public EventCallback OnCancelar { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private ElementReference dialogo;
+    private bool enfocado;
+    private bool EsDestructivo => ClaseConfirmar.Contains("danger", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Visible && !enfocado)
+        {
+            enfocado = true;
+            await dialogo.FocusAsync();
+        }
+        else if (!Visible)
+        {
+            enfocado = false;
+        }
+    }
+
+    private Task Cerrar() => Procesando ? Task.CompletedTask : OnCancelar.InvokeAsync();
+    private Task TeclaPresionada(KeyboardEventArgs e) => e.Key == "Escape" ? Cerrar() : Task.CompletedTask;
 }

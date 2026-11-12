@@ -26,7 +26,7 @@ else
     }
     <div class="card" style="max-width:700px">
         <div class="card-body">
-            <p>La cirugía se dará de baja (eliminación lógica): se conserva en la bitácora, pero ya no aparecerá en la agenda.</p>
+            <p>Esta cirugía dejará de aparecer en los listados habituales.</p>
             <dl class="row mb-0">
                 <dt class="col-sm-4">Fecha</dt><dd class="col-sm-8">@(cirugia.Inicio?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd>
                 <dt class="col-sm-4">Estado</dt><dd class="col-sm-8"><EstadoBadge Estado="@cirugia.EstadoTexto" /></dd>
@@ -41,9 +41,9 @@ else
     </div>
 
     <ModalConfirmacion Visible="@mostrarModal"
-                       Titulo="Eliminar cirugía"
-                       Mensaje="@($"¿Confirma eliminar la cirugía #{Id}? Esta acción no se puede deshacer desde la aplicación.")"
-                       TextoConfirmar="Eliminar" Procesando="@procesando"
+                       Titulo="@($"¿Eliminar cirugía CIR-{Id:000}?")"
+                       Mensaje="Esta cirugía dejará de aparecer en los listados habituales. ¿Deseas continuar?"
+                       TextoConfirmar="Eliminar cirugía" Procesando="@procesando"
                        OnConfirmar="Eliminar" OnCancelar="() => mostrarModal = false" />
 }
 
