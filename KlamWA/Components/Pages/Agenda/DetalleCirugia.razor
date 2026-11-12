@@ -128,31 +128,34 @@ else
                     <a class="btn btn-outline-primary" href="/historial-documental?solicitud=@idSolicitud">Ver historial documental</a>
                 </div></div>
             }
-            @* RF02 (rol 5): cambio de estado y cancelación, con confirmación *@
-            @if (EsAdmin && c.EstadoCodigo is "PROGRAMADA" or "EN_PROCESO")
-            {
-                <div class="card mt-3">
-                    <div class="card-header">Estado de la cirugía</div>
-                    <div class="card-body d-flex flex-wrap gap-2">
-                        @if (c.EstadoCodigo == "PROGRAMADA")
-                        {
-                            <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("EN_PROCESO")'>Iniciar cirugía</button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("FINALIZADA")'>Marcar como culminada</button>
-                        }
-                        <button type="button" class="btn btn-outline-danger" @onclick="PedirCancelacion">Cancelar cirugía</button>
-                    </div>
-                </div>
-            }
         </div>
         <aside class="surgery-aside">
-            <div class="card mb-3">
-                <div class="card-header">Estado de la cirugía</div>
-                <div class="card-body"><EstadoBadge Estado="@c.Estado" Grande="true" />
-                    <p class="small text-muted mt-2 mb-0">Inicio: @c.Inicio.ToString("dd/MM/yyyy HH:mm")</p>
-                    @if (c.EstadoCodigo == "CANCELADA" && !string.IsNullOrWhiteSpace(c.MotivoCancelacion)) { <p class="small mt-2 mb-0">Motivo: @c.MotivoCancelacion</p> }
+            <div class="card surgery-status mb-3">
+                <div class="card-header d-flex align-items-center gap-2"><Icono Nombre="reloj" Tamano="19" />Estado de la cirugía</div>
+                <div class="card-body">
+                    <div class="status-content">
+                        <span class="status-icon" aria-hidden="true"><Icono Nombre="@(c.EstadoCodigo == "PROGRAMADA" ? "calendario" : c.EstadoCodigo == "FINALIZADA" ? "check" : "reloj")" Tamano="27" /></span>
+                        <div class="status-copy">
+                            <EstadoBadge Estado="@c.Estado" Grande="true" />
+                            <p>@ContextoEstado(c.EstadoCodigo)</p>
+                            @if (c.EstadoCodigo == "CANCELADA" && !string.IsNullOrWhiteSpace(c.MotivoCancelacion)) { <p class="status-reason">Motivo: @c.MotivoCancelacion</p> }
+                        </div>
+                    </div>
+                    @* RF02: conservar las mismas transiciones y permisos administrativos. *@
+                    @if (EsAdmin && c.EstadoCodigo is "PROGRAMADA" or "EN_PROCESO")
+                    {
+                        <div class="status-actions">
+                            @if (c.EstadoCodigo == "PROGRAMADA")
+                            {
+                                <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("EN_PROCESO")'><Icono Nombre="flecha" Tamano="17" />Iniciar cirugía</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-primary" @onclick='() => PedirCambioEstado("FINALIZADA")'><Icono Nombre="check" Tamano="17" />Marcar como culminada</button>
+                            }
+                            <button type="button" class="btn btn-outline-danger" @onclick="PedirCancelacion"><Icono Nombre="eliminar" Tamano="17" />Cancelar cirugía</button>
+                        </div>
+                    }
                 </div>
             </div>
         @if (Vista.Perfil.Clave is "administrador" or "cliente") {
@@ -337,6 +340,15 @@ else
             procesando = false;
         }
     }
+
+    private static string ContextoEstado(string? estado) => estado switch
+    {
+        "PROGRAMADA" => "La cirugía aún no ha iniciado.",
+        "EN_PROCESO" => "La cirugía se encuentra en ejecución.",
+        "FINALIZADA" => "La cirugía ha culminado.",
+        "CANCELADA" => "La cirugía fue cancelada.",
+        _ => "Consulta el detalle de esta cirugía."
+    };
 
     private static string TextoEstado(string? estado) => estado switch
     {
