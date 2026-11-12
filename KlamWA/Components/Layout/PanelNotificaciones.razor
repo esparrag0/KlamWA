@@ -1,0 +1,85 @@
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using Microsoft.AspNetCore.Components.Web
+@inject INotificacionService Notificaciones
+@inject AvisosSinLeer Avisos
+
+<div class="notification-control">
+    <button type="button" class="notification-trigger" aria-label="@($"Notificaciones, {Avisos.Cantidad ?? 0} sin leer")"
+            aria-haspopup="dialog" aria-expanded="@abierto" @onclick="Alternar">
+        <Icono Nombre="campana" Tamano="20" />
+        @if (Avisos.Cantidad > 0) { <span class="notification-count">@Avisos.Cantidad</span> }
+    </button>
+    @if (abierto)
+    {
+        <button type="button" class="notification-backdrop" tabindex="-1" aria-label="Cerrar notificaciones" @onclick="Cerrar"></button>
+        <section class="notification-panel" role="dialog" aria-label="Notificaciones recientes" tabindex="-1"
+                 @ref="panel" @onkeydown="TeclaPresionada">
+            <header class="panel-heading">
+                <div><strong>Notificaciones</strong><span>Las 5 más recientes</span></div>
+                <button type="button" class="close-panel" aria-label="Cerrar panel" @onclick="Cerrar">×</button>
+            </header>
+            @if (cargando)
+            {
+                <p class="panel-message">Cargando notificaciones…</p>
+            }
+            else if (error)
+            {
+                <p class="panel-message">No se pudieron cargar los avisos. <button type="button" @onclick="Cargar">Reintentar</button></p>
+            }
+            else if (recientes.Count == 0)
+            {
+                <p class="panel-message">No tienes notificaciones recientes.</p>
+            }
+            else
+            {
+                <div class="panel-list">
+                    @foreach (var aviso in recientes)
+                    {
+                        <a class="notice @(aviso.Leida ? "is-read" : "is-unread")" href="@($"/notificaciones/detalle/{aviso.Id}")">
+                            <span class="notice-mark" aria-hidden="true"></span>
+                            <span class="notice-content"><strong>@aviso.Titulo</strong><span>@aviso.Mensaje</span><small>@aviso.FechaTexto</small></span>
+                        </a>
+                    }
+                </div>
+            }
+            <footer><a href="/notificaciones">Ver todas las notificaciones <span aria-hidden="true">→</span></a></footer>
+        </section>
+    }
+</div>
+
+@code {
+    private bool abierto;
+    private bool cargando;
+    private bool error;
+    private bool enfocar;
+    private ElementReference panel;
+    private List<NotificacionDTO> recientes = [];
+
+    private async Task Alternar()
+    {
+        if (abierto) { Cerrar(); return; }
+        abierto = true;
+        enfocar = true;
+        await Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        error = false;
+        try {
+            recientes = (await Notificaciones.ListarAsync())
+                .OrderByDescending(n => n.Fecha ?? DateTime.MinValue).Take(5).ToList();
+        } catch (Exception) { recientes = []; error = true; }
+        finally { cargando = false; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (enfocar && abierto) { enfocar = false; await panel.FocusAsync(); }
+    }
+
+    private void TeclaPresionada(KeyboardEventArgs e) { if (e.Key == "Escape") Cerrar(); }
+    private void Cerrar() => abierto = false;
+}

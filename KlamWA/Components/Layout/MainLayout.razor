@@ -14,9 +14,7 @@
             <div class="topbar-actions">
                 @if (TieneBandeja)
                 {
-                    <a class="header-bell" href="/notificaciones" aria-label="@($"Ver notificaciones, {Avisos.Cantidad ?? 0} sin leer")">
-                        <Icono Nombre="campana" Tamano="20" />@if (Avisos.Cantidad > 0) { <span class="notification-count">@Avisos.Cantidad</span> }
-                    </a>
+                    <PanelNotificaciones />
                 }
                 <details class="profile-menu">
                     <summary aria-label="Opciones de la cuenta"><span class="avatar avatar-sm">@Vista.Perfil.Iniciales</span><span class="profile-name">@Vista.Perfil.Persona</span><span class="profile-chevron" aria-hidden="true"></span></summary>
