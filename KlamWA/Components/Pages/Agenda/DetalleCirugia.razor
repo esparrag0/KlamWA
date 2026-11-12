@@ -25,9 +25,11 @@ else if (c == null)
 }
 else
 {
-    <PageHeader Titulo="@("Cirugía #" + c.Id)" Subtitulo="@c.Procedimiento">
-        <Etiqueta><EstadoBadge Estado="@c.Estado" Grande="true" /></Etiqueta>
-        <ChildContent>
+    <div class="surgery-breadcrumb"><a href="/agenda/lista">Cirugías</a><span>/</span><span>Cirugía #@c.Id</span></div>
+    <header class="surgery-heading">
+        <span class="heading-icon"><Icono Nombre="calendario" Tamano="25" /></span>
+        <div class="heading-copy"><div class="heading-title"><h1>Cirugía #@c.Id</h1><EstadoBadge Estado="@c.Estado" Grande="true" /></div><p>@c.Procedimiento</p></div>
+        <div class="heading-actions">
             @if (EsAdmin && c.EstadoCodigo != "CANCELADA")
             {
                 <a class="btn btn-primary" href="/agenda/editar/@c.Id">Editar</a>
@@ -37,8 +39,15 @@ else
                 <a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a>
             }
             <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
-        </ChildContent>
-    </PageHeader>
+        </div>
+    </header>
+
+    <section class="surgery-summary" aria-label="Resumen de la cirugía">
+        <div><span class="summary-icon"><Icono Nombre="calendario" Tamano="20" /></span><span><small>Fecha</small><strong>@c.Inicio.ToString("dd/MM/yyyy")</strong></span></div>
+        <div><span class="summary-icon"><Icono Nombre="reloj" Tamano="20" /></span><span><small>Horario</small><strong>@c.Inicio.ToString("HH:mm") – @(c.Fin?.ToString("HH:mm") ?? "Sin definir")</strong></span></div>
+        <div><span class="summary-icon"><Icono Nombre="usuarios" Tamano="20" /></span><span><small>Cliente</small><strong>@c.Cliente</strong></span></div>
+        <div><span class="summary-icon"><Icono Nombre="usuarios" Tamano="20" /></span><span><small>Médico</small><strong>@c.Doctor</strong></span></div>
+    </section>
 
     @if (mensajeOk != null)
     {
@@ -49,26 +58,26 @@ else
         <div class="alert alert-danger">@mensajeError</div>
     }
 
-    <div class="row g-3">
-        <div class="col-lg-8">
+    <div class="surgery-content">
+        <div class="surgery-main">
+            <div class="detail-tabs" role="tablist" aria-label="Secciones del detalle">
+                <button type="button" class="@(seccion == "general" ? "active" : "")" role="tab" aria-selected="@(seccion == "general")" @onclick='() => seccion = "general"'>Información general</button>
+                <button type="button" class="@(seccion == "equipos" ? "active" : "")" role="tab" aria-selected="@(seccion == "equipos")" @onclick='() => seccion = "equipos"'>Equipos y bandejas</button>
+                @if (c.Consumibles.Count > 0) { <button type="button" class="@(seccion == "consumibles" ? "active" : "")" role="tab" aria-selected="@(seccion == "consumibles")" @onclick='() => seccion = "consumibles"'>Consumibles</button> }
+                @if (EsAdmin && c.SolicitudId is not null) { <button type="button" class="@(seccion == "documentos" ? "active" : "")" role="tab" aria-selected="@(seccion == "documentos")" @onclick='() => seccion = "documentos"'>Documentación</button> }
+            </div>
+            @if (seccion == "general")
+            {
             <div class="card">
-                <div class="card-header">Datos de la cirugía</div>
+                <div class="card-header">Información general</div>
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Procedimiento</dt><dd class="col-sm-8">@c.Procedimiento</dd>
-                        <dt class="col-sm-4">Inicio</dt><dd class="col-sm-8">@c.Inicio.ToString("dd/MM/yyyy HH:mm")</dd>
-                        <dt class="col-sm-4">Fin</dt><dd class="col-sm-8">@(c.Fin?.ToString("dd/MM/yyyy HH:mm") ?? "Sin definir")</dd>
                         <dt class="col-sm-4">Doctor</dt><dd class="col-sm-8">@c.Doctor</dd>
                         <dt class="col-sm-4">Paciente</dt><dd class="col-sm-8">@c.Paciente</dd>
                         <dt class="col-sm-4">Diagnóstico</dt><dd class="col-sm-8">@c.Diagnostico</dd>
                         <dt class="col-sm-4">Clínica u hospital</dt><dd class="col-sm-8">@c.Clinica</dd>
                         <dt class="col-sm-4">Cliente</dt><dd class="col-sm-8">@c.Cliente</dd>
-                        <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@(c.Equipo == "" ? "Sin equipo asignado" : c.Equipo)</dd>
-                        @if (c.Equipo != "")
-                        {
-                            <dt class="col-sm-4">Marca del equipo</dt><dd class="col-sm-8">@(c.EquipoMarca == "" ? "No registrada" : c.EquipoMarca)</dd>
-                        }
-                        <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@(c.Bandeja == "" ? "Sin bandeja asignada" : c.Bandeja)</dd>
                         @if (c.Estado == "Cancelada")
                         {
                             <dt class="col-sm-4">Motivo de cancelación</dt><dd class="col-sm-8">@c.MotivoCancelacion</dd>
@@ -76,7 +85,21 @@ else
                     </dl>
                 </div>
             </div>
-            <div class="card mt-3">
+            }
+            @if (seccion == "equipos")
+            {
+                <div class="card"><div class="card-header">Equipos y bandejas</div><div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Equipo</dt><dd class="col-sm-8">@(string.IsNullOrWhiteSpace(c.Equipo) ? "Sin equipo asignado" : c.Equipo)</dd>
+                        <dt class="col-sm-4">Marca</dt><dd class="col-sm-8">@(string.IsNullOrWhiteSpace(c.EquipoMarca) ? "No registrada" : c.EquipoMarca)</dd>
+                        <dt class="col-sm-4">Bandeja instrumental</dt><dd class="col-sm-8">@(string.IsNullOrWhiteSpace(c.Bandeja) ? "Sin bandeja asignada" : c.Bandeja)</dd>
+                        @if (!string.IsNullOrWhiteSpace(c.BandejaProcedimiento)) { <dt class="col-sm-4">Procedimiento de bandeja</dt><dd class="col-sm-8">@c.BandejaProcedimiento</dd> }
+                    </dl>
+                </div></div>
+            }
+            @if (seccion == "consumibles" && c.Consumibles.Count > 0)
+            {
+            <div class="card">
                 <div class="card-header">Consumibles de la cirugía</div>
                 @if (c.Consumibles.Count == 0)
                 {
@@ -97,6 +120,14 @@ else
                     </div>
                 }
             </div>
+            }
+            @if (seccion == "documentos" && EsAdmin && c.SolicitudId is int idSolicitud)
+            {
+                <div class="card"><div class="card-header">Documentación relacionada</div><div class="card-body d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-primary" href="/solicitudes/revision/@idSolicitud">Ver solicitud</a>
+                    <a class="btn btn-outline-primary" href="/historial-documental?solicitud=@idSolicitud">Ver historial documental</a>
+                </div></div>
+            }
             @* RF02 (rol 5): cambio de estado y cancelación, con confirmación *@
             @if (EsAdmin && c.EstadoCodigo is "PROGRAMADA" or "EN_PROCESO")
             {
@@ -116,8 +147,15 @@ else
                 </div>
             }
         </div>
+        <aside class="surgery-aside">
+            <div class="card mb-3">
+                <div class="card-header">Estado de la cirugía</div>
+                <div class="card-body"><EstadoBadge Estado="@c.Estado" Grande="true" />
+                    <p class="small text-muted mt-2 mb-0">Inicio: @c.Inicio.ToString("dd/MM/yyyy HH:mm")</p>
+                    @if (c.EstadoCodigo == "CANCELADA" && !string.IsNullOrWhiteSpace(c.MotivoCancelacion)) { <p class="small mt-2 mb-0">Motivo: @c.MotivoCancelacion</p> }
+                </div>
+            </div>
         @if (Vista.Perfil.Clave is "administrador" or "cliente") {
-        <div class="col-lg-4">
             <div class="card mb-3">
                 <div class="card-header">Cotización</div>
                 <div class="card-body">
@@ -132,78 +170,36 @@ else
                     }
                 </div>
             </div>
-            <div class="card mb-3">
-                <div class="card-header">Cierre de insumos</div>
-                @if (c.Estado != "Culminada")
-                {
-                    <div class="card-body">
-                        <p class="text-muted mb-0">La orden de compra y el comparativo se habilitan cuando el administrador marca la cirugía como culminada.</p>
-                    </div>
-                }
-                else if (!esClinica)
-                {
-                    <div class="card-body">
-                        <p class="text-muted mb-0">Este cliente es particular: no adjunta orden de compra al cierre.</p>
-                    </div>
-                }
-                else if (cierre != null)
-                {
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Orden de compra</span>
-                            <DocumentoEstadoBadge Estado="@cierre.EstadoOc" />
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Consumo real</span>
-                            <DocumentoEstadoBadge Estado="@cierre.EstadoConsumo" />
-                        </div>
-                        @if (cierre.EstadoOc == DatosCierre.OcRechazado && !string.IsNullOrWhiteSpace(cierre.MotivoRechazo))
-                        {
-                            <div class="list-group-item small text-danger">@cierre.MotivoRechazo</div>
-                        }
-                        @if (Vista.Perfil.Clave == "cliente" && cierre.PuedeAdjuntarOc)
-                        {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.Id/orden-compra">
-                                Adjuntar orden de compra
-                            </a>
-                        }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeRevisarOc)
-                        {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/agenda/cirugia/@c.Id/revisar-oc">
-                                Revisar orden de compra
-                            </a>
-                        }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeRegistrarConsumo)
-                        {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/inventario/consumos/registrar/@c.Id">
-                                Registrar consumo real
-                            </a>
-                        }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.PuedeVerComparativo)
-                        {
-                            <a class="list-group-item list-group-item-action fw-semibold" href="/reportes/comparativo/@c.Id">
-                                Ver control de consumo
-                            </a>
-                        }
-                        @if (Vista.Perfil.Clave == "administrador" && cierre.EstadoOc == DatosCierre.OcPorAdjuntar)
-                        {
-                            <div class="list-group-item text-muted small">Esperando a que la clínica adjunte la orden de compra.</div>
-                        }
-                    </div>
-                }
-            </div>
-            @if (Vista.Perfil.Clave == "administrador" && c.SolicitudId is int solicitudId)
+            @if (esClinica)
             {
-                <div class="card">
-                    <div class="card-header">Relacionado</div>
-                    <div class="list-group list-group-flush">
-                        <a class="list-group-item list-group-item-action" href="/solicitudes/revision/@solicitudId">Ver solicitud</a>
-                        <a class="list-group-item list-group-item-action" href="/historial-documental?solicitud=@solicitudId">Ver documentación</a>
+                <div class="card mb-3">
+                    <div class="card-header">Cierre de insumos</div>
+                    <div class="card-body">
+                        @if (c.EstadoCodigo != "FINALIZADA")
+                        {
+                            <p class="text-muted mb-0">El cierre se habilita cuando la cirugía está culminada.</p>
+                        }
+                        else
+                        {
+                            <p class="small text-muted">Consulta el estado de cada operación en su pantalla correspondiente.</p>
+                            <div class="closing-links">
+                                @if (Vista.Perfil.Clave == "cliente")
+                                {
+                                    <a href="/agenda/cirugia/@c.Id/orden-compra">Orden de compra</a>
+                                }
+                                @if (EsAdmin)
+                                {
+                                    <a href="/agenda/cirugia/@c.Id/revisar-oc">Revisar orden de compra</a>
+                                    <a href="/inventario/consumos/registrar/@c.Id">Registro de consumo</a>
+                                    <a href="/reportes/comparativo/@c.Id">Control de consumo</a>
+                                }
+                            </div>
+                        }
                     </div>
                 </div>
             }
-        </div>
     }
+        </aside>
     </div>
 
     <ModalConfirmacion Visible="@(estadoPendiente != null)"
@@ -229,8 +225,8 @@ else
     [Parameter] public int Id { get; set; }
     [SupplyParameterFromQuery(Name = "guardado")] public int? Guardado { get; set; }
     private CirugiaDetalleViewModel? c;
-    private CierreCirugiaMock? cierre;
     private bool esClinica;
+    private string seccion = "general";
     private bool cargando;
     private string? error;
 
@@ -257,16 +253,13 @@ else
         cargando = true;
         error = null;
         c = null;
-        cierre = null;
         esClinica = false;
         try
         {
             c = await CirugiaSvc.FindById(Id);
             if (c != null)
             {
-                // El cierre (orden de compra / consumo real) aún usa los datos de ejemplo de otro módulo.
                 esClinica = c.TipoCliente == "CLINICA_HOSPITAL";
-                cierre = DatosCierre.De(c.Id);
             }
         }
         catch (ServicioException ex)

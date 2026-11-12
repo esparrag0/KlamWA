@@ -1,0 +1,36 @@
+.surgery-breadcrumb { display: flex; gap: .5rem; align-items: center; margin-bottom: .9rem; color: #67818b; font-size: .82rem; }
+.surgery-breadcrumb a { color: #087888; text-decoration: none; }
+.surgery-breadcrumb a:hover { text-decoration: underline; }
+.surgery-heading { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.1rem; }
+.heading-icon { display: grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: .65rem; background: #e4f5f4; color: #087888; }
+.heading-copy { min-width: 0; }
+.heading-title { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.heading-title h1 { margin: 0; color: #143946; font-size: 1.5rem; font-weight: 700; }
+.heading-copy p { margin: .18rem 0 0; color: #526b73; font-size: .9rem; }
+.heading-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-left: auto; }
+.surgery-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1.2rem; padding: .85rem .4rem; border: 1px solid #dce7e9; border-radius: .75rem; background: #fff; box-shadow: 0 3px 14px #0b3c490b; }
+.surgery-summary > div { display: flex; align-items: center; gap: .7rem; min-width: 0; padding: .3rem .9rem; border-right: 1px solid #dce7e9; }
+.surgery-summary > div:last-child { border-right: 0; }
+.summary-icon { flex: none; color: #087888; }
+.surgery-summary small { display: block; color: #66808a; font-size: .72rem; }
+.surgery-summary strong { display: block; overflow: hidden; color: #173946; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
+.surgery-content { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; align-items: start; }
+.surgery-main, .surgery-aside { min-width: 0; }
+.detail-tabs { display: flex; gap: .2rem; margin-bottom: .85rem; overflow-x: auto; border-bottom: 1px solid #dce7e9; }
+.detail-tabs button { flex: none; padding: .7rem .8rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #57717b; font-size: .82rem; font-weight: 600; cursor: pointer; }
+.detail-tabs button:hover { color: #087888; background: #f2f9f8; }
+.detail-tabs button.active { border-bottom-color: #087888; color: #075d69; }
+.detail-tabs button:focus-visible, .closing-links a:focus-visible { outline: 2px solid #168898; outline-offset: 2px; }
+.surgery-content .card { overflow: hidden; border-color: #dce7e9; border-radius: .7rem; box-shadow: 0 3px 12px #0b3c490b; }
+.surgery-content .card-header { padding: .75rem 1rem; border-bottom-color: #dce7e9; background: #f1f7f8; color: #153c48; font-size: .88rem; font-weight: 700; }
+.surgery-content .card-body { padding: 1rem; }
+.surgery-main dl dt, .surgery-main dl dd { padding-top: .48rem; padding-bottom: .48rem; margin-bottom: 0; border-bottom: 1px solid #edf1f2; font-size: .85rem; }
+.surgery-main dl dt { color: #31525d; }
+.surgery-main dl dd { color: #173946; }
+.surgery-aside .card-body { font-size: .84rem; }
+.closing-links { display: flex; flex-direction: column; gap: .35rem; }
+.closing-links a { display: block; padding: .55rem .65rem; border: 1px solid #d2e5e5; border-radius: .4rem; color: #087280; font-size: .8rem; font-weight: 600; text-decoration: none; }
+.closing-links a:hover { background: #e8f6f5; }
+@media (max-width: 1100px) { .surgery-content { grid-template-columns: minmax(0, 1fr) 290px; } .surgery-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .surgery-summary > div:nth-child(2) { border-right: 0; } }
+@media (max-width: 900px) { .surgery-content { grid-template-columns: 1fr; } .surgery-heading { flex-wrap: wrap; } .heading-actions { width: 100%; margin-left: 0; } }
+@media (max-width: 600px) { .surgery-summary { grid-template-columns: 1fr; } .surgery-summary > div { border-right: 0; border-bottom: 1px solid #dce7e9; } .surgery-summary > div:last-child { border-bottom: 0; } .heading-title h1 { font-size: 1.25rem; } }
