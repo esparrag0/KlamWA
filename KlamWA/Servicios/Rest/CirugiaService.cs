@@ -75,8 +75,10 @@ public class CirugiaService : ICirugiaService
         }
     }
 
-    public Task<OpcionesCirugiaDTO> OpcionesAsync() =>
-        _rest.DoGet<OpcionesCirugiaDTO>($"{_baseUrl}/opciones");
+    public Task<OpcionesCirugiaDTO> OpcionesAsync(string? procedimiento = null) =>
+        _rest.DoGet<OpcionesCirugiaDTO>(string.IsNullOrWhiteSpace(procedimiento)
+            ? $"{_baseUrl}/opciones"
+            : QueryHelpers.AddQueryString($"{_baseUrl}/opciones", "procedimiento", procedimiento));
 
     public Task<CirugiaDTO> RegistrarAsync(CirugiaFormDTO cirugia) =>
         _rest.DoPost<CirugiaFormDTO, CirugiaDTO>(_baseUrl, cirugia);

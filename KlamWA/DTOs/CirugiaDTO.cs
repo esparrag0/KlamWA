@@ -22,6 +22,7 @@ public class CirugiaDTO
     public int? IdEquipo { get; set; }
     public string? EquipoNombre { get; set; }
     public int? IdBandeja { get; set; }
+    public Dictionary<int, int> ConsumiblesPrevistos { get; set; } = [];
     public string? BandejaTipo { get; set; }
     public int? IdSolicitudOrigen { get; set; }
     public double? PrecioPactado { get; set; }
@@ -49,6 +50,7 @@ public class CirugiaDTO
 // Cuerpo de POST /cirugias y PUT /cirugias/{id}
 public class CirugiaFormDTO
 {
+    public Dictionary<int, int> ConsumiblesPrevistos { get; set; } = [];
     public string? FechaHoraInicio { get; set; }
     public string? FechaHoraFin { get; set; }
     public string TipoProcedimiento { get; set; } = "";

@@ -16,7 +16,7 @@ public interface ICirugiaService
 
     // Gestión (rol 5: RF02)
     Task<CirugiaDTO?> ObtenerAsync(int id);
-    Task<OpcionesCirugiaDTO> OpcionesAsync();
+    Task<OpcionesCirugiaDTO> OpcionesAsync(string? procedimiento = null);
     Task<CirugiaDTO> RegistrarAsync(CirugiaFormDTO cirugia);
     Task<CirugiaDTO> ModificarAsync(int id, CirugiaFormDTO cirugia);
     Task<CirugiaDTO> CambiarEstadoAsync(int id, string estado);

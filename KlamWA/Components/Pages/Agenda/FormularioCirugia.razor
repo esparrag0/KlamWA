@@ -1,4 +1,5 @@
 @page "/agenda/nueva"
+@page "/agenda/registrar"
 @page "/agenda/editar/{Id:int}"
 @attribute [Authorize(Roles = "ADMINISTRADOR")]
 @using Microsoft.AspNetCore.Authorization
@@ -33,8 +34,12 @@ else if (opciones != null)
         <div class="card" style="max-width:900px">
             <div class="card-body">
                 <div class="row g-3">
+                    <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2">Datos de cirugía</h2></div>
                     <CampoForm Etiqueta="Tipo de procedimiento">
-                        <InputText class="form-control" @bind-Value="ViewModel.TipoProcedimiento" />
+                        <InputSelect class="form-select" @bind-Value="ViewModel.TipoProcedimiento" @bind-Value:after="CambiarProcedimiento">
+                            <option value="">-- Seleccione un procedimiento --</option>
+                            @foreach (string nombre in procedimientosRegistrados) { <option value="@nombre">@nombre</option> }
+                        </InputSelect>
                         <ValidationMessage For="() => ViewModel.TipoProcedimiento" />
                     </CampoForm>
                     <CampoForm Etiqueta="Doctor">
@@ -45,6 +50,7 @@ else if (opciones != null)
                         <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
                         <ValidationMessage For="() => ViewModel.Diagnostico" />
                     </CampoForm>
+                    <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2 mt-2">Programación</h2></div>
                     <CampoForm Etiqueta="Inicio">
                         <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraInicio" />
                         <ValidationMessage For="() => ViewModel.FechaHoraInicio" />
@@ -63,6 +69,7 @@ else if (opciones != null)
                         </InputSelect>
                         <ValidationMessage For="() => ViewModel.ClienteClave" />
                     </CampoForm>
+                    <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2 mt-2">Instrumental y consumibles</h2></div>
                     <CampoForm Etiqueta="Equipo">
                         <InputSelect class="form-select" @bind-Value="ViewModel.IdEquipo">
                             <option value="0">-- Ninguno --</option>
@@ -73,43 +80,31 @@ else if (opciones != null)
                         </InputSelect>
                         <div class="form-text">Solo se listan los equipos disponibles.</div>
                     </CampoForm>
-                    <CampoForm Etiqueta="Procedimiento de la bandeja">
-                        <InputSelect class="form-select" @bind-Value="ViewModel.Procedimiento" @bind-Value:after="CambiarProcedimiento">
-                            <option value="">-- Todos --</option>
-                            @foreach (string procedimiento in Procedimientos)
-                            {
-                                <option value="@procedimiento">@procedimiento</option>
-                            }
-                        </InputSelect>
-                    </CampoForm>
                     <CampoForm Etiqueta="Bandeja instrumental" Columnas="col-12">
                         <InputSelect class="form-select" @bind-Value="ViewModel.IdBandeja" @bind-Value:after="CargarPlantilla">
-                            <option value="0">-- Ninguna --</option>
+                            <option value="0">-- Seleccione una bandeja compatible --</option>
                             @foreach (BandejaDTO bandeja in BandejasFiltradas)
                             {
                                 <option value="@bandeja.IdBandeja">@bandeja.Tipo · @bandeja.Procedimiento</option>
                             }
                         </InputSelect>
-                        <div class="form-text">Solo bandejas esterilizadas y sin otra cirugía asignada.</div>
+                        <div class="form-text">Se muestran las bandejas compatibles, esterilizadas y disponibles para este procedimiento.</div>
                     </CampoForm>
                     @if (plantilla != null)
                     {
                         <div class="col-12">
-                            <div class="alert alert-light border mb-0">
-                                <strong>Plantilla de @plantilla.Tipo (@plantilla.Procedimiento)</strong>
-                                @if (plantilla.Consumibles.Count == 0)
+                            <div class="alert alert-light border mb-2"><strong>@plantilla.Tipo</strong> · @(plantilla.IdCirugia == Id ? "asignada a esta cirugía" : "disponible") · @(plantilla.Esterilizado ? "esterilizada" : "sin esterilizar"). Las cantidades siguientes corresponden solo a esta cirugía.</div>
+                            <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Consumible</th><th style="width:140px">Cantidad prevista</th><th style="width:100px">Acción</th></tr></thead><tbody>
+                                @foreach (var linea in ViewModel.ConsumiblesPrevistos.ToList())
                                 {
-                                    <div class="text-muted small mt-1">Esta bandeja no tiene consumibles asociados.</div>
+                                    int idConsumible = linea.Key;
+                                    <tr><td>@NombreConsumible(idConsumible)</td><td><input type="number" class="form-control form-control-sm" min="1" @bind="ViewModel.ConsumiblesPrevistos[idConsumible]" /></td><td><button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => QuitarConsumible(idConsumible)">Quitar</button></td></tr>
                                 }
-                                else
-                                {
-                                    <ul class="mb-0 mt-2">
-                                        @foreach (ConsumibleBandejaDTO consumible in plantilla.Consumibles)
-                                        {
-                                            <li>@consumible.NombreComercial · @consumible.Medida · @consumible.Cantidad previstos</li>
-                                        }
-                                    </ul>
-                                }
+                            </tbody></table></div>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <select class="form-select form-select-sm" style="max-width:280px" @bind="consumibleAgregar"><option value="0">-- Agregar consumible --</option>@foreach (var consumible in catalogoConsumibles.Where(x => x.Activo && !ViewModel.ConsumiblesPrevistos.ContainsKey(x.IdConsumible))) { <option value="@consumible.IdConsumible">@consumible.NombreComercial</option> }</select>
+                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(consumibleAgregar == 0)" @onclick="AgregarConsumible">Agregar consumible</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RestablecerEstandar">Restablecer valores estándar</button>
                             </div>
                         </div>
                     }
@@ -130,15 +125,14 @@ else if (opciones != null)
     private string? MensajeError { get; set; }
     private OpcionesCirugiaDTO? opciones;
     private BandejaDTO? plantilla;
+    private List<ConsumibleDTO> catalogoConsumibles = [];
+    private List<string> procedimientosRegistrados = [];
+    private int consumibleAgregar;
     private bool cargando = true;
     private bool guardando;
 
-    // Procedimientos de las plantillas registradas (RF13: cráneo/cabeza y columna)
-    private IEnumerable<string> Procedimientos =>
-        opciones!.Bandejas.Select(b => b.Procedimiento ?? "").Where(p => p != "").Distinct().OrderBy(p => p);
-
     private IEnumerable<BandejaDTO> BandejasFiltradas =>
-        opciones!.Bandejas.Where(b => ViewModel.Procedimiento == "" || b.Procedimiento == ViewModel.Procedimiento
+        opciones!.Bandejas.Where(b => string.Equals(b.Procedimiento?.Trim(), ViewModel.TipoProcedimiento.Trim(), StringComparison.OrdinalIgnoreCase)
                                       || b.IdBandeja == ViewModel.IdBandeja);
 
     protected override async Task OnParametersSetAsync()
@@ -149,6 +143,10 @@ else if (opciones != null)
         try
         {
             opciones = await CirugiaService.OpcionesAsync();
+            procedimientosRegistrados = (await BandejaService.ListarAsync(null))
+                .Select(x => x.Procedimiento).Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            catalogoConsumibles = await BandejaService.ListarConsumiblesAsync();
             if (Id is int id)
             {
                 CirugiaDTO? cirugia = await CirugiaService.ObtenerAsync(id);
@@ -158,8 +156,11 @@ else if (opciones != null)
                     return;
                 }
                 ViewModel = new CirugiaViewModel(cirugia);
+                if (!procedimientosRegistrados.Contains(ViewModel.TipoProcedimiento, StringComparer.OrdinalIgnoreCase))
+                    procedimientosRegistrados.Add(ViewModel.TipoProcedimiento);
                 AgregarAsignadosActuales(cirugia);
                 await CargarPlantilla();
+                if (cirugia.ConsumiblesPrevistos.Count > 0) ViewModel.ConsumiblesPrevistos = new(cirugia.ConsumiblesPrevistos);
             }
             else
             {
@@ -195,9 +196,13 @@ else if (opciones != null)
 
     private async Task CambiarProcedimiento()
     {
-        if (ViewModel.IdBandeja > 0 && BandejasFiltradas.All(b => b.IdBandeja != ViewModel.IdBandeja))
+        ViewModel.IdBandeja = 0;
+        ViewModel.ConsumiblesPrevistos.Clear();
+        if (opciones is not null)
         {
-            ViewModel.IdBandeja = 0;
+            var disponibles = await CirugiaService.OpcionesAsync(ViewModel.TipoProcedimiento);
+            opciones.Bandejas = disponibles.Bandejas;
+            if (BandejasFiltradas.Count() == 1) ViewModel.IdBandeja = BandejasFiltradas.Single().IdBandeja;
         }
         await CargarPlantilla();
     }
@@ -206,6 +211,7 @@ else if (opciones != null)
     private async Task CargarPlantilla()
     {
         plantilla = null;
+        ViewModel.ConsumiblesPrevistos.Clear();
         if (ViewModel.IdBandeja <= 0)
         {
             return;
@@ -213,12 +219,31 @@ else if (opciones != null)
         try
         {
             plantilla = await BandejaService.ObtenerAsync(ViewModel.IdBandeja);
+            if (plantilla is not null && plantilla.IdCirugia is int asignada && asignada != Id)
+            {
+                MensajeError = "La bandeja ya está asignada a otra cirugía.";
+                plantilla = null;
+                ViewModel.IdBandeja = 0;
+                return;
+            }
+            RestablecerEstandar();
         }
         catch (ServicioException ex)
         {
             MensajeError = ex.Message;
         }
     }
+
+    private void RestablecerEstandar() => ViewModel.ConsumiblesPrevistos = plantilla?.Consumibles
+        .ToDictionary(x => x.IdConsumible, x => x.Cantidad) ?? [];
+    private void QuitarConsumible(int id) => ViewModel.ConsumiblesPrevistos.Remove(id);
+    private void AgregarConsumible()
+    {
+        if (consumibleAgregar > 0 && !ViewModel.ConsumiblesPrevistos.ContainsKey(consumibleAgregar))
+            ViewModel.ConsumiblesPrevistos[consumibleAgregar] = 1;
+        consumibleAgregar = 0;
+    }
+    private string NombreConsumible(int id) => catalogoConsumibles.FirstOrDefault(x => x.IdConsumible == id)?.NombreComercial ?? $"Consumible {id}";
 
     private async Task Guardar()
     {

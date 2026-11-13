@@ -30,9 +30,7 @@ public class CirugiaViewModel : IValidatableObject
 
     public int IdEquipo { get; set; }    // 0 = ninguno
     public int IdBandeja { get; set; }   // 0 = ninguna
-
-    // Solo filtra las bandejas del formulario (no se envía)
-    public string Procedimiento { get; set; } = "";
+    public Dictionary<int, int> ConsumiblesPrevistos { get; set; } = [];
 
     public CirugiaViewModel() { }
 
@@ -46,6 +44,7 @@ public class CirugiaViewModel : IValidatableObject
         ClienteClave = c.IdCliente is int id ? $"{c.TipoCliente}:{id}" : "";
         IdEquipo = c.IdEquipo ?? 0;
         IdBandeja = c.IdBandeja ?? 0;
+        ConsumiblesPrevistos = new(c.ConsumiblesPrevistos);
     }
 
     public CirugiaFormDTO ToFormDTO()
@@ -62,6 +61,7 @@ public class CirugiaViewModel : IValidatableObject
             IdCliente = partes.Length == 2 && int.TryParse(partes[1], out int id) ? id : 0,
             IdEquipo = IdEquipo > 0 ? IdEquipo : null,
             IdBandeja = IdBandeja > 0 ? IdBandeja : null
+            ,ConsumiblesPrevistos = new(ConsumiblesPrevistos)
         };
     }
 
