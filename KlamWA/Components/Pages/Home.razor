@@ -2,74 +2,226 @@
 @page "/inicio"
 @page "/inicio/{Rol}"
 @inject VistaPreviaRol Vista
+@inject INotificacionService Notificaciones
+@inject ICirugiaService Cirugias
+@inject ISolicitudCirugiaService Solicitudes
+@inject ISolicitudClienteService SolicitudesCliente
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.ViewModels
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
-<PageTitle>Inicio | Klam</PageTitle>
+<PageTitle>Inicio | BIOKLAM</PageTitle>
+
 @if (rolDesconocido)
 {
     <EstadoVacio Titulo="Perfil no disponible" Descripcion="Esta ruta no corresponde al rol de tu cuenta." />
 }
 else
 {
-    <PageHeader Titulo="Inicio" Subtitulo="@($"Vista de {Vista.Perfil.Nombre.ToLowerInvariant()} (datos de ejemplo)")" />
-    <div class="alert alert-info" role="note">@Vista.Perfil.Descripcion</div>
-    <div class="row g-3 mb-4">
-        @if (Vista.Perfil.Clave == "administrador")
-        {
-            <div class="col-md-4"><a class="stat-card" href="/usuarios"><span class="stat-icon"><Icono Nombre="usuarios" /></span><div><span>Usuarios del equipo</span><strong>06</strong><small>5 activos · 1 inactivo</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
-            <div class="col-md-4"><a class="stat-card" href="/notificaciones/administrador"><span class="stat-icon warm"><Icono Nombre="campana" /></span><div><span>Avisos sin leer</span><strong>02</strong><small>Nuevas solicitudes</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
-        }
-        else
-        {
-            <div class="col-md-4"><a class="stat-card" href="/agenda/lista"><span class="stat-icon"><Icono Nombre="lista" /></span><div><span>@(Vista.Perfil.Clave == "vendedor" ? "Cirugías que coordino" : "Mis cirugías")</span><strong>@KlamWA.Components.Shared.DatosAgenda.ParaPerfil(Vista.Perfil.Clave).Count()</strong><small>Procedimientos en agenda</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
-            <div class="col-md-4"><a class="stat-card" href="@(Vista.Perfil.Clave == "instrumentista" ? "/notificaciones/instrumentista" : "/mis-solicitudes")"><span class="stat-icon warm"><Icono Nombre="reloj" /></span><div><span>@(Vista.Perfil.Clave == "instrumentista" ? "Avisos sin leer" : "Solicitudes disponibles")</span><strong>@(Vista.Perfil.Clave == "instrumentista" ? "02" : "05")</strong><small>Datos de demostración</small></div><Icono Nombre="flecha" Tamano="18" /></a></div>
-        }
-        @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <div class="col-md-4"><a class="stat-card" href="/agenda"><span class="stat-icon blue"><Icono Nombre="calendario" /></span><div><span>Cirugías programadas</span><strong>02</strong><small>Próximas en octubre</small></div><Icono Nombre="flecha" Tamano="18" /></a></div> }
-    </div>
-    <div class="row g-4">
-        <div class="col-xl-7">
-            <section class="card h-100"><div class="section-heading"><h2>Accesos rápidos</h2></div><div class="quick-links">
-                @if (Vista.Perfil.Clave == "administrador")
-                {
-                    <a href="/usuarios/nuevo"><span class="quick-icon"><Icono Nombre="mas" /></span><div><strong>Registrar un usuario</strong><small>Datos personales, rol y estado de acceso</small></div><Icono Nombre="flecha" Tamano="18" /></a>
-                }
-                else if (Vista.Perfil.Clave is "vendedor" or "cliente")
-                {
-                    <a href="/mis-solicitudes/nueva"><span class="quick-icon"><Icono Nombre="mas" /></span><div><strong>Nueva solicitud de cirugía</strong><small>Abre el formulario visual del equipo</small></div><Icono Nombre="flecha" Tamano="18" /></a>
-                }
-                @if (Vista.Perfil.Clave is "administrador" or "instrumentista") { <a href="/agenda"><span class="quick-icon"><Icono Nombre="calendario" /></span><div><strong>Consultar el calendario</strong><small>Fechas, procedimientos y estados</small></div><Icono Nombre="flecha" Tamano="18" /></a> }
-                @if (Vista.Perfil.Clave == "cliente")
-                {
-                    <a href="/mis-solicitudes"><span class="quick-icon"><Icono Nombre="reloj" /></span><div><strong>Mis solicitudes</strong><small>Consulta tus documentos y solicitudes</small></div><Icono Nombre="flecha" Tamano="18" /></a>
-                }
-            </div></section>
-        </div>
-        <div class="col-xl-5">
-            <section class="card h-100"><div class="section-heading"><h2>@(TieneAvisos ? "Últimas notificaciones" : "Próximo en la agenda")</h2><Icono Nombre="@(TieneAvisos ? "campana" : "calendario")" Tamano="18" /></div>
-                @if (TieneAvisos)
-                {
-                    @foreach (var n in Avisos.Take(2))
+    <div class="home-dashboard">
+        <section class="home-hero" aria-labelledby="home-bienvenida">
+            <div class="home-hero-content">
+                <span class="home-eyebrow"><Icono Nombre="inicio" Tamano="16" /> Inicio · @Vista.Perfil.Nombre</span>
+                <h1 id="home-bienvenida">Bienvenido, @NombreCorto</h1>
+                <p>@DescripcionRol</p>
+                <div class="home-hero-actions">
+                    @if (accesos.Count > 0)
                     {
-                        <a class="mini-notification" href="@($"/notificaciones/detalle/{n.Id}")"><span class="unread-dot"></span><div><strong>@n.Titulo</strong><p>@n.Mensaje</p><small>@n.Fecha</small></div></a>
+                        <a class="btn btn-primary" href="@accesos[0].Ruta"><Icono Nombre="@accesos[0].Icono" Tamano="18" /> @accesos[0].Titulo</a>
                     }
-                    <a class="card-footer-link" href="@($"/notificaciones/{Vista.Perfil.Clave}")">Ver todas las notificaciones <Icono Nombre="flecha" Tamano="16" /></a>
+                    @if (accesos.Count > 1)
+                    {
+                        <a class="btn btn-outline-primary" href="@accesos[1].Ruta">@accesos[1].Titulo <Icono Nombre="flecha" Tamano="17" /></a>
+                    }
+                </div>
+            </div>
+            <div class="home-hero-mark" aria-hidden="true"><Icono Nombre="calendario" Tamano="100" /></div>
+        </section>
+
+        <section class="home-metrics" aria-label="Resumen de tu actividad">
+            @foreach (var indicador in indicadores)
+            {
+                <a class="home-metric" href="@indicador.Ruta">
+                    <span class="home-metric-icon"><Icono Nombre="@indicador.Icono" Tamano="27" /></span>
+                    <span class="home-metric-text"><span>@indicador.Titulo</span><strong>@(cargando ? "…" : indicador.Valor?.ToString("00") ?? "—")</strong><small>@(cargando ? "Consultando datos" : indicador.Valor is null ? "Información no disponible" : indicador.Detalle)</small></span>
+                    <Icono Nombre="flecha" Tamano="18" />
+                </a>
+            }
+        </section>
+
+        <div class="home-sections">
+            <section class="home-panel" aria-labelledby="home-accesos">
+                <div class="home-panel-heading"><Icono Nombre="lista" Tamano="22" /><h2 id="home-accesos">Accesos rápidos</h2></div>
+                <div class="home-links">
+                    @foreach (var acceso in accesos)
+                    {
+                        <a href="@acceso.Ruta"><span class="home-link-icon"><Icono Nombre="@acceso.Icono" Tamano="22" /></span><span><strong>@acceso.Titulo</strong><small>@acceso.Descripcion</small></span><Icono Nombre="flecha" Tamano="18" /></a>
+                    }
+                </div>
+            </section>
+
+            <section class="home-panel" aria-labelledby="home-novedades">
+                <div class="home-panel-heading"><Icono Nombre="@(TieneAvisos ? "campana" : "lista")" Tamano="22" /><h2 id="home-novedades">@(TieneAvisos ? "Últimas notificaciones" : "Solicitudes recientes")</h2></div>
+                @if (cargando)
+                {
+                    <p class="home-empty">Cargando información…</p>
+                }
+                else if (novedades is null)
+                {
+                    <p class="home-empty">No se pudo cargar esta información. Puedes consultarla desde su sección.</p>
+                }
+                else if (novedades.Count == 0)
+                {
+                    <p class="home-empty">@(TieneAvisos ? "No tienes notificaciones por ahora." : "Aún no tienes solicitudes registradas.")</p>
                 }
                 else
                 {
-                    <div class="p-4"><p class="text-muted">Consulta las cirugías asociadas a tu perfil.</p><a href="/agenda/lista">Ver mis cirugías <Icono Nombre="flecha" Tamano="16" /></a></div>
+                    <div class="home-news">
+                        @foreach (var novedad in novedades)
+                        {
+                            <a class="@(novedad.SinLeer ? "home-news-unread" : "")" href="@novedad.Ruta"><span class="home-news-icon"><Icono Nombre="@(TieneAvisos ? "campana" : "lista")" Tamano="19" /></span><span><strong>@novedad.Titulo</strong><small>@novedad.Detalle</small></span><time>@novedad.Fecha</time></a>
+                        }
+                    </div>
                 }
+                <a class="home-panel-footer" href="@(TieneAvisos ? "/notificaciones" : "/cliente/solicitudes")">@(TieneAvisos ? "Ver todas las notificaciones" : "Ver mis solicitudes") <Icono Nombre="flecha" Tamano="17" /></a>
             </section>
         </div>
     </div>
-    <AvisoDemostracion />
 }
 
 @code {
     [Parameter] public string? Rol { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
     private bool rolDesconocido;
-    private bool TieneAvisos => Vista.Perfil.Clave is "administrador" or "instrumentista";
-    private IReadOnlyList<NotificacionVista> Avisos => Vista.Perfil.Clave == "instrumentista" ? DatosAcceso.AvisosInstrumentista : DatosAcceso.AvisosAdministrador;
-    protected override void OnParametersSet()
+    private bool cargando = true;
+    private string rolAutenticado = "";
+    private bool TieneAvisos => Vista.Perfil.Clave is "administrador" or "instrumentista" or "vendedor";
+    private string NombreCorto => Vista.Perfil.Persona.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Vista.Perfil.Nombre;
+    private string DescripcionRol => Vista.Perfil.Clave switch
     {
-        rolDesconocido = Rol is not null && Rol != Vista.Perfil.Clave;
+        "administrador" => "Supervisa la agenda quirúrgica, revisa solicitudes y coordina al equipo.",
+        "vendedor" => "Registra solicitudes de tus clientes y sigue las cirugías que coordinas.",
+        "instrumentista" => "Consulta la programación quirúrgica y tus avisos recientes.",
+        _ when rolAutenticado == "CLINICA_HOSPITAL" => "Consulta las solicitudes y cirugías de tu institución.",
+        _ => "Consulta tus solicitudes, cirugías y documentos."
+    };
+
+    private sealed record Acceso(string Titulo, string Descripcion, string Icono, string Ruta);
+    private sealed record Novedad(string Titulo, string Detalle, string Fecha, string Ruta, bool SinLeer);
+    private sealed class Indicador(string titulo, string detalle, string icono, string ruta)
+    {
+        public string Titulo { get; } = titulo;
+        public string Detalle { get; } = detalle;
+        public string Icono { get; } = icono;
+        public string Ruta { get; } = ruta;
+        public int? Valor { get; set; }
+    }
+
+    private List<Acceso> accesos = [];
+    private List<Indicador> indicadores = [];
+    private List<Novedad>? novedades;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var usuario = (await AuthenticationStateTask).User;
+        Vista.Establecer(usuario);
+        rolAutenticado = usuario.FindFirst(ClaimTypes.Role)?.Value ?? "";
+        rolDesconocido = rolAutenticado is not ("ADMINISTRADOR" or "VENDEDOR" or
+            "TECNICO_INSTRUMENTAL" or "TECNICO_INSTRUMENTISTA" or "CLINICA_HOSPITAL" or "PACIENTE_PARTICULAR")
+            || Rol is not null && !Rol.Equals(Vista.Perfil.Clave, StringComparison.OrdinalIgnoreCase);
+        if (rolDesconocido) return;
+
+        cargando = true;
+        novedades = null;
+        var perfil = Vista.Perfil.Clave;
+        accesos = perfil switch
+        {
+            "administrador" => [new("Nueva cirugía", "Programa una cirugía y sus recursos.", "mas", "/agenda/nueva"),
+                new("Revisar solicitudes", "Valida la documentación recibida.", "lista", "/solicitudes"),
+                new("Consultar calendario", "Revisa fechas y estados de cirugía.", "calendario", "/agenda"),
+                new("Administrar usuarios", "Gestiona los accesos del equipo.", "usuarios", "/usuarios")],
+            "vendedor" => [new("Nueva solicitud", "Registra una solicitud de tu cliente.", "mas", "/mis-solicitudes/nueva"),
+                new("Mis solicitudes", "Consulta las solicitudes que registraste.", "lista", "/mis-solicitudes"),
+                new("Cirugías coordinadas", "Revisa las cirugías vinculadas a tus solicitudes.", "calendario", "/agenda/lista")],
+            "instrumentista" => [new("Consultar calendario", "Revisa la agenda quirúrgica.", "calendario", "/agenda"),
+                new("Mis cirugías", "Consulta los procedimientos asignados.", "lista", "/agenda/lista"),
+                new("Notificaciones", "Revisa tus avisos recientes.", "campana", "/notificaciones")],
+            _ => [new("Nueva solicitud", "Envía una solicitud de cirugía.", "mas", "/cliente/solicitudes/nueva"),
+                new("Mis solicitudes", rolAutenticado == "CLINICA_HOSPITAL" ? "Consulta las solicitudes de tu institución." : "Consulta tus solicitudes.", "lista", "/cliente/solicitudes"),
+                new("Mis cirugías", "Revisa las cirugías vinculadas a tu cuenta.", "calendario", "/agenda/lista"),
+                new("Mis cotizaciones", "Consulta las cotizaciones de tus solicitudes.", "lista", "/cotizaciones/cliente")]
+        };
+
+        var solicitudes = new Indicador(perfil == "administrador" ? "Solicitudes por revisar" : "Mis solicitudes",
+            perfil == "administrador" ? "Pendientes de revisión" : "Vinculadas a tu cuenta",
+            "lista", perfil == "administrador" ? "/solicitudes" : perfil == "vendedor" ? "/mis-solicitudes" : "/cliente/solicitudes");
+        var pendientes = new Indicador("Por revisar", "Esperan revisión", "reloj",
+            perfil == "vendedor" ? "/mis-solicitudes" : "/cliente/solicitudes");
+        var avisos = new Indicador("Avisos sin leer", "En tu bandeja", "campana", "/notificaciones");
+        var cirugias = new Indicador(perfil == "instrumentista" ? "Agenda del mes" : "Cirugías programadas",
+            perfil == "instrumentista" ? "Programación de este mes" : "Próximos 30 días",
+            "calendario", perfil is "administrador" or "instrumentista" ? "/agenda" : "/agenda/lista");
+        indicadores = perfil switch
+        {
+            "administrador" => [solicitudes, avisos, cirugias],
+            "vendedor" => [solicitudes, pendientes, avisos],
+            "instrumentista" => [cirugias, avisos],
+            _ => [solicitudes, pendientes, cirugias]
+        };
+
+        if (TieneAvisos)
+        {
+            try
+            {
+                var lista = await Notificaciones.ListarAsync();
+                avisos.Valor = lista.Count(n => !n.Leida);
+                novedades = lista.OrderByDescending(n => n.Fecha).Take(3)
+                    .Select(n => new Novedad(n.Titulo, n.Mensaje, n.FechaTexto,
+                        $"/notificaciones/detalle/{n.Id}", !n.Leida)).ToList();
+            }
+            catch (Exception) { novedades = null; }
+        }
+
+        if (perfil is "administrador" or "vendedor" or "cliente")
+        {
+            try
+            {
+                var propias = perfil switch
+                {
+                    "administrador" => await Solicitudes.ListarAsync(),
+                    "vendedor" => await Solicitudes.ListarMiasAsync(),
+                    _ => await SolicitudesCliente.ListarPropiasAsync()
+                };
+                solicitudes.Valor = perfil == "administrador"
+                    ? propias.Count(s => s.Estado == "POR_REVISAR") : propias.Count;
+                if (perfil is "vendedor" or "cliente") pendientes.Valor = propias.Count(s => s.Estado == "POR_REVISAR");
+                if (perfil == "cliente")
+                    novedades = propias.OrderByDescending(s => s.FechaSolicitud).Take(3)
+                        .Select(s => new Novedad(s.Codigo, $"{s.TipoProcedimiento} · {EstadoSolicitudTexto.Texto(s.Estado)}",
+                            s.FechaSolicitud?.ToString("dd/MM/yyyy HH:mm") ?? "Fecha no disponible",
+                            $"/cliente/solicitudes/{s.IdSolicitud}/documentos", false)).ToList();
+            }
+            catch (Exception) { if (perfil == "cliente") novedades = null; }
+        }
+
+        if (perfil is "administrador" or "instrumentista" or "cliente")
+        {
+            try
+            {
+                var hoy = DateTime.Today;
+                if (perfil == "instrumentista")
+                    cirugias.Valor = (await Cirugias.ObtenerCalendario(hoy.Year, hoy.Month))
+                        .Count(c => c.EstadoCodigo != "CANCELADA");
+                else
+                    cirugias.Valor = (await Cirugias.Buscar(new FiltroCirugia(Desde: hoy, Hasta: hoy.AddDays(30))))
+                        .Count(c => c.EstadoCodigo == "PROGRAMADA" && c.Inicio >= DateTime.Now);
+            }
+            catch (Exception) { }
+        }
+
+        cargando = false;
     }
 }

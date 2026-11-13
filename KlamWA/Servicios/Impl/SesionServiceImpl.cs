@@ -41,6 +41,7 @@ public sealed class SesionServiceImpl(
             "ADMINISTRADOR" => "administrador",
             "VENDEDOR" => "vendedor",
             "TECNICO_INSTRUMENTAL" or "TECNICO_INSTRUMENTISTA" => "instrumentista",
+            "CLINICA_HOSPITAL" or "PACIENTE_PARTICULAR" => "cliente",
             _ => null
         };
         if (perfil is null)
@@ -53,6 +54,8 @@ public sealed class SesionServiceImpl(
         {
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Name, usuario.UserName),
+            new Claim("nombre_completo", string.IsNullOrWhiteSpace(usuario.NombreCompleto)
+                ? usuario.UserName : usuario.NombreCompleto.Trim()),
             new Claim(ClaimTypes.Role, usuario.Rol),
             sesion
         };
