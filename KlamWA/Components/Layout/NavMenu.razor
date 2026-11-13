@@ -105,6 +105,7 @@
                 <div id="nav-administracion" class="nav-submenu">
                     <NavLink href="/usuarios">Usuarios</NavLink>
                     <NavLink href="/bitacora-cirugias">Bitácora de cirugías</NavLink>
+                    <NavLink href="/bitacora-documental">Bitácora documental</NavLink>
                 </div>
             }
         }
@@ -130,7 +131,7 @@
         var ruta = new Uri(Nav.Uri).AbsolutePath.ToLowerInvariant();
         seccionAbierta = ruta switch
         {
-            var r when r.StartsWith("/usuarios") || r.StartsWith("/bitacora-cirugias") => "administracion",
+            var r when r.StartsWith("/usuarios") || r.StartsWith("/bitacora-cirugias") || r.StartsWith("/bitacora-documental") => "administracion",
             var r when r.StartsWith("/reportes") => "reportes",
             var r when r.StartsWith("/cotizaciones") => "cotizaciones",
             var r when r.StartsWith("/clientes") => "clientes",
