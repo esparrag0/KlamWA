@@ -1,0 +1,299 @@
+@page "/bitacora-documental"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IDocumentoIngresoService Documentos
+@inject IJSRuntime JS
+
+<PageTitle>Bitácora documental | BIOKLAM</PageTitle>
+
+<header class="bitacora-heading">
+    <span class="heading-icon"><Icono Nombre="reloj" Tamano="23" /></span>
+    <div>
+        <h1>Bitácora documental</h1>
+        <p>Historial de operaciones y seguimiento de documentos</p>
+    </div>
+</header>
+
+<section class="filter-card" aria-label="Filtros de bitácora documental">
+    <div class="section-heading"><Icono Nombre="buscar" Tamano="18" /><h2>Filtros de búsqueda</h2></div>
+    <div class="filter-grid">
+        <div class="field">
+            <label for="bit-doc-desde">Desde</label>
+            <input id="bit-doc-desde" type="date" class="form-control" @bind="Desde" />
+        </div>
+        <div class="field">
+            <label for="bit-doc-hasta">Hasta</label>
+            <input id="bit-doc-hasta" type="date" class="form-control" @bind="Hasta" />
+        </div>
+        <div class="field">
+            <label for="bit-doc-tipo">Tipo de documento</label>
+            <select id="bit-doc-tipo" class="form-select" @bind="TipoDocumento">
+                <option value="">Todos</option>
+                @foreach (var tipo in TiposDisponibles)
+                {
+                    <option value="@tipo">@NombreDocumento(tipo)</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="bit-doc-accion">Tipo de acción</label>
+            <select id="bit-doc-accion" class="form-select" @bind="Accion">
+                <option value="">Todas</option>
+                <option value="CARGA">Carga inicial</option>
+                <option value="RESUBIDA">Nueva versión</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="bit-doc-responsable">Usuario responsable</label>
+            <input id="bit-doc-responsable" type="text" class="form-control" placeholder="Nombre registrado" @bind="Responsable" />
+        </div>
+        <div class="field">
+            <label for="bit-doc-origen">Solicitud o cirugía</label>
+            <div class="origin-input">
+                <select id="bit-doc-origen" class="form-select" @bind="Origen" aria-label="Tipo de referencia">
+                    <option value="SOLICITUD">Solicitud</option>
+                    <option value="CIRUGIA">Cirugía</option>
+                </select>
+                <input type="number" min="1" class="form-control" placeholder="ID" aria-label="Identificador" @bind="IdReferencia" />
+            </div>
+        </div>
+    </div>
+    <div class="filter-actions">
+        <button type="button" class="btn btn-primary" disabled="@Cargando" @onclick="BuscarAsync"><Icono Nombre="buscar" Tamano="17" /> Buscar</button>
+        <button type="button" class="btn btn-outline-secondary" disabled="@Cargando" @onclick="Limpiar">Limpiar filtros</button>
+    </div>
+</section>
+
+@if (Cargando)
+{
+    <div class="message-card" role="status"><span class="spinner-border spinner-border-sm"></span> Consultando historial documental…</div>
+}
+else if (Error is not null)
+{
+    <div class="message-card error" role="alert">@Error</div>
+}
+else if (ServicioNoDisponible)
+{
+    <div class="message-card" role="status">El servicio actual permite consultar el historial documental por solicitud. La consulta por cirugía todavía no está disponible.</div>
+}
+else if (IdReferencia is not > 0)
+{
+    <div class="message-card">Indica el ID de una solicitud para consultar sus documentos y versiones registradas.</div>
+}
+else
+{
+    <div class="results-layout">
+        <section class="history-card" aria-label="Historial documental">
+            <div class="section-heading results-heading">
+                <div><h2>Historial de la solicitud SOL-@IdReferencia.Value.ToString("000")</h2><p>@Filtrados.Count registro(s) con los filtros actuales</p></div>
+            </div>
+            @if (Filtrados.Count == 0)
+            {
+                <div class="empty-results"><Icono Nombre="lista" Tamano="27" /><strong>Sin registros</strong><p>No hay versiones documentales que coincidan con la búsqueda.</p></div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table history-table">
+                        <thead><tr><th>Fecha y hora</th><th>Documento</th><th>Solicitud</th><th>Acción</th><th>Responsable</th><th>Estado</th><th>Detalle</th></tr></thead>
+                        <tbody>
+                            @foreach (var evento in Filtrados)
+                            {
+                                <tr class="@(IdSeleccionado == evento.IdDocumento ? "selected-row" : "")">
+                                    <td class="text-nowrap">@evento.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td><strong>@NombreDocumento(evento.Documento)</strong><small>Versión @evento.Version</small></td>
+                                    <td class="text-nowrap">SOL-@IdReferencia.Value.ToString("000")</td>
+                                    <td>@NombreAccion(evento)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(evento.Responsable) ? "No registrado" : evento.Responsable)</td>
+                                    <td><span class="status-chip @ClaseEstado(evento.Estado)">@NombreEstado(evento.Estado)</span></td>
+                                    <td><button type="button" class="detail-button" @onclick="() => Seleccionar(evento.IdDocumento)">Ver detalle <Icono Nombre="flecha" Tamano="15" /></button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <aside class="detail-card" aria-label="Detalle del evento documental">
+            <div class="section-heading"><Icono Nombre="lista" Tamano="18" /><h2>Detalle del evento</h2></div>
+            @if (IdSeleccionado is null)
+            {
+                <div class="detail-placeholder">Selecciona «Ver detalle» en un registro para consultar sus datos.</div>
+            }
+            else if (Seleccionado is null)
+            {
+                <div class="detail-placeholder">Evento no encontrado con los filtros actuales.</div>
+            }
+            else
+            {
+                <div class="detail-content">
+                    <span class="status-chip @ClaseEstado(Seleccionado.Estado)">@NombreEstado(Seleccionado.Estado)</span>
+                    <h3>@NombreDocumento(Seleccionado.Documento) <small>v@Seleccionado.Version</small></h3>
+                    <dl>
+                        <div><dt>Solicitud</dt><dd>SOL-@IdReferencia.Value.ToString("000")</dd></div>
+                        <div><dt>Acción</dt><dd>@NombreAccion(Seleccionado)</dd></div>
+                        <div><dt>Fecha de carga</dt><dd>@Seleccionado.FechaHora.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        <div><dt>Responsable registrado</dt><dd>@(string.IsNullOrWhiteSpace(Seleccionado.Responsable) ? "No registrado" : Seleccionado.Responsable)</dd></div>
+                        @if (Seleccionado.FechaValidacion is not null)
+                        {
+                            <div><dt>Fecha de revisión</dt><dd>@Seleccionado.FechaValidacion.Value.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Seleccionado.MotivoRechazo))
+                        {
+                            <div><dt>Motivo de rechazo</dt><dd>@Seleccionado.MotivoRechazo</dd></div>
+                        }
+                        @if (Seleccionado.Estado == "RECHAZADO")
+                        {
+                            <div><dt>Resubida</dt><dd>@(Seleccionado.HabilitarResubida ? "Habilitada" : "No habilitada")</dd></div>
+                        }
+                    </dl>
+                    @if (!string.IsNullOrWhiteSpace(Seleccionado.Referencia))
+                    {
+                        <button type="button" class="btn btn-outline-primary w-100" disabled="@Descargando" @onclick="() => DescargarAsync(Seleccionado.IdDocumento)">
+                            @(Descargando ? "Abriendo documento…" : "Abrir documento asociado")
+                        </button>
+                    }
+                    @if (ErrorDescarga is not null) { <p class="download-error" role="alert">@ErrorDescarga</p> }
+                </div>
+            }
+        </aside>
+    </div>
+}
+
+<p class="source-note">El servicio actual registra una fila por versión documental. La revisión y su resultado se muestran como estado de esa versión; no se presentan como eventos independientes.</p>
+
+@code {
+    [SupplyParameterFromQuery(Name = "solicitud")] public int? SolicitudInicial { get; set; }
+
+    private DateTime? Desde;
+    private DateTime? Hasta;
+    private string TipoDocumento = "";
+    private string Accion = "";
+    private string Responsable = "";
+    private string Origen = "SOLICITUD";
+    private int? IdReferencia;
+    private int? IdSeleccionado;
+    private int? UltimaSolicitudInicial;
+    private bool Cargando;
+    private bool Descargando;
+    private bool ServicioNoDisponible;
+    private string? Error;
+    private string? ErrorDescarga;
+    private List<HistorialDocumentoDTO> Todos = [];
+    private List<HistorialDocumentoDTO> Filtrados = [];
+
+    private IEnumerable<string> TiposDisponibles => Todos.Select(x => x.Documento).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().OrderBy(x => x);
+    private HistorialDocumentoDTO? Seleccionado => Filtrados.FirstOrDefault(x => x.IdDocumento == IdSeleccionado);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SolicitudInicial is > 0 && SolicitudInicial != UltimaSolicitudInicial)
+        {
+            UltimaSolicitudInicial = SolicitudInicial;
+            IdReferencia = SolicitudInicial;
+            Origen = "SOLICITUD";
+            await BuscarAsync();
+        }
+    }
+
+    private async Task BuscarAsync()
+    {
+        Error = null;
+        ErrorDescarga = null;
+        ServicioNoDisponible = false;
+        Todos = [];
+        Filtrados = [];
+        if (Desde.HasValue && Hasta.HasValue && Desde.Value.Date > Hasta.Value.Date)
+        {
+            Error = "La fecha inicial no puede ser posterior a la fecha final.";
+            return;
+        }
+        if (IdReferencia is not > 0) return;
+        if (Origen == "CIRUGIA")
+        {
+            ServicioNoDisponible = true;
+            return;
+        }
+        Cargando = true;
+        try
+        {
+            Todos = await Documentos.ConsultarHistorialAsync(IdReferencia.Value);
+            Filtrados = Todos.Where(Coincide).OrderByDescending(x => x.FechaHora).ThenByDescending(x => x.IdDocumento).ToList();
+        }
+        catch (HttpRequestException ex)
+        {
+            Error = ex.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => "Tu sesión expiró. Inicia sesión nuevamente.",
+                HttpStatusCode.Forbidden => "No tienes permiso para consultar este historial.",
+                HttpStatusCode.NotFound => "No se encontró la solicitud indicada.",
+                HttpStatusCode.BadRequest => "El identificador de solicitud no es válido.",
+                _ => "No se pudo consultar el historial documental. Inténtalo de nuevo."
+            };
+        }
+        catch (TaskCanceledException)
+        {
+            Error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+        }
+        finally { Cargando = false; }
+    }
+
+    private bool Coincide(HistorialDocumentoDTO x) =>
+        (!Desde.HasValue || x.FechaHora.Date >= Desde.Value.Date) &&
+        (!Hasta.HasValue || x.FechaHora.Date <= Hasta.Value.Date) &&
+        (TipoDocumento.Length == 0 || x.Documento == TipoDocumento) &&
+        (Accion.Length == 0 || CodigoAccion(x) == Accion) &&
+        (Responsable.Length == 0 || (x.Responsable?.Contains(Responsable.Trim(), StringComparison.OrdinalIgnoreCase) ?? false));
+
+    private void Seleccionar(int id) { IdSeleccionado = id; ErrorDescarga = null; }
+    private void Limpiar()
+    {
+        Desde = Hasta = null;
+        TipoDocumento = Accion = Responsable = "";
+        Origen = "SOLICITUD";
+        IdReferencia = IdSeleccionado = null;
+        Todos = [];
+        Filtrados = [];
+        Error = ErrorDescarga = null;
+        ServicioNoDisponible = false;
+    }
+
+    private async Task DescargarAsync(int idDocumento)
+    {
+        Descargando = true;
+        ErrorDescarga = null;
+        try
+        {
+            var archivo = await Documentos.DescargarAsync(idDocumento);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JSException)
+        {
+            ErrorDescarga = ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound }
+                ? "El archivo asociado ya no está disponible."
+                : "No se pudo abrir el documento. Inténtalo de nuevo.";
+        }
+        finally { Descargando = false; }
+    }
+
+    private static string CodigoAccion(HistorialDocumentoDTO x) => x.Version > 1 ? "RESUBIDA" : "CARGA";
+    private static string NombreAccion(HistorialDocumentoDTO x) => x.Version > 1 ? "Nueva versión" : "Carga inicial";
+    private static string NombreDocumento(string tipo) => tipo switch
+    {
+        "DNI" => "DNI", "RECETA_MEDICA" => "Receta médica", "COMPROBANTE_PAGO" => "Comprobante de pago",
+        "ORDEN_COMPRA" => "Orden de compra", _ => tipo.Replace('_', ' ')
+    };
+    private static string NombreEstado(string estado) => estado switch
+    {
+        "VALIDADO" => "Validado", "RECHAZADO" => "Rechazado", "PENDIENTE" => "Pendiente", _ => estado
+    };
+    private static string ClaseEstado(string estado) => estado switch
+    {
+        "VALIDADO" => "validated", "RECHAZADO" => "rejected", "PENDIENTE" => "pending", _ => "neutral"
+    };
+}
