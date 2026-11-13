@@ -4,7 +4,7 @@ using KlamWA.DTOs;
 namespace KlamWA.ViewModels;
 
 // Formulario de cirugía (RF02). Las anotaciones solo ayudan al usuario;
-// las reglas reales (cruces de horario, esterilización, estados) las valida CirugiaBL en Java.
+// las reglas reales de integridad, compatibilidad y estados las valida CirugiaBL en Java.
 public class CirugiaViewModel : IValidatableObject
 {
     [Required(ErrorMessage = "El tipo de procedimiento es obligatorio")]
