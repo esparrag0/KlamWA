@@ -54,6 +54,8 @@ public sealed class SesionServiceImpl(
         {
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Name, usuario.UserName),
+            new Claim("nombre_completo", string.IsNullOrWhiteSpace(usuario.NombreCompleto)
+                ? usuario.UserName : usuario.NombreCompleto.Trim()),
             new Claim(ClaimTypes.Role, usuario.Rol),
             sesion
         };

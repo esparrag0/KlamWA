@@ -63,14 +63,17 @@ public sealed class VistaPreviaRol
         {
             "ADMINISTRADOR" => "administrador",
             "VENDEDOR" => "vendedor",
-            "TECNICO_INSTRUMENTISTA" => "instrumentista",
+            "TECNICO_INSTRUMENTAL" or "TECNICO_INSTRUMENTISTA" => "instrumentista",
             "CLINICA_HOSPITAL" or "PACIENTE_PARTICULAR" => "cliente",
             _ => null
         };
         if (DatosAcceso.Perfil(clave) is not { } perfil) return;
 
-        var nombre = usuario.Identity?.Name ?? perfil.Nombre;
-        var iniciales = nombre.Length >= 2 ? nombre[..2].ToUpperInvariant() : nombre.ToUpperInvariant();
+        var nombre = usuario.FindFirst("nombre_completo")?.Value ?? usuario.Identity?.Name ?? perfil.Nombre;
+        var partes = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var iniciales = partes.Length > 1
+            ? $"{partes[0][0]}{partes[^1][0]}".ToUpperInvariant()
+            : nombre.Length >= 2 ? nombre[..2].ToUpperInvariant() : nombre.ToUpperInvariant();
         Perfil = perfil with { Persona = nombre, Iniciales = iniciales };
         Cambio?.Invoke();
     }
