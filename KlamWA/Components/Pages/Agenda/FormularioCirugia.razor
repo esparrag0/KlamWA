@@ -1,154 +1,275 @@
 @page "/agenda/nueva"
+@page "/agenda/registrar"
 @page "/agenda/editar/{Id:int}"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @using KlamWA.Components.Shared
 @using KlamWA.ViewModels
+@using KlamWA.DTOs
+@using KlamWA.Servicios
 @inject NavigationManager Nav
+@inject ICirugiaService CirugiaService
+@inject IBandejaService BandejaService
 
 <PageTitle>Formulario de cirugía</PageTitle>
 
 <PageHeader Titulo="@(Id == null ? "Registrar cirugía" : "Editar cirugía #" + Id)"
-            Subtitulo="Los datos se validan pero no se guardan en este laboratorio" />
+            Subtitulo="Los datos se guardan en el sistema" />
 
 @if (MensajeError != null)
 {
     <div class="alert alert-danger">@MensajeError</div>
 }
-@if (MensajeOk != null)
+
+@if (cargando)
 {
-    <div class="alert alert-success">@MensajeOk</div>
+    <div class="alert alert-info">Cargando datos...</div>
 }
+else if (opciones != null)
+{
+    <EditForm Model="ViewModel" OnValidSubmit="Guardar">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-<EditForm Model="ViewModel" OnValidSubmit="Guardar">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="card" style="max-width:900px">
-        <div class="card-body">
-            <div class="row g-3">
-                <CampoForm Etiqueta="Tipo de procedimiento">
-                    <InputText class="form-control" @bind-Value="ViewModel.TipoProcedimiento" />
-                    <ValidationMessage For="() => ViewModel.TipoProcedimiento" />
-                </CampoForm>
-                <CampoForm Etiqueta="Doctor">
-                    <InputText class="form-control" @bind-Value="ViewModel.Doctor" />
-                    <ValidationMessage For="() => ViewModel.Doctor" />
-                </CampoForm>
-                <CampoForm Etiqueta="Paciente">
-                    <InputText class="form-control" @bind-Value="ViewModel.Paciente" />
-                    <ValidationMessage For="() => ViewModel.Paciente" />
-                </CampoForm>
-                <CampoForm Etiqueta="Clínica u hospital">
-                    <InputSelect class="form-select" @bind-Value="ViewModel.Clinica">
-                        <option value="">-- Seleccione --</option>
-                        @foreach (var clinica in DatosClientes.Clinicas.Values) { <option value="@clinica">@clinica</option> }
-                    </InputSelect>
-                    <ValidationMessage For="() => ViewModel.Clinica" />
-                </CampoForm>
-                <CampoForm Etiqueta="Diagnóstico" Columnas="col-12">
-                    <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
-                    <ValidationMessage For="() => ViewModel.Diagnostico" />
-                </CampoForm>
-                <CampoForm Etiqueta="Inicio">
-                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraInicio" />
-                    <ValidationMessage For="() => ViewModel.FechaHoraInicio" />
-                </CampoForm>
-                <CampoForm Etiqueta="Fin">
-                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraFin" />
-                    <ValidationMessage For="() => ViewModel.FechaHoraFin" />
-                </CampoForm>
-                <CampoForm Etiqueta="Cliente">
-                    <InputSelect class="form-select" @bind-Value="ViewModel.IdCliente">
-                        <option value="0">-- Seleccione --</option>
-                        @foreach (var x in DatosAgenda.Clientes) { <option value="@x.Key">@x.Value</option> }
-                    </InputSelect>
-                    <ValidationMessage For="() => ViewModel.IdCliente" />
-                </CampoForm>
-                <CampoForm Etiqueta="Estado">
-                    <InputSelect class="form-select" @bind-Value="ViewModel.Estado">
-                        @foreach (var e in DatosAgenda.Estados) { <option value="@e">@e</option> }
-                    </InputSelect>
-                    @if (ViewModel.Estado == "Culminada")
+        <div class="card" style="max-width:900px">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2">Datos de cirugía</h2></div>
+                    <CampoForm Etiqueta="Tipo de procedimiento">
+                        <InputSelect class="form-select" @bind-Value="ViewModel.TipoProcedimiento" @bind-Value:after="CambiarProcedimiento">
+                            <option value="">-- Seleccione un procedimiento --</option>
+                            @foreach (string nombre in procedimientosRegistrados) { <option value="@nombre">@nombre</option> }
+                        </InputSelect>
+                        <ValidationMessage For="() => ViewModel.TipoProcedimiento" />
+                    </CampoForm>
+                    <CampoForm Etiqueta="Doctor">
+                        <InputText class="form-control" @bind-Value="ViewModel.Doctor" />
+                        <ValidationMessage For="() => ViewModel.Doctor" />
+                    </CampoForm>
+                    <CampoForm Etiqueta="Diagnóstico" Columnas="col-12">
+                        <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
+                        <ValidationMessage For="() => ViewModel.Diagnostico" />
+                    </CampoForm>
+                    <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2 mt-2">Programación</h2></div>
+                    <CampoForm Etiqueta="Inicio">
+                        <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraInicio" />
+                        <ValidationMessage For="() => ViewModel.FechaHoraInicio" />
+                    </CampoForm>
+                    <CampoForm Etiqueta="Fin">
+                        <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraFin" />
+                        <ValidationMessage For="() => ViewModel.FechaHoraFin" />
+                    </CampoForm>
+                    <CampoForm Etiqueta="Cliente (clínica u hospital, o paciente particular)" Columnas="col-12">
+                        <InputSelect class="form-select" @bind-Value="ViewModel.ClienteClave">
+                            <option value="">-- Seleccione --</option>
+                            @foreach (OpcionDTO cliente in opciones.Clientes)
+                            {
+                                <option value="@($"{cliente.Tipo}:{cliente.Id}")">@cliente.Nombre (@TextoTipoCliente(cliente.Tipo))</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => ViewModel.ClienteClave" />
+                    </CampoForm>
+                    <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2 mt-2">Instrumental y consumibles</h2></div>
+                    <CampoForm Etiqueta="Equipo">
+                        <InputSelect class="form-select" @bind-Value="ViewModel.IdEquipo">
+                            <option value="0">-- Ninguno --</option>
+                            @foreach (OpcionDTO equipo in opciones.Equipos)
+                            {
+                                <option value="@equipo.Id">@equipo.Nombre</option>
+                            }
+                        </InputSelect>
+                        <div class="form-text">Solo se listan los equipos disponibles.</div>
+                    </CampoForm>
+                    <CampoForm Etiqueta="Bandeja instrumental" Columnas="col-12">
+                        <InputSelect class="form-select" @bind-Value="ViewModel.IdBandeja" @bind-Value:after="CargarPlantilla">
+                            <option value="0">-- Seleccione una bandeja compatible --</option>
+                            @foreach (BandejaDTO bandeja in BandejasFiltradas)
+                            {
+                                <option value="@bandeja.IdBandeja">@bandeja.Tipo · @bandeja.Procedimiento</option>
+                            }
+                        </InputSelect>
+                        <div class="form-text">Se muestran las bandejas compatibles, esterilizadas y disponibles para este procedimiento.</div>
+                    </CampoForm>
+                    @if (plantilla != null)
                     {
-                        <div class="form-text">Si el cliente es clínica u hospital, al guardar se habilita adjuntar la orden de compra. Se exige fecha y hora de fin.</div>
-                    }
-                </CampoForm>
-                <CampoForm Etiqueta="Equipo">
-                    <InputSelect class="form-select" @bind-Value="ViewModel.IdEquipo">
-                        <option value="0">-- Ninguno --</option>
-                        @foreach (var x in DatosAgenda.Equipos) { <option value="@x.Key">@x.Value</option> }
-                    </InputSelect>
-                </CampoForm>
-                <CampoForm Etiqueta="Bandeja instrumental">
-                    <InputSelect class="form-select" @bind-Value="ViewModel.IdBandeja">
-                        <option value="0">-- Ninguna --</option>
-                        @foreach (var x in DatosAgenda.Bandejas) { <option value="@x.Key">@x.Value</option> }
-                    </InputSelect>
-                </CampoForm>
-                @if (ViewModel.IdBandeja is 4 or 5)
-                {
-                    var plantilla = DatosInsumos.Plantillas.First(p => p.Nombre == DatosAgenda.Bandejas[ViewModel.IdBandeja]);
-                    <div class="col-12">
-                        <div class="alert alert-light border mb-0">
-                            <strong>Plantilla asociada: @plantilla.Nombre</strong>
-                            <ul class="mb-0 mt-2">
-                                @foreach (var insumo in plantilla.Insumos)
+                        <div class="col-12">
+                            <div class="alert alert-light border mb-2"><strong>@plantilla.Tipo</strong> · @(plantilla.IdCirugia == Id ? "asignada a esta cirugía" : "disponible") · @(plantilla.Esterilizado ? "esterilizada" : "sin esterilizar"). Las cantidades siguientes corresponden solo a esta cirugía.</div>
+                            <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Consumible</th><th style="width:140px">Cantidad prevista</th><th style="width:100px">Acción</th></tr></thead><tbody>
+                                @foreach (var linea in ViewModel.ConsumiblesPrevistos.ToList())
                                 {
-                                    <li>@insumo.Nombre · @insumo.Medida · @insumo.Despachado previstos</li>
+                                    int idConsumible = linea.Key;
+                                    <tr><td>@NombreConsumible(idConsumible)</td><td><input type="number" class="form-control form-control-sm" min="1" @bind="ViewModel.ConsumiblesPrevistos[idConsumible]" /></td><td><button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => QuitarConsumible(idConsumible)">Quitar</button></td></tr>
                                 }
-                            </ul>
+                            </tbody></table></div>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <select class="form-select form-select-sm" style="max-width:280px" @bind="consumibleAgregar"><option value="0">-- Agregar consumible --</option>@foreach (var consumible in catalogoConsumibles.Where(x => x.Activo && !ViewModel.ConsumiblesPrevistos.ContainsKey(x.IdConsumible))) { <option value="@consumible.IdConsumible">@consumible.NombreComercial</option> }</select>
+                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(consumibleAgregar == 0)" @onclick="AgregarConsumible">Agregar consumible</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RestablecerEstandar">Restablecer valores estándar</button>
+                            </div>
                         </div>
-                    </div>
-                }
-                <CampoForm Etiqueta="Motivo de cancelación (obligatorio si está cancelada)" Columnas="col-12">
-                    <InputText class="form-control" @bind-Value="ViewModel.MotivoCancelacion" />
-                    <ValidationMessage For="() => ViewModel.MotivoCancelacion" />
-                </CampoForm>
-                <CampoForm Etiqueta="Vendedor asignado">
-                    <select class="form-select"><option>Vendedor 1</option><option>Vendedor 2</option></select>
-                </CampoForm>
-                <CampoForm Etiqueta="Precio pactado (cotización) S/">
-                    <InputNumber class="form-control" @bind-Value="ViewModel.PrecioPactado" />
-                    <ValidationMessage For="() => ViewModel.PrecioPactado" />
-                </CampoForm>
+                    }
+                </div>
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <button type="submit" class="btn btn-primary" disabled="@guardando">Guardar</button>
+                <a class="btn btn-outline-secondary" href="@(Id == null ? "/agenda/lista" : $"/agenda/cirugia/{Id}")">Cancelar</a>
             </div>
         </div>
-        <div class="card-footer">
-            <button type="submit" class="btn btn-primary">Guardar</button>
-            <a class="btn btn-outline-secondary" href="/agenda/lista">Cancelar</a>
-        </div>
-    </div>
-</EditForm>
+    </EditForm>
+}
 
 @code {
     [Parameter] public int? Id { get; set; }
 
     private CirugiaViewModel ViewModel { get; set; } = new();
     private string? MensajeError { get; set; }
-    private string? MensajeOk { get; set; }
+    private OpcionesCirugiaDTO? opciones;
+    private BandejaDTO? plantilla;
+    private List<ConsumibleDTO> catalogoConsumibles = [];
+    private List<string> procedimientosRegistrados = [];
+    private int consumibleAgregar;
+    private bool cargando = true;
+    private bool guardando;
 
-    protected override void OnParametersSet()
+    private IEnumerable<BandejaDTO> BandejasFiltradas =>
+        opciones!.Bandejas.Where(b => string.Equals(b.Procedimiento?.Trim(), ViewModel.TipoProcedimiento.Trim(), StringComparison.OrdinalIgnoreCase)
+                                      || b.IdBandeja == ViewModel.IdBandeja);
+
+    protected override async Task OnParametersSetAsync()
     {
+        cargando = true;
         MensajeError = null;
-        MensajeOk = null;
-        if (Id == null)
+        plantilla = null;
+        try
         {
-            ViewModel = new CirugiaViewModel();
-            return;
+            opciones = await CirugiaService.OpcionesAsync();
+            procedimientosRegistrados = (await BandejaService.ListarAsync(null))
+                .Select(x => x.Procedimiento).Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+            catalogoConsumibles = await BandejaService.ListarConsumiblesAsync();
+            if (Id is int id)
+            {
+                CirugiaDTO? cirugia = await CirugiaService.ObtenerAsync(id);
+                if (cirugia == null)
+                {
+                    Nav.NavigateTo("/agenda/lista");
+                    return;
+                }
+                ViewModel = new CirugiaViewModel(cirugia);
+                if (!procedimientosRegistrados.Contains(ViewModel.TipoProcedimiento, StringComparer.OrdinalIgnoreCase))
+                    procedimientosRegistrados.Add(ViewModel.TipoProcedimiento);
+                AgregarAsignadosActuales(cirugia);
+                await CargarPlantilla();
+                if (cirugia.ConsumiblesPrevistos.Count > 0) ViewModel.ConsumiblesPrevistos = new(cirugia.ConsumiblesPrevistos);
+            }
+            else
+            {
+                ViewModel = new CirugiaViewModel();
+            }
         }
-        var c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
-        if (c == null)
+        catch (ServicioException ex)
         {
-            Nav.NavigateTo("/agenda/lista");
-            return;
+            MensajeError = ex.Message;
         }
-        ViewModel = new CirugiaViewModel(c);
+        catch (HttpRequestException)
+        {
+            MensajeError = "No se pudo conectar con el servicio de cirugías";
+        }
+        finally
+        {
+            cargando = false;
+        }
     }
 
-    // Solo confirma la validación en pantalla; no cambia los datos de ejemplo.
-    private void Guardar()
+    // El equipo y la bandeja de la propia cirugía no salen como "disponibles": se agregan para poder conservarlos
+    private void AgregarAsignadosActuales(CirugiaDTO cirugia)
     {
-        MensajeOk = Id is null
-            ? "Formulario válido. La cirugía no se registró porque esta entrega es solo visual."
-            : "Formulario válido. Los cambios no se guardaron porque esta entrega es solo visual.";
+        if (cirugia.IdEquipo is int idEquipo && opciones!.Equipos.All(e => e.Id != idEquipo))
+        {
+            opciones.Equipos.Add(new OpcionDTO { Id = idEquipo, Nombre = cirugia.EquipoNombre ?? $"Equipo {idEquipo}" });
+        }
+        if (cirugia.IdBandeja is int idBandeja && opciones!.Bandejas.All(b => b.IdBandeja != idBandeja))
+        {
+            opciones.Bandejas.Add(new BandejaDTO { IdBandeja = idBandeja, Tipo = cirugia.BandejaTipo ?? $"Bandeja {idBandeja}" });
+        }
     }
+
+    private async Task CambiarProcedimiento()
+    {
+        ViewModel.IdBandeja = 0;
+        ViewModel.ConsumiblesPrevistos.Clear();
+        if (opciones is not null)
+        {
+            var disponibles = await CirugiaService.OpcionesAsync(ViewModel.TipoProcedimiento);
+            opciones.Bandejas = disponibles.Bandejas;
+            if (BandejasFiltradas.Count() == 1) ViewModel.IdBandeja = BandejasFiltradas.Single().IdBandeja;
+        }
+        await CargarPlantilla();
+    }
+
+    // Muestra los consumibles de la plantilla elegida (RF13)
+    private async Task CargarPlantilla()
+    {
+        plantilla = null;
+        ViewModel.ConsumiblesPrevistos.Clear();
+        if (ViewModel.IdBandeja <= 0)
+        {
+            return;
+        }
+        try
+        {
+            plantilla = await BandejaService.ObtenerAsync(ViewModel.IdBandeja);
+            if (plantilla is not null && plantilla.IdCirugia is int asignada && asignada != Id)
+            {
+                MensajeError = "La bandeja ya está asignada a otra cirugía.";
+                plantilla = null;
+                ViewModel.IdBandeja = 0;
+                return;
+            }
+            RestablecerEstandar();
+        }
+        catch (ServicioException ex)
+        {
+            MensajeError = ex.Message;
+        }
+    }
+
+    private void RestablecerEstandar() => ViewModel.ConsumiblesPrevistos = plantilla?.Consumibles
+        .ToDictionary(x => x.IdConsumible, x => x.Cantidad) ?? [];
+    private void QuitarConsumible(int id) => ViewModel.ConsumiblesPrevistos.Remove(id);
+    private void AgregarConsumible()
+    {
+        if (consumibleAgregar > 0 && !ViewModel.ConsumiblesPrevistos.ContainsKey(consumibleAgregar))
+            ViewModel.ConsumiblesPrevistos[consumibleAgregar] = 1;
+        consumibleAgregar = 0;
+    }
+    private string NombreConsumible(int id) => catalogoConsumibles.FirstOrDefault(x => x.IdConsumible == id)?.NombreComercial ?? $"Consumible {id}";
+
+    private async Task Guardar()
+    {
+        guardando = true;
+        MensajeError = null;
+        try
+        {
+            CirugiaDTO guardada = Id is int id
+                ? await CirugiaService.ModificarAsync(id, ViewModel.ToFormDTO())
+                : await CirugiaService.RegistrarAsync(ViewModel.ToFormDTO());
+            Nav.NavigateTo($"/agenda/cirugia/{guardada.IdCirugia}?guardado=1");
+        }
+        catch (ServicioException ex)
+        {
+            // Mensaje de la BL (cruce de horario, bandeja no esterilizada, etc.)
+            MensajeError = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            MensajeError = "No se pudo conectar con el servicio de cirugías";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private string TextoTipoCliente(string? tipo) => tipo == "PACIENTE_PARTICULAR" ? "particular" : "clínica";
 }
