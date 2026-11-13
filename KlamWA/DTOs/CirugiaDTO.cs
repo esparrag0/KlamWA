@@ -79,6 +79,7 @@ public class OpcionDTO
 // Listas reales para el formulario de cirugía
 public class OpcionesCirugiaDTO
 {
+    public List<string> Procedimientos { get; set; } = [];
     public List<OpcionDTO> Clientes { get; set; } = [];
     public List<OpcionDTO> Equipos { get; set; } = [];
     public List<BandejaDTO> Bandejas { get; set; } = [];
