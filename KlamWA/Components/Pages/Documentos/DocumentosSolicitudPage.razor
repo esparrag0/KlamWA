@@ -146,7 +146,12 @@ else if (Requisitos is not null)
         Archivo = null;
     }
 
-    private void SeleccionarArchivo(InputFileChangeEventArgs e) => Archivo = e.File;
+    private void SeleccionarArchivo(InputFileChangeEventArgs e)
+    {
+        Error = ArchivoDocumentoSeleccion.Validar(e.File);
+        Archivo = Error is null ? e.File : null;
+        Mensaje = null;
+    }
 
     private async Task EnviarAsync()
     {

@@ -123,9 +123,9 @@
 
     private void SeleccionarArchivo(InputFileChangeEventArgs e, int idDocumento)
     {
-        Archivo = e.File;
-        DocumentoSeleccionado = idDocumento;
-        Error = null;
+        Error = ArchivoDocumentoSeleccion.Validar(e.File);
+        Archivo = Error is null ? e.File : null;
+        DocumentoSeleccionado = Error is null ? idDocumento : null;
         Mensaje = null;
     }
 
@@ -143,7 +143,7 @@
             await CargarAsync();
             Mensaje = "Nueva versión cargada; queda pendiente de revisión.";
         }
-        catch (Exception ex) when (ex is HttpRequestException or IOException)
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException)
         {
             RequiereLogin = ex is HttpRequestException http && http.StatusCode == HttpStatusCode.Unauthorized;
             Error = ex.Message;

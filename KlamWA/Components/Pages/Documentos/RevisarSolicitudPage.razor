@@ -211,8 +211,8 @@ else if (Solicitud is not null)
 
     private void SeleccionarArchivo(InputFileChangeEventArgs e)
     {
-        ArchivoNuevo = e.File;
-        ErrorAccion = null;
+        ErrorAccion = ArchivoDocumentoSeleccion.Validar(e.File);
+        ArchivoNuevo = ErrorAccion is null ? e.File : null;
     }
 
     private async Task RegistrarArchivoAsync()
@@ -296,6 +296,10 @@ else if (Solicitud is not null)
             ErrorAccion = MostrarError(ex);
         }
         catch (IOException ex)
+        {
+            ErrorAccion = ex.Message;
+        }
+        catch (InvalidDataException ex)
         {
             ErrorAccion = ex.Message;
         }
