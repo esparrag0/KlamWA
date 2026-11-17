@@ -1,14 +1,14 @@
 @page "/notificaciones/detalle/{Id:int}"
-@attribute [Authorize(Roles = "ADMINISTRADOR,TECNICO_INSTRUMENTISTA")]
-@using Microsoft.AspNetCore.Authorization
 @using KlamWA.DTOs
 @using KlamWA.Servicios
 @inject INotificacionService NotificacionService
+@inject AvisosSinLeer Contador
+@inject VistaPreviaRol Vista
 
 <PageTitle>Detalle de notificación | Klam</PageTitle>
 <div class="breadcrumb-line"><a href="/notificaciones">Notificaciones</a><span>/</span>Detalle del aviso</div>
 <PageHeader Titulo="Detalle de notificación" Subtitulo="Información del evento y su destinatario.">
-    <a class="btn btn-outline-secondary" href="@($"/notificaciones/{aviso?.Perfil ?? "administrador"}")">
+    <a class="btn btn-outline-secondary" href="/notificaciones">
         <Icono Nombre="volver" Tamano="17" /> Volver a la bandeja
     </a>
 </PageHeader>
@@ -67,6 +67,13 @@ else
                     Ver cirugía <Icono Nombre="flecha" Tamano="17" />
                 </a>
             }
+            else if (aviso.IdSolicitud != null && Vista.Perfil.Clave == "administrador")
+            {
+                @* RF11: el aviso de nueva solicitud lleva a su revisión *@
+                <a class="btn btn-primary" href="@($"/solicitudes/revision/{aviso.IdSolicitud}")">
+                    Ver solicitud <Icono Nombre="flecha" Tamano="17" />
+                </a>
+            }
         </div>
     </section>
 }
@@ -108,6 +115,7 @@ else
             await NotificacionService.MarcarLeidaAsync(Id);
             aviso.Leida = true;
             mensajeOk = "Aviso marcado como leído.";
+            await Contador.ActualizarAsync();
         }
         catch (Exception ex)
         {

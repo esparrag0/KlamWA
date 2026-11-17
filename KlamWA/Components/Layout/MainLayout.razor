@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @using Microsoft.AspNetCore.Components.Authorization
+@inject KlamWA.Servicios.AvisosSinLeer Avisos
 @inject VistaPreviaRol Vista
 @inject NavigationManager Nav
 
@@ -11,13 +12,18 @@
         <header class="app-topbar">
             <a class="topbar-brand" href="/inicio">BIOKLAM</a>
             <div class="topbar-actions">
-                @if (Vista.Perfil.Clave is "administrador" or "instrumentista")
+                @if (TieneBandeja)
                 {
-                    <a class="header-bell" href="@($"/notificaciones/{Vista.Perfil.Clave}")" aria-label="Ver notificaciones, 2 sin leer de ejemplo">
-                        <Icono Nombre="campana" /><span class="notification-dot"></span>
-                    </a>
+                    <PanelNotificaciones />
                 }
-                <span class="avatar avatar-sm" aria-label="@Vista.Perfil.Persona">@Vista.Perfil.Iniciales</span>
+                <details class="profile-menu">
+                    <summary aria-label="Opciones de la cuenta"><span class="avatar avatar-sm">@Vista.Perfil.Iniciales</span><span class="profile-name">@Vista.Perfil.Persona</span><span class="profile-chevron" aria-hidden="true"></span></summary>
+                    <div class="profile-dropdown">
+                        <span class="profile-caption">Cuenta de @Vista.Perfil.Persona</span>
+                        <a href="/cuenta/password"><Icono Nombre="usuarios" Tamano="17" /> Cambiar contraseña</a>
+                        <form method="post" action="/cuenta/logout"><AntiforgeryToken /><button type="submit"><Icono Nombre="salir" Tamano="17" /> Cerrar sesión</button></form>
+                    </div>
+                </details>
             </div>
         </header>
         <main id="contenido" class="app-content" tabindex="-1">
@@ -48,8 +54,8 @@
                 return ruta.Equals($"/inicio/{Vista.Perfil.Clave}", StringComparison.OrdinalIgnoreCase);
             if (Es("/notificaciones"))
             {
-                if (Vista.Perfil.Clave is not ("administrador" or "instrumentista")) return false;
-                // El backend solo entrega los avisos propios del usuario de la sesión
+                if (!TieneBandeja) return false;
+                // El backend solo entrega los avisos propios de la sesión (los ajenos responden 403).
                 if (ruta.StartsWith("/notificaciones/detalle/", StringComparison.OrdinalIgnoreCase))
                     return int.TryParse(ruta["/notificaciones/detalle/".Length..], out _);
                 return ruta == "/notificaciones"
@@ -60,7 +66,7 @@
             if (ruta.Contains("/revisar-oc", StringComparison.OrdinalIgnoreCase) || ruta.Contains("/rechazar-oc", StringComparison.OrdinalIgnoreCase))
                 return Vista.Perfil.Clave == "administrador";
             if (ruta == "/agenda") return Vista.Perfil.Clave is "administrador" or "instrumentista";
-            if (Es("/agenda/historial")) return Vista.Perfil.Clave == "cliente";
+            if (Es("/agenda/historial")) return Vista.Perfil.Clave is "administrador" or "cliente";
             if (Es("/agenda/nueva") || Es("/agenda/registrar") || Es("/agenda/editar") || Es("/agenda/eliminar")
                 || Es("/bitacora-cirugias") || Es("/historial-documental") || Es("/usuarios")
                 || Es("/clientes") || Es("/solicitudes") || Es("/reportes") || Es("/inventario"))
@@ -74,12 +80,47 @@
         }
     }
 
+    // RF12: bandeja de avisos internos del personal (los clientes no reciben avisos).
+    private bool TieneBandeja => Vista.Perfil.Clave is "administrador" or "instrumentista" or "vendedor";
+
     protected override async Task OnInitializedAsync()
     {
         Vista.Cambio += Actualizar;
+        Avisos.Cambio += Actualizar;
         Vista.Establecer((await AuthenticationStateTask).User);
+        if (TieneBandeja)
+        {
+            await Avisos.ActualizarAsync();
+            _ = SondearAvisos();
+        }
+    }
+
+    // RF11: sondeo ligero. Cada 15 s se consulta el resumen de avisos; si llega uno nuevo,
+    // la campana y el contador se actualizan sin recargar la página.
+    private readonly CancellationTokenSource sondeo = new();
+
+    private async Task SondearAvisos()
+    {
+        using var temporizador = new PeriodicTimer(TimeSpan.FromSeconds(15));
+        try
+        {
+            while (await temporizador.WaitForNextTickAsync(sondeo.Token))
+            {
+                await InvokeAsync(Avisos.ActualizarAsync);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // se cerró la página o la sesión
+        }
     }
 
     private void Actualizar() => _ = InvokeAsync(StateHasChanged);
-    public void Dispose() => Vista.Cambio -= Actualizar;
+    public void Dispose()
+    {
+        Vista.Cambio -= Actualizar;
+        Avisos.Cambio -= Actualizar;
+        sondeo.Cancel();
+        sondeo.Dispose();
+    }
 }
