@@ -173,7 +173,10 @@ else
     private static string NombreDocumento(string tipo) => tipo switch {
         "DNI" => "DNI", "RECETA_MEDICA" => "Receta médica", _ => "Comprobante de pago" };
     private void SeleccionarArchivo(InputFileChangeEventArgs e, string tipo) {
-        archivos[tipo] = e.File; erroresArchivo.Remove(tipo); mensaje = null;
+        var error = ArchivoDocumentoSeleccion.Validar(e.File);
+        if (error is null) { archivos[tipo] = e.File; erroresArchivo.Remove(tipo); }
+        else { archivos.Remove(tipo); erroresArchivo[tipo] = error; }
+        mensaje = null;
     }
 
     private void CambiarTipo()
