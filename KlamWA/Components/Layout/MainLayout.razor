@@ -88,16 +88,18 @@
         Vista.Cambio += Actualizar;
         Avisos.Cambio += Actualizar;
         Vista.Establecer((await AuthenticationStateTask).User);
-        if (TieneBandeja)
-        {
-            await Avisos.ActualizarAsync();
-            _ = SondearAvisos();
-        }
+        if (TieneBandeja) await Avisos.ActualizarAsync();
     }
 
     // RF11: sondeo ligero. Cada 15 s se consulta el resumen de avisos; si llega uno nuevo,
     // la campana y el contador se actualizan sin recargar la página.
+    // Empieza en el primer render interactivo (no durante el pre-renderizado del servidor).
     private readonly CancellationTokenSource sondeo = new();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && TieneBandeja) _ = SondearAvisos();
+    }
 
     private async Task SondearAvisos()
     {
@@ -112,6 +114,10 @@
         catch (OperationCanceledException)
         {
             // se cerró la página o la sesión
+        }
+        catch (ObjectDisposedException)
+        {
+            // el circuito ya se cerró
         }
     }
 
