@@ -3,6 +3,7 @@
 @using KlamWA.Servicios
 @inject INotificacionService NotificacionService
 @inject AvisosSinLeer Contador
+@inject VistaPreviaRol Vista
 
 <PageTitle>Detalle de notificación | Klam</PageTitle>
 <div class="breadcrumb-line"><a href="/notificaciones">Notificaciones</a><span>/</span>Detalle del aviso</div>
@@ -64,6 +65,13 @@ else
             {
                 <a class="btn btn-primary" href="@($"/agenda/cirugia/{aviso.IdCirugia}")">
                     Ver cirugía <Icono Nombre="flecha" Tamano="17" />
+                </a>
+            }
+            else if (aviso.IdSolicitud != null && Vista.Perfil.Clave == "administrador")
+            {
+                @* RF11: el aviso de nueva solicitud lleva a su revisión *@
+                <a class="btn btn-primary" href="@($"/solicitudes/revision/{aviso.IdSolicitud}")">
+                    Ver solicitud <Icono Nombre="flecha" Tamano="17" />
                 </a>
             }
         </div>
