@@ -1,21 +1,35 @@
 ﻿@page "/inventario/consumos/registrar/{Id:int}"
-@inject NavigationManager Nav
+@using KlamWA.Servicios
+@inject IConsumoService ConsumoService
 
 <PageTitle>Registrar consumo real</PageTitle>
 
-@if (c == null)
+@if (cargando)
 {
-    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <div class="card p-4 text-center text-muted">Cargando consumo...</div>
+}
+else if (consumo == null)
+{
+    <PageHeader Titulo="Registrar consumo real" Subtitulo="@($"CIR-{Id:000}")" />
+    @if (mensajeError != null)
+    {
+        <div class="alert alert-danger" role="alert">@mensajeError</div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Cirugía no encontrada.</div>
+    }
     <a class="btn btn-outline-secondary" href="/inventario/consumos">Volver a consumos</a>
 }
-else if (cierre == null || !cierre.PuedeRegistrarConsumo && !cierre.PuedeVerComparativo)
+else if (!consumo.PuedeRegistrarConsumo && !consumo.PuedeVerComparativo)
 {
-    <PageHeader Titulo="Registrar consumo real" Subtitulo="@($"CIR-{Id:000} · {c.Cliente}")">
+    <PageHeader Titulo="Registrar consumo real" Subtitulo="@($"{consumo.Codigo} · {consumo.Cliente}")">
         <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver al detalle</a>
     </PageHeader>
     <EstadoVacio Titulo="Aún no se puede registrar el consumo"
-                 Descripcion="Primero la clínica debe adjuntar la orden de compra y administración debe validarla." />
-    @if (cierre?.PuedeRevisarOc == true)
+                 Descripcion="@consumo.MotivoNoDisponible"
+                 Enlace="/inventario/consumos" TextoEnlace="Volver a consumos" />
+    @if (consumo.PuedeRevisarOc)
     {
         <a class="btn btn-primary" href="/agenda/cirugia/@Id/revisar-oc">Revisar orden de compra</a>
     }
@@ -29,96 +43,187 @@ else
     <div class="mb-4">
         <span class="text-muted">Operaciones / Consumos</span>
         <h2 class="mt-2">Registrar consumo real</h2>
-        <p class="text-muted">CIR-@Id.ToString("000") · Cirugía culminada · OC validada · Registro por administración</p>
-        <EstadoBadge Estado="@c.Estado" />
-        <DocumentoEstadoBadge Estado="@cierre.EstadoOc" />
+        <p class="text-muted">
+            @consumo.Codigo · @consumo.Cliente · Cirugía culminada
+            @(consumo.EsClinica ? "· OC validada" : "· Comprobante de pago validado") · Registro por administración
+        </p>
+        <EstadoBadge Estado="Culminada" />
+        <DocumentoEstadoBadge Estado="@consumo.DocumentacionTexto" />
     </div>
 
-    @if (cierre.PuedeVerComparativo)
+    @if (mensajeError != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @mensajeError
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+    @if (mensajeExito != null)
+    {
+        <div class="alert alert-success" role="status">@mensajeExito</div>
+    }
+    @if (consumo.PuedeVerComparativo && mensajeExito == null)
     {
         <div class="alert alert-success">El consumo de esta cirugía ya está completo.</div>
     }
-
-    <table class="table table-borderless table-striped mb-5">
-        <thead class="table-light">
-            <tr>
-                <th>CONSUMIBLE</th>
-                <th>MEDIDA</th>
-                <th>DESPACHADO</th>
-                <th>CONSUMIDO</th>
-                <th>DIFERENCIA</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var insumo in DatosInsumos.DeCirugia(Id))
-            {
-                <tr>
-                    <td>@insumo.Nombre</td><td>@insumo.Medida</td><td>@insumo.Despachado</td>
-                    <td>@(insumo.Consumido?.ToString() ?? "Pendiente")</td>
-                    <td>@(insumo.Diferencia?.ToString() ?? "—")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    @if (erroresValidacion.Count > 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            <ul class="mb-0">
+                @foreach (var error in erroresValidacion)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
 
     <div class="card mb-4 p-3 shadow-sm">
         <div class="card-body">
-            <h5 class="card-title mb-4">Ajustar consumo</h5>
-            <p class="text-muted small">Use la orden de compra validada (@cierre.ArchivoOc) y la hoja de sala. El despacho ya viene del kit enviado.</p>
-            <div class="row mb-3">
-                <div class="col-md-8">
-                    <label class="form-label">Consumible</label>
-                    <select class="form-select">
-                        @foreach (var insumo in DatosInsumos.DeCirugia(Id))
+            <h5 class="card-title mb-3">Cantidades consumidas</h5>
+            <p class="text-muted small">
+                Use @(consumo.EsClinica ? $"la orden de compra validada ({consumo.ArchivoOrdenCompra})" : "el comprobante de pago validado") y la hoja de sala.
+                El despacho ya viene del kit enviado: la cantidad consumida no puede ser mayor que la despachada.
+            </p>
+            <div class="table-responsive">
+                <table class="table table-borderless table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CONSUMIBLE</th>
+                            <th>MEDIDA</th>
+                            <th class="text-end">DESPACHADO</th>
+                            <th style="width: 180px">CONSUMIDO</th>
+                            <th class="text-end">DIFERENCIA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var linea in consumo.Lineas)
                         {
-                            <option>@insumo.Nombre · @insumo.Medida</option>
+                            <tr>
+                                <td>@linea.Nombre</td>
+                                <td>@linea.Medida</td>
+                                <td class="text-end">@linea.CantidadDespachada</td>
+                                <td>
+                                    <input type="number" min="0" max="@linea.CantidadDespachada"
+                                           class="form-control form-control-sm @(linea.EsValida ? "" : "is-invalid")"
+                                           aria-label="Cantidad consumida de @linea.Nombre @linea.Medida"
+                                           @bind="linea.CantidadConsumida" @bind:event="oninput"
+                                           disabled="@(soloLectura || guardando)" />
+                                </td>
+                                <td class="text-end">@linea.Diferencia</td>
+                            </tr>
                         }
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Cantidad consumida *</label>
-                    <input type="number" class="form-control" min="0" placeholder="Cantidad" />
-                </div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Observación</label>
-                <input type="text" class="form-control" placeholder="Observación de la hoja de sala" />
+                        @if (!consumo.Lineas.Any())
+                        {
+                            <tr><td colspan="5" class="text-center text-muted py-3">La bandeja de esta cirugía no tiene consumibles despachados.</td></tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td colspan="2">Total</td>
+                            <td class="text-end">@consumo.TotalDespachado</td>
+                            <td>@consumo.TotalConsumido</td>
+                            <td class="text-end">@consumo.Diferencia</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
     </div>
 
-    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
     <div class="d-flex gap-2">
-        @if (cierre.PuedeRegistrarConsumo)
+        @if (consumo.PuedeRegistrarConsumo)
         {
-            <button type="button" class="btn btn-primary" @onclick="Guardar">Guardar cantidades reales</button>
+            <button type="button" class="btn btn-outline-primary" disabled="@guardando" @onclick="() => Guardar(false)">Guardar cantidades</button>
+            <button type="button" class="btn btn-primary" disabled="@(guardando || !consumo.Lineas.Any())" @onclick="PedirConfirmacion">Confirmar consumo</button>
         }
-        @if (cierre.PuedeVerComparativo)
+        @if (consumo.PuedeVerComparativo)
         {
             <a class="btn btn-primary" href="/reportes/comparativo/@Id">Ver control de consumo</a>
         }
-        else
-        {
-            <button type="button" class="btn btn-outline-secondary" disabled>Ver reporte comparativo</button>
-        }
-        <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Volver al detalle</a>
+        <a class="btn btn-outline-secondary" href="/inventario/consumos">Volver a consumos</a>
     </div>
+
+    <ModalConfirmacion Visible="@mostrarConfirmacion"
+                       Titulo="Confirmar consumo"
+                       Mensaje="Al confirmar, el consumo de esta cirugía queda completo y ya no se podrá modificar. ¿Desea continuar?"
+                       TextoConfirmar="Confirmar consumo"
+                       ClaseConfirmar="btn-primary"
+                       Procesando="@guardando"
+                       OnConfirmar="() => Guardar(true)"
+                       OnCancelar="() => mostrarConfirmacion = false" />
 }
 
 @code {
     [Parameter] public int Id { get; set; }
-    private CirugiaMock? c;
-    private CierreCirugiaMock? cierre;
-    private string? mensaje;
 
-    protected override void OnParametersSet()
+    private ConsumoDetalleViewModel? consumo;
+    private bool cargando = true;
+    private bool guardando;
+    private bool mostrarConfirmacion;
+    private string? mensajeError;
+    private string? mensajeExito;
+    private List<string> erroresValidacion = [];
+
+    private bool soloLectura => consumo is null || !consumo.PuedeRegistrarConsumo;
+
+    protected override async Task OnParametersSetAsync()
     {
-        c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
-        cierre = c == null ? null : DatosCierre.De(Id);
+        cargando = true;
+        mensajeError = null;
+        mensajeExito = null;
+        erroresValidacion = [];
+        try
+        {
+            consumo = await ConsumoService.ObtenerAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            consumo = null;
+            mensajeError = "No se pudo obtener el consumo: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
     }
 
-    private void Guardar()
+    private void PedirConfirmacion()
     {
-        mensaje = "Cantidades de ejemplo revisadas. El consumo no se guardó.";
+        mensajeExito = null;
+        erroresValidacion = consumo!.Errores();
+        mostrarConfirmacion = erroresValidacion.Count == 0;
+    }
+
+    private async Task Guardar(bool confirmar)
+    {
+        if (consumo is null || guardando) return;
+
+        mensajeError = null;
+        mensajeExito = null;
+        erroresValidacion = consumo.Errores();
+        if (erroresValidacion.Count > 0)
+        {
+            mostrarConfirmacion = false;
+            return;
+        }
+
+        guardando = true;
+        try
+        {
+            consumo = await ConsumoService.GuardarAsync(consumo, confirmar);
+            mensajeExito = confirmar
+                ? "Consumo confirmado. Ya no se puede modificar."
+                : "Cantidades guardadas. Puede seguir editándolas hasta confirmar el consumo.";
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo guardar el consumo: " + ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+            mostrarConfirmacion = false;
+        }
     }
 }
