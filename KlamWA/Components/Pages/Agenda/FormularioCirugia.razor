@@ -97,7 +97,7 @@ else if (opciones != null)
                             }
                         </InputSelect>
                     </CampoForm>
-                    <CampoForm Etiqueta="Plantilla de bandeja" Columnas="col-12">
+                    <CampoForm Obligatorio="@(BandejasFiltradas.Any())" Etiqueta="Plantilla de bandeja" Columnas="col-12">
                         <InputSelect class="form-select" @bind-Value="ViewModel.IdBandeja" @bind-Value:after="CargarPlantilla">
                             <option value="0">-- Seleccione una bandeja compatible --</option>
                             @foreach (BandejaDTO bandeja in BandejasFiltradas)
@@ -105,7 +105,7 @@ else if (opciones != null)
                                 <option value="@bandeja.IdBandeja">@bandeja.Tipo · @bandeja.Procedimiento</option>
                             }
                         </InputSelect>
-                        <div class="form-text">Se muestran las plantillas configuradas para este procedimiento.</div>
+                        <div class="form-text">Se muestran las plantillas configuradas para este procedimiento. Es obligatoria cuando el procedimiento tiene plantillas compatibles.</div>
                     </CampoForm>
                     @if (plantilla != null)
                     {
