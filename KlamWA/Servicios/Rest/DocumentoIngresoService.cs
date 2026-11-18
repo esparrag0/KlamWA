@@ -3,17 +3,26 @@ using Microsoft.AspNetCore.Components.Forms;
 using System.Net.Http.Headers;
 using KlamWA.Seguridad;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.JSInterop;
 
 namespace KlamWA.Servicios.Rest;
 
 public sealed class DocumentoIngresoService(
     HttpClient client,
     AuthenticationStateProvider autenticacion,
-    SesionTokenStore tokens) : IDocumentoIngresoService
+    SesionTokenStore tokens,
+    ILogger<DocumentoIngresoService> logger) : IDocumentoIngresoService
 {
     public async Task<List<DocumentoIngresoDTO>> ListarPorSolicitudAsync(int idSolicitud) =>
         await HttpUtils.DoGetAutenticado<List<DocumentoIngresoDTO>>(
             client, $"documentos/solicitud/{idSolicitud}", await tokens.ObtenerAsync(autenticacion)) ?? [];
+
+    public async Task<List<DocumentoIngresoDTO>> ListarPorCirugiaAsync(int idCirugia) =>
+        await HttpUtils.DoGetAutenticado<List<DocumentoIngresoDTO>>(
+            client, $"documentos/cirugia/{idCirugia}", await tokens.ObtenerAsync(autenticacion)) ?? [];
+
+    public Task AdjuntarOrdenCompraAsync(int idCirugia, IBrowserFile archivo) =>
+        EnviarArchivoAsync($"documentos/cirugia/{idCirugia}/orden-compra", archivo);
 
     public async Task<List<DocumentoIngresoDTO>> ListarPropiosAsync(int? idSolicitud = null) =>
         await HttpUtils.DoGetAutenticado<List<DocumentoIngresoDTO>>(
@@ -56,21 +65,31 @@ public sealed class DocumentoIngresoService(
 
     private async Task EnviarArchivoAsync(string ruta, IBrowserFile archivo, string? tipoDocumento = null)
     {
-        const long maxBytes = 5L * 1024 * 1024;
-        if (archivo.Size == 0 || archivo.Size > maxBytes)
-            throw new InvalidDataException("El archivo debe tener contenido y no superar 5 MB.");
-        using var formulario = new MultipartFormDataContent();
-        using var contenido = new StreamContent(archivo.OpenReadStream(maxBytes));
-        if (!string.IsNullOrWhiteSpace(archivo.ContentType))
-            contenido.Headers.ContentType = new MediaTypeHeaderValue(archivo.ContentType);
-        formulario.Add(contenido, "archivo", archivo.Name);
-        if (tipoDocumento is not null)
-            formulario.Add(new StringContent(tipoDocumento), "tipoDocumento");
-        using var request = new HttpRequestMessage(HttpMethod.Post, ruta) { Content = formulario };
-        request.Headers.Authorization = new AuthenticationHeaderValue(
-            "Bearer", await tokens.ObtenerAsync(autenticacion));
-        using var response = await client.SendAsync(request);
-        await HttpUtils.VerificarRespuestaAsync(response);
+        var error = ArchivoDocumentoSeleccion.Validar(archivo);
+        if (error is not null) throw new InvalidDataException(error);
+        try
+        {
+            var token = await tokens.ObtenerAsync(autenticacion);
+            using var formulario = new MultipartFormDataContent();
+            using var contenido = new StreamContent(archivo.OpenReadStream(ArchivoDocumentoSeleccion.MaximoBytes));
+            if (MediaTypeHeaderValue.TryParse(archivo.ContentType, out var tipoContenido))
+                contenido.Headers.ContentType = tipoContenido;
+            formulario.Add(contenido, "archivo", archivo.Name);
+            if (tipoDocumento is not null)
+                formulario.Add(new StringContent(tipoDocumento), "tipoDocumento");
+            using var request = new HttpRequestMessage(HttpMethod.Post, ruta) { Content = formulario };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await client.SendAsync(request);
+            await HttpUtils.VerificarRespuestaAsync(response);
+        }
+        catch (Exception ex) when (ex is IOException or JSException or InvalidOperationException
+                                   or TimeoutException or OperationCanceledException)
+        {
+            logger.LogWarning(ex, "No se pudo leer o enviar el archivo documental seleccionado");
+            throw new IOException(ex is OperationCanceledException or TimeoutException
+                ? "La carga tardó demasiado. Comprueba si se registró antes de reintentar."
+                : "No se pudo leer el archivo seleccionado. Selecciónalo de nuevo e intenta otra vez.", ex);
+        }
     }
 
     public async Task<List<HistorialDocumentoDTO>> ConsultarHistorialAsync(int idSolicitud) =>
