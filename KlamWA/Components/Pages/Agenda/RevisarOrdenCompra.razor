@@ -1,20 +1,43 @@
 @page "/agenda/cirugia/{Id:int}/revisar-oc"
-@inject NavigationManager Nav
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@inject ICirugiaService Cirugias
+@inject IDocumentoIngresoService Documentos
+@inject IJSRuntime JS
 
 <PageTitle>Revisar orden de compra</PageTitle>
 
-@if (c == null || cierre == null)
+@if (cargando)
 {
-    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <div class="card p-4 text-center text-muted">Cargando cirugía...</div>
+}
+else if (c == null)
+{
+    <div class="alert alert-warning">@(mensajeError ?? "Cirugía no encontrada.")</div>
     <a class="btn btn-outline-secondary" href="/agenda/lista">Volver a la lista</a>
 }
-else if (!cierre.PuedeRevisarOc)
+else if (Oc is null || Oc.EstadoValidacion != "PENDIENTE")
 {
     <PageHeader Titulo="Revisión de orden de compra" Subtitulo="@($"CIR-{Id:000} · {c.Cliente}")">
-        <DocumentoEstadoBadge Estado="@cierre.EstadoOc" />
-        <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver</a>
+        <Etiqueta><DocumentoEstadoBadge Estado="@(Oc?.EstadoValidacion ?? "Por adjuntar")" /></Etiqueta>
+        <ChildContent>
+            <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver</a>
+        </ChildContent>
     </PageHeader>
-    <div class="alert alert-info">No hay una orden de compra pendiente de revisión.</div>
+    <div class="alert alert-info">
+        @if (Oc is null)
+        {
+            <text>La clínica todavía no ha adjuntado la orden de compra de esta cirugía.</text>
+        }
+        else if (Oc.EstadoValidacion == "VALIDADO")
+        {
+            <text>La orden de compra ya está validada. El consumo real de la cirugía está habilitado.</text>
+        }
+        else
+        {
+            <text>La orden de compra fue rechazada; la clínica debe adjuntar una versión nueva.</text>
+        }
+    </div>
 }
 else
 {
@@ -26,7 +49,8 @@ else
     </PageHeader>
 
     <p class="text-muted">Revisa el archivo antes de cambiar su estado. El consumo real se habilita solo si la OC queda validada.</p>
-    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
+    @if (mensajeError is not null) { <div class="alert alert-danger" role="alert">@mensajeError</div> }
+    @if (mensajeOk is not null) { <div class="alert alert-success" role="status">@mensajeOk</div> }
 
     <div class="row g-3 mb-3">
         <div class="col-lg-7">
@@ -35,13 +59,17 @@ else
                 <div class="card-body">
                     <table class="table table-sm mb-0">
                         <thead>
-                            <tr><th>Documento</th><th>Estado</th><th>Archivo</th></tr>
+                            <tr><th>Documento</th><th>Versión</th><th>Estado</th><th>Archivo</th></tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>@DatosClientes.OrdenCompra</td>
-                                <td><DocumentoEstadoBadge Estado="@cierre.EstadoOc" /></td>
-                                <td>@(string.IsNullOrWhiteSpace(cierre.ArchivoOc) ? "Sin archivo adjunto" : cierre.ArchivoOc)</td>
+                                <td>Orden de compra</td>
+                                <td>@Oc.Version</td>
+                                <td><DocumentoEstadoBadge Estado="@Oc.EstadoValidacion" /></td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            disabled="@ocupado" @onclick="Descargar">Descargar</button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -56,7 +84,9 @@ else
                     <p class="fw-bold mb-1">@c.Procedimiento</p>
                     <p class="mb-3">@c.Inicio.ToString("dd/MM/yyyy HH:mm") · @c.Doctor</p>
                     <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-success" @onclick="Validar">Validar orden de compra</button>
+                        <button type="button" class="btn btn-success" disabled="@ocupado" @onclick="Validar">
+                            @(ocupado ? "Procesando…" : "Validar orden de compra")
+                        </button>
                         <a class="btn btn-outline-danger" href="/agenda/cirugia/@Id/rechazar-oc">Rechazar / pedir corrección</a>
                     </div>
                 </div>
@@ -67,18 +97,71 @@ else
 
 @code {
     [Parameter] public int Id { get; set; }
-    private CirugiaMock? c;
-    private CierreCirugiaMock? cierre;
-    private string? mensaje;
 
-    protected override void OnParametersSet()
+    private CirugiaDetalleViewModel? c;
+    private List<DocumentoIngresoDTO> documentos = [];
+    private string? mensajeError;
+    private string? mensajeOk;
+    private bool cargando = true;
+    private bool ocupado;
+
+    // La orden vigente es la de mayor versión: una rechazada se vuelve a subir como versión nueva.
+    private DocumentoIngresoDTO? Oc => documentos
+        .Where(d => d.TipoDocumento == "ORDEN_COMPRA")
+        .OrderByDescending(d => d.Version)
+        .FirstOrDefault();
+
+    protected override async Task OnParametersSetAsync() => await Cargar();
+
+    private async Task Cargar()
     {
-        c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
-        cierre = c == null ? null : DatosCierre.De(Id);
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            c = await Cirugias.FindById(Id);
+            if (c is not null) documentos = await Documentos.ListarPorCirugiaAsync(Id);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ServicioException)
+        {
+            mensajeError = ex.Message;
+        }
+        finally { cargando = false; }
     }
 
-    private void Validar()
+    private async Task Validar()
     {
-        mensaje = "Validación de ejemplo. La orden de compra no cambió de estado.";
+        if (Oc is null || ocupado) return;
+        ocupado = true;
+        mensajeError = null;
+        mensajeOk = null;
+        try
+        {
+            await Documentos.ValidarAsync(Oc.IdDocumento);
+            mensajeOk = "Orden de compra validada. Ya se puede registrar el consumo real de esta cirugía.";
+            documentos = await Documentos.ListarPorCirugiaAsync(Id);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ServicioException)
+        {
+            mensajeError = ex.Message;
+        }
+        finally { ocupado = false; }
+    }
+
+    private async Task Descargar()
+    {
+        if (Oc is null || ocupado) return;
+        ocupado = true;
+        mensajeError = null;
+        try
+        {
+            var archivo = await Documentos.DescargarAsync(Oc.IdDocumento);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JSException or ServicioException)
+        {
+            mensajeError = ex.Message;
+        }
+        finally { ocupado = false; }
     }
 }

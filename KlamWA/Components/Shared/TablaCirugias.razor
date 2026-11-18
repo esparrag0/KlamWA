@@ -51,19 +51,23 @@
     [Parameter] public IEnumerable<CirugiaResumenViewModel> Cirugias { get; set; } = new List<CirugiaResumenViewModel>();
     [Parameter] public bool MostrarMotivo { get; set; }
 
+    // Se decide con los datos reales de la cirugía, no con el estado simulado del cierre.
+    // Cada pantalla de destino resuelve por su cuenta el sub-estado de la orden de compra.
     private (string Texto, string Href)? BotonCierre(CirugiaResumenViewModel cirugia)
     {
-        if (cirugia.Estado != "Culminada" || !DatosCierre.EsClinica(cirugia.Cliente)) return null;
-        var cierre = DatosCierre.De(cirugia.Id);
+        bool culminada = cirugia.EstadoCodigo == "FINALIZADA" || cirugia.Estado == "Culminada";
+        if (!culminada) return null;
+        bool clinica = cirugia.TipoCliente == "CLINICA_HOSPITAL";
         var perfil = Vista.Perfil.Clave;
-        if (perfil == "cliente" && cierre.PuedeAdjuntarOc)
-            return ("Adjuntar orden de compra", $"/agenda/cirugia/{cirugia.Id}/orden-compra");
-        if (perfil == "administrador" && cierre.PuedeRevisarOc)
-            return ("Revisar OC", $"/agenda/cirugia/{cirugia.Id}/revisar-oc");
-        if (perfil == "administrador" && cierre.PuedeRegistrarConsumo)
-            return ("Registrar consumo", $"/inventario/consumos/registrar/{cirugia.Id}");
-        if (perfil == "administrador" && cierre.PuedeVerComparativo)
+
+        // Solo las clínicas y hospitales adjuntan orden de compra; los particulares no devuelven consumibles.
+        if (perfil == "cliente")
+            return clinica ? ("Adjuntar orden de compra", $"/agenda/cirugia/{cirugia.Id}/orden-compra") : null;
+        if (perfil != "administrador") return null;
+        if (cirugia.ConsumoCompleto)
             return ("Comparativo", $"/reportes/comparativo/{cirugia.Id}");
-        return null;
+        if (clinica)
+            return ("Revisar OC", $"/agenda/cirugia/{cirugia.Id}/revisar-oc");
+        return ("Registrar consumo", $"/inventario/consumos/registrar/{cirugia.Id}");
     }
 }

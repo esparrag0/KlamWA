@@ -1,18 +1,32 @@
 @page "/agenda/cirugia/{Id:int}/rechazar-oc"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@inject ICirugiaService Cirugias
+@inject IDocumentoIngresoService Documentos
 @inject NavigationManager Nav
 
 <PageTitle>Rechazar orden de compra</PageTitle>
 
-@if (c == null)
+@if (cargando)
 {
-    <div class="alert alert-warning">Cirugía no encontrada.</div>
+    <div class="card p-4 text-center text-muted">Cargando cirugía...</div>
+}
+else if (c == null)
+{
+    <div class="alert alert-warning">@(mensajeError ?? "Cirugía no encontrada.")</div>
     <a class="btn btn-outline-secondary" href="/agenda/lista">Volver a la lista</a>
+}
+else if (Oc is null || Oc.EstadoValidacion != "PENDIENTE")
+{
+    <PageHeader Titulo="Rechazar o solicitar corrección" Subtitulo="@($"CIR-{Id:000} · {c.Cliente}")" />
+    <div class="alert alert-info">No hay una orden de compra pendiente de revisión en esta cirugía.</div>
+    <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id/revisar-oc">Volver a la revisión</a>
 }
 else
 {
     <PageHeader Titulo="Rechazar o solicitar corrección" Subtitulo="@($"CIR-{Id:000} · Comunica el motivo a {c.Cliente}")" />
 
-    @if (mensaje is not null) { <div class="alert alert-info" role="status">@mensaje</div> }
+    @if (mensajeError is not null) { <div class="alert alert-danger" role="alert">@mensajeError</div> }
     <EditForm Model="ViewModel" OnValidSubmit="Confirmar">
         <DataAnnotationsValidator />
         <ValidationSummary />
@@ -21,7 +35,7 @@ else
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label">Documento observado</label>
-                    <input class="form-control" value="@DatosClientes.OrdenCompra" disabled />
+                    <input class="form-control" value="@($"Orden de compra · versión {Oc.Version}")" disabled />
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="motivo">Motivo / Mensaje para la clínica</label>
@@ -34,7 +48,9 @@ else
                 </div>
             </div>
             <div class="card-footer d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Confirmar rechazo y habilitar resubida</button>
+                <button type="submit" class="btn btn-primary" disabled="@enviando">
+                    @(enviando ? "Enviando…" : "Confirmar rechazo y habilitar resubida")
+                </button>
                 <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id/revisar-oc">Cancelar</a>
             </div>
         </div>
@@ -43,22 +59,55 @@ else
 
 @code {
     [Parameter] public int Id { get; set; }
-    private CirugiaMock? c;
-    private string? mensaje;
+
+    private CirugiaDetalleViewModel? c;
+    private List<DocumentoIngresoDTO> documentos = [];
+    private string? mensajeError;
+    private bool cargando = true;
+    private bool enviando;
+
     private RechazoViewModel ViewModel { get; set; } = new()
     {
-        DocumentoObservado = DatosClientes.OrdenCompra,
+        DocumentoObservado = "Orden de compra",
         Motivo = "La orden de compra no se puede leer. Suba una copia más nítida.",
         HabilitarResubida = true
     };
 
-    protected override void OnParametersSet()
+    private DocumentoIngresoDTO? Oc => documentos
+        .Where(d => d.TipoDocumento == "ORDEN_COMPRA")
+        .OrderByDescending(d => d.Version)
+        .FirstOrDefault();
+
+    protected override async Task OnParametersSetAsync()
     {
-        c = DatosAgenda.Cirugias.FirstOrDefault(x => x.Id == Id);
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            c = await Cirugias.FindById(Id);
+            if (c is not null) documentos = await Documentos.ListarPorCirugiaAsync(Id);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ServicioException)
+        {
+            mensajeError = ex.Message;
+        }
+        finally { cargando = false; }
     }
 
-    private void Confirmar()
+    private async Task Confirmar()
     {
-        mensaje = "Rechazo de ejemplo. La orden de compra no cambió de estado.";
+        if (Oc is null || enviando) return;
+        enviando = true;
+        mensajeError = null;
+        try
+        {
+            await Documentos.RechazarAsync(Oc.IdDocumento, ViewModel.Motivo, ViewModel.HabilitarResubida);
+            Nav.NavigateTo($"/agenda/cirugia/{Id}/revisar-oc");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ServicioException)
+        {
+            mensajeError = ex.Message;
+        }
+        finally { enviando = false; }
     }
 }

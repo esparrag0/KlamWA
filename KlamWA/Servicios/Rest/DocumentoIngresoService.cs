@@ -17,6 +17,13 @@ public sealed class DocumentoIngresoService(
         await HttpUtils.DoGetAutenticado<List<DocumentoIngresoDTO>>(
             client, $"documentos/solicitud/{idSolicitud}", await tokens.ObtenerAsync(autenticacion)) ?? [];
 
+    public async Task<List<DocumentoIngresoDTO>> ListarPorCirugiaAsync(int idCirugia) =>
+        await HttpUtils.DoGetAutenticado<List<DocumentoIngresoDTO>>(
+            client, $"documentos/cirugia/{idCirugia}", await tokens.ObtenerAsync(autenticacion)) ?? [];
+
+    public Task AdjuntarOrdenCompraAsync(int idCirugia, IBrowserFile archivo) =>
+        EnviarArchivoAsync($"documentos/cirugia/{idCirugia}/orden-compra", archivo);
+
     public async Task<List<DocumentoIngresoDTO>> ListarPropiosAsync(int? idSolicitud = null) =>
         await HttpUtils.DoGetAutenticado<List<DocumentoIngresoDTO>>(
             client, idSolicitud is > 0 ? $"documentos/solicitud/{idSolicitud}/propios" : "documentos/propios",
