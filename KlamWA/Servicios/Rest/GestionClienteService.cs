@@ -34,10 +34,9 @@ public sealed class GestionClienteService(
             client, $"gestion-clientes/{Uri.EscapeDataString(tipoCliente)}/{id}",
             await tokens.ObtenerAsync(autenticacion), cliente);
 
-    public async Task HabilitarCuentaAsync(string tipoCliente, int id, string username, string password)
-    {
-        await HttpUtilsAutenticado.DoPost<object, System.Text.Json.JsonElement>(
+    public async Task<CredencialClienteDTO> HabilitarCuentaAsync(string tipoCliente, int id, string username) =>
+        await HttpUtilsAutenticado.DoPost<object, CredencialClienteDTO>(
             client, $"clientes/{Uri.EscapeDataString(tipoCliente)}/{id}/cuenta",
-            await tokens.ObtenerAsync(autenticacion), new { userName = username, password });
-    }
+            await tokens.ObtenerAsync(autenticacion), new { userName = username })
+            ?? throw new HttpRequestException("La respuesta de la habilitación de cuenta está vacía.");
 }

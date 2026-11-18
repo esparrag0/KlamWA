@@ -6,7 +6,4 @@ public sealed class ClienteBusquedaDTO
     public string Nombre { get; set; } = string.Empty;
     public string? Dni { get; set; }
     public string? Ruc { get; set; }
-
-    public string? Usuario { get; set; }
-    public string? PasswordTemporal { get; set; }
 }

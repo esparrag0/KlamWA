@@ -5,12 +5,14 @@
 @inject NavigationManager Nav
 @using KlamWA.Servicios
 @using KlamWA.DTOs
+@using Microsoft.JSInterop
 @inject IGestionClienteService Api
+@inject IJSRuntime JS
 
 <PageTitle>Formulario de cliente</PageTitle>
 
 <PageHeader Titulo="@(Id == null ? "Registrar cliente" : "Editar cliente #" + Id)"
-            Subtitulo="@(Id == null ? "Registra los datos comerciales del cliente" : "Modifica los datos comerciales o habilita una cuenta por separado")" />
+            Subtitulo="@(Id == null ? "Registra los datos comerciales del cliente" : "Modifica los datos comerciales o habilita su cuenta de acceso")" />
 
 @if (MensajeOk != null)
 {
@@ -18,7 +20,7 @@
         @MensajeOk
         @if (ClienteCreadoId != null)
         {
-            <a href="/clientes/editar/@ClienteCreadoTipo/@ClienteCreadoId#acceso">Agregar otra cuenta de acceso</a>
+            <a href="/clientes/editar/@ClienteCreadoTipo/@ClienteCreadoId#acceso">Habilitar su cuenta de acceso</a>
         }
     </div>
 }
@@ -106,24 +108,13 @@
                 }
                 @if (Id == null)
                 {
-                    <div class="col-12"><hr class="my-1" /><strong>Acceso a la plataforma</strong>
-                        <div class="form-text">Todo cliente se registra con su usuario y contraseña; sin ellos no se puede guardar.</div>
+                    <div class="col-12"><hr class="my-1" />
+                        <div class="form-text">
+                            El alta solo registra al cliente. Su cuenta de acceso se habilita
+                            después, desde la ficha del cliente, y es ahí donde el sistema le
+                            envía sus credenciales por correo.
+                        </div>
                     </div>
-                    <CampoForm Etiqueta="Usuario *">
-                        <InputText class="form-control" maxlength="@ReglasCredenciales.MaxUsuario" autocomplete="off" @bind-Value="ViewModel.Username" />
-                        <div class="form-text">@ReglasCredenciales.TextoUsuario</div>
-                        <ValidationMessage For="() => ViewModel.Username" />
-                    </CampoForm>
-                    <div class="col-md-6"></div>
-                    <CampoForm Etiqueta="Contraseña *">
-                        <InputText type="password" class="form-control" maxlength="@ReglasCredenciales.MaxPassword" autocomplete="new-password" @bind-Value="ViewModel.Password" />
-                        <div class="form-text">@ReglasCredenciales.TextoPassword</div>
-                        <ValidationMessage For="() => ViewModel.Password" />
-                    </CampoForm>
-                    <CampoForm Etiqueta="Confirmar contraseña *">
-                        <InputText type="password" class="form-control" autocomplete="new-password" @bind-Value="ViewModel.ConfirmarPassword" />
-                        <ValidationMessage For="() => ViewModel.ConfirmarPassword" />
-                    </CampoForm>
                 }
             </div>
         </div>
@@ -139,7 +130,35 @@
     <div id="acceso" class="card mt-3" style="max-width:900px">
         <div class="card-header">Habilitar cuenta de acceso</div>
         <div class="card-body">
-            <p class="text-muted">Todo cliente se registra con su cuenta de acceso. Aquí puedes agregar otra cuenta con otro usuario y contraseña.</p>
+            <p class="text-muted">
+                Al habilitar la cuenta, el sistema genera una contraseña temporal y se la
+                envía al cliente a <strong>@(string.IsNullOrWhiteSpace(ViewModel.Email) ? "su correo de contacto" : ViewModel.Email)</strong>.
+                Nadie más la teclea ni la conoce.
+            </p>
+            @if (CredencialNueva != null)
+            {
+                <div class="alert alert-warning" role="status">
+                    <div class="fw-bold mb-1">Credenciales generadas</div>
+                    <p class="small mb-2">
+                        Ya salieron por correo. Si el cliente no lo recibe, entrégueselas por otro
+                        medio: la contraseña no se vuelve a mostrar.
+                    </p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-sm-4">
+                            <label class="form-label small mb-1" for="cred-usuario">Usuario</label>
+                            <input id="cred-usuario" class="form-control form-control-sm" readonly value="@CredencialNueva.UserName" />
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label small mb-1" for="cred-password">Contraseña temporal</label>
+                            <input id="cred-password" class="form-control form-control-sm font-monospace" readonly value="@CredencialNueva.PasswordTemporal" />
+                        </div>
+                        <div class="col-sm-4 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary" @onclick="CopiarCredencial">Copiar</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => CredencialNueva = null">Ya las anoté</button>
+                        </div>
+                    </div>
+                </div>
+            }
             @if (MensajeCuentaOk != null)
             {
                 <div class="alert alert-success" role="status">@MensajeCuentaOk</div>
@@ -154,18 +173,9 @@
                     <input id="cuentaUsuario" class="form-control" maxlength="@ReglasCredenciales.MaxUsuario" autocomplete="off" @bind="CuentaUsuario" />
                     <div class="form-text">@ReglasCredenciales.TextoUsuario</div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="cuentaPassword">Contraseña</label>
-                    <input id="cuentaPassword" type="password" class="form-control" maxlength="@ReglasCredenciales.MaxPassword" autocomplete="new-password" @bind="CuentaPassword" />
-                    <div class="form-text">@ReglasCredenciales.TextoPassword</div>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label" for="cuentaConfirmar">Confirmar contraseña</label>
-                    <input id="cuentaConfirmar" type="password" class="form-control" autocomplete="new-password" @bind="CuentaConfirmar" />
-                </div>
                 <div class="col-12">
                     <button type="button" class="btn btn-outline-primary" disabled="@habilitando" @onclick="HabilitarCuenta">
-                        @(habilitando ? "Habilitando…" : "Habilitar cuenta")
+                        @(habilitando ? "Habilitando…" : "Habilitar cuenta y enviar credenciales")
                     </button>
                 </div>
             </div>
@@ -185,8 +195,7 @@
     private int? ClienteCreadoId { get; set; }
     private string? ClienteCreadoTipo { get; set; }
     private string CuentaUsuario { get; set; } = "";
-    private string CuentaPassword { get; set; } = "";
-    private string CuentaConfirmar { get; set; } = "";
+    private CredencialClienteDTO? CredencialNueva { get; set; }
     private bool enviando;
     private bool habilitando;
 
@@ -200,7 +209,15 @@
             ViewModel = new ClienteViewModel();
             return;
         }
-        try { ViewModel = new ClienteViewModel(await Api.ObtenerAsync(Tipo ?? "", Id.Value)); }
+        MensajeCuentaOk = null;
+        MensajeCuentaError = null;
+        CredencialNueva = null;
+        try
+        {
+            ViewModel = new ClienteViewModel(await Api.ObtenerAsync(Tipo ?? "", Id.Value));
+            // Por defecto el usuario es el documento del cliente; el administrador puede cambiarlo.
+            CuentaUsuario = ViewModel.Tipo == DatosClientes.Particular ? ViewModel.Dni : ViewModel.Ruc;
+        }
         catch (HttpRequestException ex) { MensajeError = ex.Message; }
     }
 
@@ -223,9 +240,8 @@
         enviando = true;
         try
         {
-            var usuario = ViewModel.Username.Trim();
             var creado = await Api.RegistrarAsync(ViewModel.ToRegistro());
-            MensajeOk = $"Cliente «{creado.Nombre}» registrado con su cuenta de acceso. Usuario: {usuario}. ";
+            MensajeOk = $"Cliente «{creado.Nombre}» registrado. Todavía no tiene cuenta de acceso: ";
             ClienteCreadoId = creado.IdCliente;
             ClienteCreadoTipo = creado.TipoCliente;
             ViewModel = new ClienteViewModel { Tipo = ViewModel.Tipo };
@@ -238,23 +254,38 @@
     {
         MensajeCuentaOk = null;
         MensajeCuentaError = null;
+        CredencialNueva = null;
         if (Id == null || string.IsNullOrWhiteSpace(Tipo)) return;
         if (!ReglasCredenciales.UsuarioValido(CuentaUsuario))
+        {
             MensajeCuentaError = "Usuario inválido. " + ReglasCredenciales.TextoUsuario;
-        else if (!ReglasCredenciales.PasswordValida(CuentaPassword))
-            MensajeCuentaError = "Contraseña inválida. " + ReglasCredenciales.TextoPassword;
-        else if (CuentaPassword != CuentaConfirmar)
-            MensajeCuentaError = "Las contraseñas no coinciden.";
-        if (MensajeCuentaError != null) return;
+            return;
+        }
 
         habilitando = true;
         try
         {
-            await Api.HabilitarCuentaAsync(Tipo, Id.Value, CuentaUsuario.Trim(), CuentaPassword);
-            MensajeCuentaOk = $"Cuenta «{CuentaUsuario.Trim()}» habilitada.";
-            CuentaUsuario = CuentaPassword = CuentaConfirmar = "";
+            // La contraseña la genera el backend y la manda por correo; vuelve una sola vez.
+            CredencialNueva = await Api.HabilitarCuentaAsync(Tipo, Id.Value, CuentaUsuario.Trim());
+            MensajeCuentaOk = $"Cuenta «{CredencialNueva.UserName}» habilitada. Se enviaron las credenciales al correo del cliente.";
+            CuentaUsuario = "";
         }
         catch (HttpRequestException ex) { MensajeCuentaError = ex.Message; }
         finally { habilitando = false; }
+    }
+
+    private async Task CopiarCredencial()
+    {
+        if (CredencialNueva is null) return;
+        string texto = $"Usuario: {CredencialNueva.UserName}\nContraseña temporal: {CredencialNueva.PasswordTemporal}";
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", texto);
+            MensajeCuentaOk = "Credenciales copiadas al portapapeles.";
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or TaskCanceledException)
+        {
+            MensajeCuentaError = "No se pudo copiar automáticamente: seleccione el texto y cópielo a mano.";
+        }
     }
 }

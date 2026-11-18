@@ -9,5 +9,9 @@ public interface IGestionClienteService
     Task<ClienteGestionDTO> RegistrarAsync(ClienteFormDTO cliente);
     Task<ClienteFormDTO> ObtenerAsync(string tipoCliente, int id);
     Task ActualizarAsync(string tipoCliente, int id, ClienteFormDTO cliente);
-    Task HabilitarCuentaAsync(string tipoCliente, int id, string username, string password);
+    /// <summary>
+    /// Habilita la cuenta de acceso del cliente. El backend genera la contraseña
+    /// temporal y se la envía por correo; la devuelve una sola vez para mostrarla.
+    /// </summary>
+    Task<CredencialClienteDTO> HabilitarCuentaAsync(string tipoCliente, int id, string username);
 }
