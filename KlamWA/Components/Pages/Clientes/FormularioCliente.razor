@@ -36,28 +36,28 @@
     <div class="card" style="max-width:900px">
         <div class="card-body">
             <div class="row g-3">
-                <CampoForm Etiqueta="Tipo de cliente" Columnas="col-12">
+                <CampoForm Obligatorio="true" Etiqueta="Tipo de cliente" Columnas="col-12">
                     <InputSelect class="form-select" @bind-Value="ViewModel.Tipo" disabled="@(Id != null)">
                         <option value="@DatosClientes.Particular">Paciente particular</option>
                         <option value="@DatosClientes.Clinica">Clínica / hospital</option>
                     </InputSelect>
                 </CampoForm>
 
-                <CampoForm Etiqueta="@(ViewModel.Tipo == DatosClientes.Particular ? "Nombre completo" : "Razón social")">
+                <CampoForm Obligatorio="true" Etiqueta="@(ViewModel.Tipo == DatosClientes.Particular ? "Nombre completo" : "Razón social")">
                     <InputText class="form-control" @bind-Value="ViewModel.Nombre" />
                     <ValidationMessage For="() => ViewModel.Nombre" />
                 </CampoForm>
 
                 @if (ViewModel.Tipo == DatosClientes.Particular)
                 {
-                    <CampoForm Etiqueta="DNI">
+                    <CampoForm Obligatorio="true" Etiqueta="DNI">
                         <InputText class="form-control" maxlength="8" placeholder="8 dígitos" @bind-Value="ViewModel.Dni" />
                         <ValidationMessage For="() => ViewModel.Dni" />
                     </CampoForm>
                 }
                 else
                 {
-                    <CampoForm Etiqueta="RUC">
+                    <CampoForm Obligatorio="true" Etiqueta="RUC">
                         <InputText class="form-control" maxlength="11" placeholder="11 dígitos" @bind-Value="ViewModel.Ruc" />
                         <ValidationMessage For="() => ViewModel.Ruc" />
                     </CampoForm>

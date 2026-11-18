@@ -30,7 +30,7 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-12"><span class="text-muted">Solicitante:</span> <strong>@usuario</strong></div>
-                <CampoForm Etiqueta="@(ViewModel.ClinicaDestinoObligatoria ? "Clínica u hospital de destino *" : "Clínica u hospital de destino (opcional)")" Para="clinica">
+                <CampoForm Obligatorio="@ViewModel.ClinicaDestinoObligatoria" Etiqueta="@(ViewModel.ClinicaDestinoObligatoria ? "Clínica u hospital de destino" : "Clínica u hospital de destino (opcional)")" Para="clinica">
                     <div class="position-relative">
                         <input id="clinica" class="form-control" autocomplete="off"
                                placeholder="Escriba el nombre de la clínica"
@@ -66,27 +66,27 @@
                     }
                     <ValidationMessage For="() => ViewModel.IdClinica" />
                 </CampoForm>
-                <CampoForm Etiqueta="@(ViewModel.PacienteObligatorio ? "Nombre del paciente *" : "Nombre del paciente (opcional)")" Para="paciente">
+                <CampoForm Obligatorio="@ViewModel.PacienteObligatorio" Etiqueta="@(ViewModel.PacienteObligatorio ? "Nombre del paciente" : "Nombre del paciente (opcional)")" Para="paciente">
                     <InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" />
                     <ValidationMessage For="() => ViewModel.PacienteNombre" />
                 </CampoForm>
-                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico">
+                <CampoForm Obligatorio="true" Etiqueta="Diagnóstico" Columnas="col-12" Para="diagnostico">
                     <InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
                     <ValidationMessage For="() => ViewModel.Diagnostico" />
                 </CampoForm>
-                <CampoForm Etiqueta="Procedimiento *" Para="procedimiento">
+                <CampoForm Obligatorio="true" Etiqueta="Procedimiento" Para="procedimiento">
                     <InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" />
                     <ValidationMessage For="() => ViewModel.Procedimiento" />
                 </CampoForm>
-                <CampoForm Etiqueta="Médico *" Para="medico">
+                <CampoForm Obligatorio="true" Etiqueta="Médico" Para="medico">
                     <InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" />
                     <ValidationMessage For="() => ViewModel.Medico" />
                 </CampoForm>
-                <CampoForm Etiqueta="Fecha *" Para="fecha">
+                <CampoForm Obligatorio="true" Etiqueta="Fecha" Para="fecha">
                     <InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" />
                     <ValidationMessage For="() => ViewModel.Fecha" />
                 </CampoForm>
-                <CampoForm Etiqueta="Hora *" Para="hora">
+                <CampoForm Obligatorio="true" Etiqueta="Hora" Para="hora">
                     <InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" />
                     <ValidationMessage For="() => ViewModel.Hora" />
                 </CampoForm>

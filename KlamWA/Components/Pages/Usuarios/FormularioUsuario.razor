@@ -56,20 +56,20 @@ else
                     </div>
                     <div class="card-body p-4">
                         <div class="row g-3">
-                            <CampoForm Etiqueta="Nombres" Para="nombres">
+                            <CampoForm Obligatorio="true" Etiqueta="Nombres" Para="nombres">
                                 <input class="form-control" id="nombres" @bind="modelo.Nombres" placeholder="Ej. Valeria" required />
                             </CampoForm>
-                            <CampoForm Etiqueta="Apellidos" Para="apellidos">
+                            <CampoForm Obligatorio="true" Etiqueta="Apellidos" Para="apellidos">
                                 <input class="form-control" id="apellidos" @bind="modelo.Apellidos" placeholder="Ej. Torres" required />
                             </CampoForm>
-                            <CampoForm Etiqueta="Nombre de usuario" Para="username">
+                            <CampoForm Obligatorio="true" Etiqueta="Nombre de usuario" Para="username">
                                 <div class="input-group">
                                     <span class="input-group-text">@@</span>
                                     <input class="form-control" id="username" @bind="modelo.Username" placeholder="Ej. vtorres"
                                            disabled="@Id.HasValue" required />
                                 </div>
                             </CampoForm>
-                            <CampoForm Etiqueta="Correo electrónico" Para="email">
+                            <CampoForm Obligatorio="true" Etiqueta="Correo electrónico" Para="email">
                                 <input class="form-control" id="email" type="email" @bind="modelo.Email" placeholder="nombre@empresa.com" required />
                             </CampoForm>
                         </div>
@@ -83,7 +83,7 @@ else
                     </div>
                     <div class="card-body p-4">
                         <div class="row g-3">
-                            <CampoForm Etiqueta="Rol del personal" Para="usuario-rol">
+                            <CampoForm Obligatorio="true" Etiqueta="Rol del personal" Para="usuario-rol">
                                 <select id="usuario-rol" class="form-select" @bind="modelo.Rol">
                                     <option value="Administrador">Administrador</option>
                                     <option value="Vendedor">Vendedor</option>
@@ -104,12 +104,12 @@ else
                                            placeholder="Ej. Cirugía de columna, Neurocirugía, Artroscopia" />
                                 </CampoForm>
                             }
-                            <CampoForm Etiqueta="@(Id.HasValue ? "Nueva contraseña (opcional)" : "Contraseña")" Para="usuario-clave">
+                            <CampoForm Obligatorio="@(!Id.HasValue)" Etiqueta="@(Id.HasValue ? "Nueva contraseña (opcional)" : "Contraseña")" Para="usuario-clave">
                                 <input id="usuario-clave" class="form-control" type="password" @bind="modelo.Password"
                                        placeholder="@(Id.HasValue ? "Dejar en blanco para conservar la actual" : "Mínimo 8 caracteres, letra y número")"
                                        autocomplete="new-password" />
                             </CampoForm>
-                            <CampoForm Etiqueta="Confirmar contraseña" Para="usuario-confirmacion">
+                            <CampoForm Obligatorio="@(!Id.HasValue)" Etiqueta="Confirmar contraseña" Para="usuario-confirmacion">
                                 <input id="usuario-confirmacion" class="form-control" type="password" @bind="passwordConfirmacion"
                                        placeholder="Repite la contraseña" autocomplete="new-password" />
                             </CampoForm>

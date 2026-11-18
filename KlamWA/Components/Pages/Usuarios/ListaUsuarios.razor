@@ -4,7 +4,7 @@
 
 <PageTitle>Usuarios | Klam</PageTitle>
 <div class="breadcrumb-line">Administración <span>/</span> Usuarios</div>
-<PageHeader Titulo="Usuarios" Subtitulo="Organiza las cuentas y los accesos del equipo de BIOKLAM.">
+<PageHeader Titulo="Usuarios" Subtitulo="Organiza las cuentas y los accesos del equipo de BIOKLAM y de los clientes con cuenta.">
     <a class="btn btn-primary" href="/usuarios/nuevo"><Icono Nombre="mas" Tamano="18" /> Nuevo usuario</a>
 </PageHeader>
 
@@ -42,7 +42,7 @@
 
 <section class="card">
     <div class="section-heading">
-        <h2>Directorio del equipo <span class="count-label">@(usuarios?.Count ?? 0)</span></h2>
+        <h2>Directorio de usuarios <span class="count-label">@(usuarios?.Count ?? 0)</span></h2>
         <span>Registros en MySQL</span>
     </div>
 
@@ -60,6 +60,7 @@
                 <option value="Administrador">Administrador</option>
                 <option value="Vendedor">Vendedor</option>
                 <option value="Instrumentista">Instrumentista</option>
+                <option value="CLIENTE">Clientes con cuenta</option>
             </select>
         </div>
         <div>
@@ -105,7 +106,7 @@
                 {
                     <tr>
                         <td>
-                            <a class="user-cell" href="@($"/usuarios/{u.Id}?rol={u.Rol}")">
+                            <a class="user-cell" href="@(u.EsCliente ? $"/clientes/{u.TipoCliente}/{u.IdCliente}" : $"/usuarios/{u.Id}?rol={u.Rol}")">
                                 <span class="avatar">@u.Iniciales</span>
                                 <span>
                                     <strong>@u.NombreCompleto</strong>
@@ -119,6 +120,19 @@
                             <EtiquetaEstado Texto="@(u.Activo ? "Activo" : "Inactivo")" Tono="@(u.Activo ? "success" : "neutral")" />
                         </td>
                         <td>
+                            @if (u.EsCliente)
+                            {
+                                <div class="table-actions">
+                                    <a href="@($"/clientes/{u.TipoCliente}/{u.IdCliente}")" title="Ver cliente" aria-label="Ver cliente de @u.NombreCompleto">
+                                        <Icono Nombre="ojo" Tamano="18" />
+                                    </a>
+                                    <a href="@($"/clientes/editar/{u.TipoCliente}/{u.IdCliente}")" title="Editar cliente" aria-label="Editar cliente de @u.NombreCompleto">
+                                        <Icono Nombre="editar" Tamano="18" />
+                                    </a>
+                                </div>
+                            }
+                            else
+                            {
                             <div class="table-actions">
                                 <a href="@($"/usuarios/{u.Id}?rol={u.Rol}")" title="Ver detalle" aria-label="Ver a @u.NombreCompleto">
                                     <Icono Nombre="ojo" Tamano="18" />
@@ -139,6 +153,7 @@
                                     </button>
                                 }
                             </div>
+                            }
                         </td>
                     </tr>
                 }

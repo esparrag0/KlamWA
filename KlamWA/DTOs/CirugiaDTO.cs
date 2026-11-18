@@ -18,6 +18,7 @@ public class CirugiaDTO
     public int? IdCliente { get; set; }
     public string? ClienteNombre { get; set; }
     public string? PacienteNombre { get; set; }
+    public string? PacienteDocumento { get; set; }
     public string? ClinicaNombre { get; set; }
     public int? IdEquipo { get; set; }
     public string? EquipoNombre { get; set; }
@@ -56,6 +57,8 @@ public class CirugiaFormDTO
     public string TipoProcedimiento { get; set; } = "";
     public string DoctorNombre { get; set; } = "";
     public string Diagnostico { get; set; } = "";
+    public string? PacienteNombre { get; set; }
+    public string? PacienteDocumento { get; set; }
     public string TipoCliente { get; set; } = "";
     public int IdCliente { get; set; }
     public int? IdEquipo { get; set; }

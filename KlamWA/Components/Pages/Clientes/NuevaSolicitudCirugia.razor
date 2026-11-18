@@ -37,7 +37,7 @@ else
                     </CampoForm>
                     @if (ViewModel.TipoCliente == "Particular")
                     {
-                        <CampoForm Etiqueta="DNI *" Para="dni-paciente">
+                        <CampoForm Obligatorio="true" Etiqueta="DNI" Para="dni-paciente">
                             <InputText id="dni-paciente" class="form-control" maxlength="8" @bind-Value="ViewModel.Dni" @bind-Value:after="InvalidarCliente" />
                         </CampoForm>
                         <div class="col-12 col-md-auto align-self-end"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarParticular">@(operacionActual == "buscar-cliente" && procesando ? "Buscando..." : "Buscar paciente")</button></div>
@@ -69,13 +69,13 @@ else
                     <hr />
                     <h6>Registrar cliente nuevo</h6>
                     <div class="row g-3">
-                        <CampoForm Etiqueta="@(ViewModel.TipoCliente == "Particular" ? "Nombre completo *" : "Razón social *")"><input class="form-control" @bind="nuevo.Nombre" /></CampoForm>
-                        <CampoForm Etiqueta="Dirección *"><input class="form-control" @bind="nuevo.Direccion" /></CampoForm>
-                        <CampoForm Etiqueta="Correo *"><input class="form-control" type="email" @bind="nuevo.EmailContacto" /></CampoForm>
-                        <CampoForm Etiqueta="Teléfono *"><input class="form-control" @bind="nuevo.Telefono" /></CampoForm>
+                        <CampoForm Obligatorio="true" Etiqueta="@(ViewModel.TipoCliente == "Particular" ? "Nombre completo" : "Razón social")"><input class="form-control" @bind="nuevo.Nombre" /></CampoForm>
+                        <CampoForm Obligatorio="true" Etiqueta="Dirección"><input class="form-control" @bind="nuevo.Direccion" /></CampoForm>
+                        <CampoForm Obligatorio="true" Etiqueta="Correo"><input class="form-control" type="email" @bind="nuevo.EmailContacto" /></CampoForm>
+                        <CampoForm Obligatorio="true" Etiqueta="Teléfono"><input class="form-control" @bind="nuevo.Telefono" /></CampoForm>
                         @if (ViewModel.TipoCliente == "Clinica")
                         {
-                            <CampoForm Etiqueta="RUC *"><input class="form-control" maxlength="11" @bind="nuevo.Ruc" /></CampoForm>
+                            <CampoForm Obligatorio="true" Etiqueta="RUC"><input class="form-control" maxlength="11" @bind="nuevo.Ruc" /></CampoForm>
                             <CampoForm Etiqueta="Periodo de crédito"><input class="form-control" @bind="nuevo.PeriodoCredito" /></CampoForm>
                             <div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" @bind="nuevo.TieneConsignacion" /><span class="form-check-label">Tiene consignación</span></label></div>
                         }
@@ -89,7 +89,7 @@ else
         <div class="card mb-3" style="max-width:900px">
             <div class="card-header">Datos de la cirugía</div>
             <div class="card-body"><div class="row g-3">
-                <CampoForm Etiqueta="Clínica u hospital donde se realizará *" Columnas="col-12" Para="destino-busqueda">
+                <CampoForm Obligatorio="true" Etiqueta="Clínica u hospital donde se realizará" Columnas="col-12" Para="destino-busqueda">
                     <div class="input-group"><input id="destino-busqueda" class="form-control" placeholder="Buscar por RUC o nombre" @bind="destinoBusqueda" @bind:after="InvalidarDestino" /><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarDestino">@(procesando && operacionActual == "buscar-destino" ? "Buscando..." : "Buscar")</button></div>
                 </CampoForm>
                 @if (procesando && operacionActual.EndsWith("-destino")) { <div class="col-12 text-muted small" role="status"><span class="spinner-border spinner-border-sm me-2"></span>@(operacionActual == "registrar-destino" ? "Registrando clínica de destino…" : "Consultando clínicas de destino…")</div> }
@@ -101,22 +101,22 @@ else
                 @if (mostrarRegistroDestino)
                 {
                     <div class="col-12"><hr /><h6>Registrar clínica de destino</h6></div>
-                    <CampoForm Etiqueta="Razón social *"><input class="form-control" @bind="nuevoDestino.Nombre" /></CampoForm>
-                    <CampoForm Etiqueta="RUC *"><input class="form-control" maxlength="11" @bind="nuevoDestino.Ruc" /></CampoForm>
-                    <CampoForm Etiqueta="Dirección *"><input class="form-control" @bind="nuevoDestino.Direccion" /></CampoForm>
-                    <CampoForm Etiqueta="Correo *"><input class="form-control" type="email" @bind="nuevoDestino.EmailContacto" /></CampoForm>
-                    <CampoForm Etiqueta="Teléfono *"><input class="form-control" @bind="nuevoDestino.Telefono" /></CampoForm>
+                    <CampoForm Obligatorio="true" Etiqueta="Razón social"><input class="form-control" @bind="nuevoDestino.Nombre" /></CampoForm>
+                    <CampoForm Obligatorio="true" Etiqueta="RUC"><input class="form-control" maxlength="11" @bind="nuevoDestino.Ruc" /></CampoForm>
+                    <CampoForm Obligatorio="true" Etiqueta="Dirección"><input class="form-control" @bind="nuevoDestino.Direccion" /></CampoForm>
+                    <CampoForm Obligatorio="true" Etiqueta="Correo"><input class="form-control" type="email" @bind="nuevoDestino.EmailContacto" /></CampoForm>
+                    <CampoForm Obligatorio="true" Etiqueta="Teléfono"><input class="form-control" @bind="nuevoDestino.Telefono" /></CampoForm>
                     <CampoForm Etiqueta="Periodo de crédito"><input class="form-control" @bind="nuevoDestino.PeriodoCredito" /></CampoForm>
                     <div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" @bind="nuevoDestino.TieneConsignacion" /><span class="form-check-label">Tiene consignación</span></label></div>
                     <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarDestino">@(procesando && operacionActual == "registrar-destino" ? "Registrando clínica..." : "Registrar y seleccionar clínica de destino")</button></div>
                 }
                 @if (mensajeDestino is not null) { <div class="col-12"><div class="alert alert-@tipoMensajeDestino mb-0" role="@(tipoMensajeDestino == "danger" ? "alert" : "status")">@mensajeDestino</div></div> }
-                <CampoForm Etiqueta="Nombre del paciente *" Columnas="col-12" Para="paciente"><InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" /><ValidationMessage For="() => ViewModel.PacienteNombre" /></CampoForm>
-                <CampoForm Etiqueta="Diagnóstico *" Columnas="col-12" Para="diagnostico"><InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" /><ValidationMessage For="() => ViewModel.Diagnostico" /></CampoForm>
-                <CampoForm Etiqueta="Procedimiento *" Para="procedimiento"><InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" /><ValidationMessage For="() => ViewModel.Procedimiento" /></CampoForm>
-                <CampoForm Etiqueta="Médico *" Para="medico"><InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" /><ValidationMessage For="() => ViewModel.Medico" /></CampoForm>
-                <CampoForm Etiqueta="Fecha *" Para="fecha"><InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" /><ValidationMessage For="() => ViewModel.Fecha" /></CampoForm>
-                <CampoForm Etiqueta="Hora *" Para="hora"><InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" /><ValidationMessage For="() => ViewModel.Hora" /></CampoForm>
+                <CampoForm Obligatorio="true" Etiqueta="Nombre del paciente" Columnas="col-12" Para="paciente"><InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" /><ValidationMessage For="() => ViewModel.PacienteNombre" /></CampoForm>
+                <CampoForm Obligatorio="true" Etiqueta="Diagnóstico" Columnas="col-12" Para="diagnostico"><InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" /><ValidationMessage For="() => ViewModel.Diagnostico" /></CampoForm>
+                <CampoForm Obligatorio="true" Etiqueta="Procedimiento" Para="procedimiento"><InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" /><ValidationMessage For="() => ViewModel.Procedimiento" /></CampoForm>
+                <CampoForm Obligatorio="true" Etiqueta="Médico" Para="medico"><InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" /><ValidationMessage For="() => ViewModel.Medico" /></CampoForm>
+                <CampoForm Obligatorio="true" Etiqueta="Fecha" Para="fecha"><InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" /><ValidationMessage For="() => ViewModel.Fecha" /></CampoForm>
+                <CampoForm Obligatorio="true" Etiqueta="Hora" Para="hora"><InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" /><ValidationMessage For="() => ViewModel.Hora" /></CampoForm>
                 <CampoForm Etiqueta="Observaciones (opcional)" Columnas="col-12" Para="observaciones"><InputTextArea id="observaciones" class="form-control" rows="2" @bind-Value="ViewModel.Observaciones" /></CampoForm>
             </div></div>
         </div>
@@ -128,10 +128,10 @@ else
                 <div class="row g-3">
                     @if (ViewModel.TipoCliente == "Particular")
                     {
-                        <CampoForm Etiqueta="DNI *" Para="archivo-dni"><InputFile id="archivo-dni" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("DNI"))" OnChange='e => SeleccionarArchivo(e, "DNI")' /></CampoForm>
-                        <CampoForm Etiqueta="Comprobante de pago *" Para="archivo-pago"><InputFile id="archivo-pago" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("COMPROBANTE_PAGO"))" OnChange='e => SeleccionarArchivo(e, "COMPROBANTE_PAGO")' /></CampoForm>
+                        <CampoForm Obligatorio="true" Etiqueta="DNI" Para="archivo-dni"><InputFile id="archivo-dni" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("DNI"))" OnChange='e => SeleccionarArchivo(e, "DNI")' /></CampoForm>
+                        <CampoForm Obligatorio="true" Etiqueta="Comprobante de pago" Para="archivo-pago"><InputFile id="archivo-pago" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("COMPROBANTE_PAGO"))" OnChange='e => SeleccionarArchivo(e, "COMPROBANTE_PAGO")' /></CampoForm>
                     }
-                    <CampoForm Etiqueta="Receta médica *" Para="archivo-receta"><InputFile id="archivo-receta" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("RECETA_MEDICA"))" OnChange='e => SeleccionarArchivo(e, "RECETA_MEDICA")' /></CampoForm>
+                    <CampoForm Obligatorio="true" Etiqueta="Receta médica" Para="archivo-receta"><InputFile id="archivo-receta" class="form-control" accept=".pdf,.png,.jpg,.jpeg" disabled="@(procesando || cargados.Contains("RECETA_MEDICA"))" OnChange='e => SeleccionarArchivo(e, "RECETA_MEDICA")' /></CampoForm>
                 </div>
                 @foreach (var tipo in TiposRequeridos)
                 {

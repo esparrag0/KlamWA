@@ -19,6 +19,13 @@ public class CirugiaViewModel : IValidatableObject
     [StringLength(300, ErrorMessage = "Máximo 300 caracteres")]
     public string Diagnostico { get; set; } = "";
 
+    [Required(ErrorMessage = "El nombre del paciente es obligatorio")]
+    [StringLength(150, ErrorMessage = "Máximo 150 caracteres")]
+    public string PacienteNombre { get; set; } = "";
+
+    [StringLength(20, ErrorMessage = "Máximo 20 caracteres")]
+    public string? PacienteDocumento { get; set; }
+
     [Required(ErrorMessage = "La fecha y hora de inicio es obligatoria")]
     public DateTime? FechaHoraInicio { get; set; }
 
@@ -39,6 +46,8 @@ public class CirugiaViewModel : IValidatableObject
         TipoProcedimiento = c.TipoProcedimiento;
         Doctor = c.DoctorNombre;
         Diagnostico = c.Diagnostico;
+        PacienteNombre = c.PacienteNombre ?? "";
+        PacienteDocumento = c.PacienteDocumento;
         FechaHoraInicio = c.Inicio;
         FechaHoraFin = c.Fin;
         ClienteClave = c.IdCliente is int id ? $"{c.TipoCliente}:{id}" : "";
@@ -57,6 +66,8 @@ public class CirugiaViewModel : IValidatableObject
             TipoProcedimiento = TipoProcedimiento,
             DoctorNombre = Doctor,
             Diagnostico = Diagnostico,
+            PacienteNombre = PacienteNombre,
+            PacienteDocumento = PacienteDocumento,
             TipoCliente = partes.Length == 2 ? partes[0] : "",
             IdCliente = partes.Length == 2 && int.TryParse(partes[1], out int id) ? id : 0,
             IdEquipo = IdEquipo > 0 ? IdEquipo : null,

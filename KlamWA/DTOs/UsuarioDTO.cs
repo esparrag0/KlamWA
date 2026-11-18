@@ -13,6 +13,9 @@ public class UsuarioDTO
     public string? Especialidad { get; set; }
     public double? ComisionAcumulada { get; set; }
     public string Iniciales { get; set; } = string.Empty;
+    public int? IdCliente { get; set; }
+    public string? TipoCliente { get; set; }
+    public bool EsCliente => TipoCliente != null;
 }
 
 public class UsuarioFormDTO

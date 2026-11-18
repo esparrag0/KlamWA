@@ -35,23 +35,31 @@ else if (opciones != null)
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2">Datos de cirugía</h2></div>
-                    <CampoForm Etiqueta="Tipo de procedimiento">
+                    <CampoForm Obligatorio="true" Etiqueta="Tipo de procedimiento">
                         <InputSelect class="form-select" @bind-Value="ViewModel.TipoProcedimiento" @bind-Value:after="CambiarProcedimiento">
                             <option value="">-- Seleccione un procedimiento --</option>
                             @foreach (string nombre in procedimientosRegistrados) { <option value="@nombre">@nombre</option> }
                         </InputSelect>
                         <ValidationMessage For="() => ViewModel.TipoProcedimiento" />
                     </CampoForm>
-                    <CampoForm Etiqueta="Doctor">
+                    <CampoForm Obligatorio="true" Etiqueta="Doctor">
                         <InputText class="form-control" @bind-Value="ViewModel.Doctor" />
                         <ValidationMessage For="() => ViewModel.Doctor" />
                     </CampoForm>
-                    <CampoForm Etiqueta="Diagnóstico" Columnas="col-12">
+                    <CampoForm Etiqueta="Paciente (persona que se opera)" Obligatorio="true">
+                        <InputText class="form-control" @bind-Value="ViewModel.PacienteNombre" />
+                        <ValidationMessage For="() => ViewModel.PacienteNombre" />
+                    </CampoForm>
+                    <CampoForm Etiqueta="Documento del paciente (DNI u otro)">
+                        <InputText class="form-control" @bind-Value="ViewModel.PacienteDocumento" />
+                        <ValidationMessage For="() => ViewModel.PacienteDocumento" />
+                    </CampoForm>
+                    <CampoForm Obligatorio="true" Etiqueta="Diagnóstico" Columnas="col-12">
                         <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
                         <ValidationMessage For="() => ViewModel.Diagnostico" />
                     </CampoForm>
                     <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2 mt-2">Programación</h2></div>
-                    <CampoForm Etiqueta="Inicio">
+                    <CampoForm Obligatorio="true" Etiqueta="Inicio">
                         <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraInicio" />
                         <ValidationMessage For="() => ViewModel.FechaHoraInicio" />
                     </CampoForm>
@@ -59,7 +67,7 @@ else if (opciones != null)
                         <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraFin" />
                         <ValidationMessage For="() => ViewModel.FechaHoraFin" />
                     </CampoForm>
-                    <CampoForm Etiqueta="Cliente (clínica u hospital, o paciente particular)" Columnas="col-12">
+                    <CampoForm Obligatorio="true" Etiqueta="Cliente (clínica u hospital, o paciente particular)" Columnas="col-12">
                         <InputSelect class="form-select" @bind-Value="ViewModel.ClienteClave">
                             <option value="">-- Seleccione --</option>
                             @foreach (OpcionDTO cliente in opciones.Clientes)
