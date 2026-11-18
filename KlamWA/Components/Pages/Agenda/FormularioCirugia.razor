@@ -46,6 +46,16 @@ else if (opciones != null)
                         <InputText class="form-control" @bind-Value="ViewModel.Doctor" />
                         <ValidationMessage For="() => ViewModel.Doctor" />
                     </CampoForm>
+                    <CampoForm Etiqueta="Paciente registrado (opcional)" Columnas="col-12">
+                        <select class="form-select" value="@pacienteRegistradoId" @onchange="SeleccionarPacienteRegistrado">
+                            <option value="0">-- Otro paciente (escribir los datos abajo) --</option>
+                            @foreach (OpcionDTO paciente in opciones.Clientes.Where(c => c.Tipo == "PACIENTE_PARTICULAR"))
+                            {
+                                <option value="@paciente.Id">@paciente.Nombre@(string.IsNullOrWhiteSpace(paciente.Documento) ? "" : $" · DNI {paciente.Documento}")</option>
+                            }
+                        </select>
+                        <div class="form-text">Si el paciente ya está registrado como cliente, elíjalo y se completan sus datos. También puede escribirlos a mano.</div>
+                    </CampoForm>
                     <CampoForm Etiqueta="Paciente (persona que se opera)" Obligatorio="true">
                         <InputText class="form-control" @bind-Value="ViewModel.PacienteNombre" />
                         <ValidationMessage For="() => ViewModel.PacienteNombre" />
@@ -277,6 +287,17 @@ else if (opciones != null)
         {
             guardando = false;
         }
+    }
+
+    private int pacienteRegistradoId;
+
+    private void SeleccionarPacienteRegistrado(ChangeEventArgs e)
+    {
+        pacienteRegistradoId = int.TryParse(e.Value?.ToString(), out int id) ? id : 0;
+        OpcionDTO? paciente = opciones?.Clientes.FirstOrDefault(c => c.Tipo == "PACIENTE_PARTICULAR" && c.Id == pacienteRegistradoId);
+        if (paciente is null) return;
+        ViewModel.PacienteNombre = paciente.Nombre;
+        ViewModel.PacienteDocumento = paciente.Documento;
     }
 
     private string TextoTipoCliente(string? tipo) => tipo == "PACIENTE_PARTICULAR" ? "particular" : "clínica";

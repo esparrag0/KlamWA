@@ -22,6 +22,7 @@ public class ClienteViewModel : IValidatableObject
     [StringLength(200, ErrorMessage = "La dirección no puede exceder 200 caracteres")]
     public string Direccion { get; set; } = "";
 
+    [Required(ErrorMessage = "El correo de contacto es obligatorio")]
     [StringLength(120, ErrorMessage = "El correo no puede exceder 120 caracteres")]
     public string Email { get; set; } = "";
 
