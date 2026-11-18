@@ -67,7 +67,7 @@
                     <InputText class="form-control" @bind-Value="ViewModel.Direccion" />
                     <ValidationMessage For="() => ViewModel.Direccion" />
                 </CampoForm>
-                <CampoForm Etiqueta="Correo de contacto">
+                <CampoForm Obligatorio="true" Etiqueta="Correo de contacto">
                     <InputText class="form-control" @bind-Value="ViewModel.Email" />
                     <ValidationMessage For="() => ViewModel.Email" />
                 </CampoForm>
