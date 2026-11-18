@@ -1,33 +1,230 @@
 @page "/reportes/consumo"
-@using KlamWA.Components.Shared
-<PageTitle>Insumos más utilizados | Klam</PageTitle>
-<PageHeader Titulo="Insumos más utilizados" >
-    <a class="btn btn-outline-secondary" href="/reportes/comparativo">Ver comparativo</a>
+@using System.Globalization
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IReporteService ReporteService
+@inject ICirugiaService CirugiaService
+@inject IJSRuntime JS
+
+<PageTitle>Uso de insumos | Klam</PageTitle>
+<PageHeader Titulo="Uso de insumos" Subtitulo="Insumos realmente utilizados en cirugías con consumo completo (RF18)">
+    <a class="btn btn-outline-secondary" href="/reportes/comparativo">Ver comparativo por cirugía</a>
 </PageHeader>
-<div class="card mb-3"><div class="card-header">Criterios del reporte</div><div class="card-body">
-    <div class="row g-2 align-items-end">
-        <div class="col-md-2"><label for="desde" class="form-label small">Desde</label><input id="desde" class="form-control form-control-sm" type="date" value="2026-10-01" /></div>
-        <div class="col-md-2"><label for="hasta" class="form-label small">Hasta</label><input id="hasta" class="form-control form-control-sm" type="date" value="2026-10-31" /></div>
-        <div class="col-md-3"><label for="cirugia" class="form-label small">Tipo de cirugía</label><select id="cirugia" class="form-select form-select-sm"><option>Todas</option><option>Artroscopia de rodilla</option><option>Cirugía de columna</option></select></div>
-        <div class="col-md-3"><label for="consumible" class="form-label small">Tipo de consumible</label><select id="consumible" class="form-select form-select-sm"><option>Todos</option><option>Fresa cortante</option><option>Cuchilla corta</option></select></div>
-        <div class="col-md-2"><label for="medida" class="form-label small">Medida</label><select id="medida" class="form-select form-select-sm"><option>Todas</option><option>70 mm</option></select></div>
+
+@if (_error != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @_error
+        <button type="button" class="btn-close" aria-label="Cerrar" @onclick="() => _error = null"></button>
     </div>
-    <button type="button" class="btn btn-primary mt-3" disabled>Generar reporte</button>
-</div></div>
-<div class="card">
-    <div class="card-header">Reporte de consumo</div>
-    <div class="card-body"><dl class="row mb-0">
-        <dt class="col-sm-3">Generado</dt><dd class="col-sm-9">@DateTime.Now.ToString("dd/MM/yyyy · HH:mm") (vista de ejemplo)</dd>
-        <dt class="col-sm-3">Periodo</dt><dd class="col-sm-9">01/10/2026 – 31/10/2026</dd>
-        <dt class="col-sm-3">Criterios aplicados</dt><dd class="col-sm-9">Todas las cirugías · Todos los consumibles · Todas las medidas</dd>
-    </dl></div>
-    <div class="table-responsive"><table class="table table-striped table-hover align-middle mb-0">
-        <caption class="visually-hidden">Consumo de insumos durante octubre de 2026</caption>
-        <thead class="table-light"><tr><th scope="col">Consumible</th><th scope="col">Medida</th><th scope="col">Tipo de cirugía</th><th scope="col" class="text-end">Cantidad utilizada</th><th scope="col" class="text-end">Frecuencia de uso</th></tr></thead>
-        <tbody>
-            <tr><td>Fresa cortante</td><td>70 mm</td><td>Artroscopia de rodilla</td><td class="text-end">2</td><td class="text-end">1 cirugía</td></tr>
-            <tr><td>Cuchilla corta</td><td>70 mm</td><td>Artroscopia de rodilla</td><td class="text-end">1</td><td class="text-end">1 cirugía</td></tr>
-        </tbody>
-    </table></div>
-    <div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center"><small class="text-muted">Frecuencia: número de cirugías en las que se utilizó el insumo.</small><div class="d-flex gap-2"><button type="button" class="btn btn-outline-secondary btn-sm" disabled>Descargar Excel</button><button type="button" class="btn btn-outline-secondary btn-sm" disabled>Descargar PDF</button></div></div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">Criterios del reporte</div>
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label for="desde" class="form-label small">Desde</label>
+                <input id="desde" type="date" class="form-control form-control-sm" @bind="_desde" />
+            </div>
+            <div class="col-md-2">
+                <label for="hasta" class="form-label small">Hasta</label>
+                <input id="hasta" type="date" class="form-control form-control-sm" @bind="_hasta" />
+            </div>
+            <div class="col-md-3">
+                <label for="tipo-cirugia" class="form-label small">Tipo de cirugía</label>
+                <select id="tipo-cirugia" class="form-select form-select-sm" @bind="_tipoCirugia">
+                    <option value="">Todas</option>
+                    @foreach (var procedimiento in _procedimientos)
+                    {
+                        <option value="@procedimiento">@procedimiento</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="consumible" class="form-label small">Tipo de consumible</label>
+                <select id="consumible" class="form-select form-select-sm" @bind="_consumible">
+                    <option value="">Todos</option>
+                    @foreach (var consumible in _consumibles)
+                    {
+                        <option value="@consumible.IdConsumible">@consumible.NombreComercial</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="medida" class="form-label small">Medida</label>
+                <select id="medida" class="form-select form-select-sm" @bind="_medida">
+                    <option value="">Todas</option>
+                    @foreach (var m in _medidas)
+                    {
+                        <option value="@m">@m</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary mt-3" disabled="@_cargando" @onclick="GenerarAsync">
+            @(_cargando ? "Generando..." : "Generar reporte")
+        </button>
+    </div>
 </div>
+
+@if (_reporte is not null)
+{
+    <div class="card">
+        <div class="card-header">Reporte de consumo</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Generado</dt>
+                <dd class="col-sm-9">@(_reporte.Generado?.ToString("dd/MM/yyyy · HH:mm") ?? "—")</dd>
+                <dt class="col-sm-3">Periodo</dt>
+                <dd class="col-sm-9">@FormatearFecha(_reporte.Desde) – @FormatearFecha(_reporte.Hasta)</dd>
+                <dt class="col-sm-3">Criterios aplicados</dt>
+                <dd class="col-sm-9">
+                    Tipo de cirugía: @(_reporte.TipoCirugia ?? "Todas") · Consumible: @(_reporte.Consumible ?? "Todos")
+                    · Medida: @(_reporte.Medida ?? "Todas")
+                </dd>
+                <dt class="col-sm-3">Cirugías consideradas</dt>
+                <dd class="col-sm-9">@_reporte.CirugiasConsideradas</dd>
+            </dl>
+        </div>
+
+        @if (_reporte.Insumos.Count == 0)
+        {
+            <div class="card-body text-center text-muted">
+                No hay consumos registrados con los criterios seleccionados.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <caption class="visually-hidden">Uso de insumos del periodo seleccionado</caption>
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Insumo</th>
+                            <th scope="col">Medida</th>
+                            <th scope="col">Tipo de cirugía</th>
+                            <th scope="col" class="text-end">Cantidad utilizada</th>
+                            <th scope="col" class="text-end">Frecuencia de uso</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var insumo in _reporte.Insumos)
+                        {
+                            <tr>
+                                <td>@insumo.Nombre</td>
+                                <td>@insumo.Medida</td>
+                                <td>@insumo.TipoCirugia</td>
+                                <td class="text-end">@insumo.CantidadUtilizada</td>
+                                <td class="text-end">@insumo.Frecuencia @(insumo.Frecuencia == 1 ? "cirugía" : "cirugías")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <small class="text-muted">
+                Frecuencia: número de cirugías en las que se utilizó el insumo. Solo cuentan cirugías finalizadas con consumo completo.
+            </small>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick='() => ExportarAsync("excel")'>Descargar Excel</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick='() => ExportarAsync("pdf")'>Descargar PDF</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DateOnly? _desde = new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateOnly? _hasta = DateOnly.FromDateTime(DateTime.Today);
+    private string _tipoCirugia = "";
+    private string _consumible = "";
+    private string _medida = "";
+
+    private List<string> _procedimientos = [];
+    private List<ConsumibleDTO> _consumibles = [];
+    private List<string> _medidas = [];
+
+    private ReporteUsoInsumosDTO? _reporte;
+    // Criterios con los que se generó la vista: la descarga usa estos mismos, así archivo y pantalla coinciden.
+    private FiltroUsoInsumos? _filtroUsado;
+    private bool _cargando;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _procedimientos = (await CirugiaService.OpcionesAsync()).Procedimientos;
+            _consumibles = (await ReporteService.ListarConsumiblesAsync())
+                .Where(c => c.Activo)
+                .OrderBy(c => c.NombreComercial)
+                .ToList();
+            _medidas = _consumibles.Select(c => c.Medida).OfType<string>()
+                .Where(m => m.Trim().Length > 0)
+                .Distinct()
+                .OrderBy(m => m)
+                .ToList();
+        }
+        catch (ServicioException ex)
+        {
+            _error = ex.Message;
+        }
+        await GenerarAsync();
+    }
+
+    private async Task GenerarAsync()
+    {
+        _error = null;
+        if (_desde > _hasta)
+        {
+            _error = "El inicio del periodo no puede ser posterior al fin.";
+            return;
+        }
+
+        _cargando = true;
+        var filtro = FiltroActual();
+        try
+        {
+            _reporte = await ReporteService.UsoInsumosAsync(filtro);
+            _filtroUsado = filtro;
+        }
+        catch (ServicioException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private async Task ExportarAsync(string formato)
+    {
+        if (_filtroUsado is null) return;
+        _error = null;
+        try
+        {
+            var archivo = await ReporteService.ExportarUsoInsumosAsync(_filtroUsado, formato);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (ServicioException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private FiltroUsoInsumos FiltroActual() => new(
+        _desde,
+        _hasta,
+        string.IsNullOrWhiteSpace(_tipoCirugia) ? null : _tipoCirugia,
+        int.TryParse(_consumible, out var idConsumible) ? (int?)idConsumible : null,
+        string.IsNullOrWhiteSpace(_medida) ? null : _medida);
+
+    private static string FormatearFecha(string? fecha) =>
+        DateOnly.TryParseExact(fecha, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+            ? d.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+            : "—";
+}
