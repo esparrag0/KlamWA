@@ -3,6 +3,8 @@
 @using System.ComponentModel.DataAnnotations
 @using KlamWA.DTOs
 @using KlamWA.Servicios
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 @inject VistaPreviaRol Vista
 @inject IClienteService Clientes
 @inject ISolicitudCirugiaService Solicitudes
@@ -19,6 +21,27 @@
 else
 {
     @if (mensaje is not null) { <div class="alert alert-@tipoMensaje" role="@(tipoMensaje == "danger" ? "alert" : "status")">@mensaje</div> }
+    @if (credencialNueva is not null)
+    {
+        <div class="alert alert-warning" role="status">
+            <div class="fw-bold mb-1">Credenciales de acceso de @credencialNueva.Nombre</div>
+            <p class="small mb-2">Anótelas y entrégueselas al cliente antes de continuar: la contraseña no se vuelve a mostrar.</p>
+            <div class="row g-2 align-items-end">
+                <div class="col-sm-4">
+                    <label class="form-label small mb-1" for="cred-usuario">Usuario</label>
+                    <input id="cred-usuario" class="form-control form-control-sm" readonly value="@credencialNueva.Usuario" />
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label small mb-1" for="cred-password">Contraseña temporal</label>
+                    <input id="cred-password" class="form-control form-control-sm font-monospace" readonly value="@credencialNueva.PasswordTemporal" />
+                </div>
+                <div class="col-sm-4 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" @onclick="CopiarCredencial">Copiar</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => credencialNueva = null">Ya las anoté</button>
+                </div>
+            </div>
+        </div>
+    }
     <EditForm Model="ViewModel" OnValidSubmit="Enviar">
         <DataAnnotationsValidator />
         <ValidationSummary />
@@ -160,6 +183,7 @@ else
     private string ruc = string.Empty, nombreBusqueda = string.Empty, destinoBusqueda = string.Empty;
     private string? mensaje;
     private string tipoMensaje = "danger";
+    private ClienteBusquedaDTO? credencialNueva;
     private string? mensajeCliente, mensajeDestino;
     private string tipoMensajeCliente = "danger", tipoMensajeDestino = "danger";
     private string operacionActual = string.Empty;
@@ -255,6 +279,7 @@ else
             if (existentes.Count > 0) { ElegirDestino(existentes[0]); NotificarDestino("La clínica ya existía y quedó seleccionada; no se creó un duplicado.", "info"); return; }
             var creada = await Clientes.RegistrarClinicaAsync(nuevoDestino);
             if (creada.IdCliente <= 0) throw new HttpRequestException("El servicio no devolvió el ID de la clínica registrada.");
+            MostrarCredencial(creada);
             ElegirDestino(creada);
             NotificarDestino($"La clínica {creada.Nombre} se registró y quedó seleccionada como destino.", "success");
         }, "registrar-destino");
@@ -273,6 +298,7 @@ else
             if (existentes.Count > 0) { ElegirCliente(existentes[0]); NotificarCliente("El cliente ya existía y quedó seleccionado; no se creó un duplicado.", "info"); return; }
             var cliente = ViewModel.TipoCliente == "Particular" ? await Clientes.RegistrarParticularAsync(nuevo) : await Clientes.RegistrarClinicaAsync(nuevo);
             if (cliente.IdCliente <= 0) throw new HttpRequestException("El servicio no devolvió el ID del cliente registrado.");
+            MostrarCredencial(cliente);
             ElegirCliente(cliente);
             NotificarCliente($"El cliente {cliente.Nombre} se registró y quedó seleccionado.", "success");
         }, "registrar-cliente");
@@ -352,4 +378,24 @@ else
     private void NotificarCliente(string texto, string tipo = "danger") { mensajeCliente = texto; tipoMensajeCliente = tipo; }
     private void NotificarDestino(string texto, string tipo = "danger") { mensajeDestino = texto; tipoMensajeDestino = tipo; }
     private void Mensaje(string texto, string tipo = "danger") { mensaje = texto; tipoMensaje = tipo; }
+    private void MostrarCredencial(ClienteBusquedaDTO cliente)
+    {
+        if (!string.IsNullOrWhiteSpace(cliente.Usuario) && !string.IsNullOrWhiteSpace(cliente.PasswordTemporal))
+            credencialNueva = cliente;
+    }
+
+    private async Task CopiarCredencial()
+    {
+        if (credencialNueva is null) return;
+        string texto = $"Usuario: {credencialNueva.Usuario}\nContraseña temporal: {credencialNueva.PasswordTemporal}";
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", texto);
+            Mensaje("Credenciales copiadas al portapapeles.", "success");
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or TaskCanceledException)
+        {
+            Mensaje("No se pudo copiar automáticamente: seleccione el texto y cópielo a mano.", "warning");
+        }
+    }
 }
