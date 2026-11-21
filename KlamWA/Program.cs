@@ -17,9 +17,13 @@ builder.Services.AddScoped<IBandejaService, BandejaService>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<AvisosSinLeer>();
 builder.Services.AddScoped<IDespachoService, DespachoService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IConsumoService, ConsumoService>();
 builder.Services.AddHttpClient<IDocumentoIngresoService, DocumentoIngresoService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<IClienteService, ClienteService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<ICotizacionService, CotizacionService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<ISolicitudCirugiaService, SolicitudCirugiaService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
@@ -36,6 +40,8 @@ builder.Services.AddHttpClient<IAuditoriaService, AuditoriaService>(client =>
 builder.Services.AddHttpClient<IAuditoriaDocumentalService, AuditoriaDocumentalService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<ICirugiaConsultaService, CirugiaConsultaService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<IReporteService, ReporteService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 
 var app = builder.Build();
