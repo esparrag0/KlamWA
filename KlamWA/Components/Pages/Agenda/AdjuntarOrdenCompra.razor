@@ -1,0 +1,249 @@
+@page "/agenda/cirugia/{Id:int}/orden-compra"
+@attribute [Authorize(Roles = "CLINICA_HOSPITAL,ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@inject ICirugiaService Cirugias
+@inject IDocumentoIngresoService Documentos
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Orden de compra</PageTitle>
+
+@if (cargando)
+{
+    <div class="card p-4 text-center text-muted">Cargando cirugía...</div>
+}
+else if (c == null)
+{
+    <div class="alert alert-warning">@(mensajeError ?? "Cirugía no encontrada.")</div>
+    <a class="btn btn-outline-secondary" href="/agenda/lista">Volver a la lista</a>
+}
+else if (!EsClinica)
+{
+    <EstadoVacio Titulo="No corresponde una orden de compra"
+                 Descripcion="Esta cirugía corresponde a un paciente particular." />
+    <a class="btn btn-outline-secondary" href="/agenda/cirugia/@Id">Volver al detalle</a>
+}
+else
+{
+    <PageHeader Titulo="Orden de compra" Subtitulo="@($"CIR-{Id:000} · {c.Procedimiento} · {c.Cliente}")">
+        <Etiqueta><EstadoBadge Estado="@c.Estado" Grande="true" /></Etiqueta>
+        <ChildContent>
+            <a class="btn btn-outline-dark" href="/agenda/cirugia/@Id">Volver al detalle</a>
+        </ChildContent>
+    </PageHeader>
+    @if (mensajeError is not null) { <div class="alert alert-danger" role="alert">@mensajeError</div> }
+    @if (mensajeOk is not null) { <div class="alert alert-success" role="status">@mensajeOk</div> }
+
+    @if (!EstaCulminada)
+    {
+        <div class="card"><div class="card-body text-muted">La orden de compra podrá adjuntarse una vez finalizada la cirugía.</div></div>
+    }
+    else if (consultaFallida)
+    {
+        <button type="button" class="btn btn-outline-primary" @onclick="Cargar">Reintentar consulta</button>
+    }
+    else
+    {
+        <div class="card mb-3">
+            <div class="card-header">Estado de la orden de compra</div>
+            <div class="card-body">
+                @if (OcVigente is null)
+                {
+                    <p class="mb-0">Sin adjuntar.</p>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <DocumentoEstadoBadge Estado="@OcVigente.EstadoValidacion" />
+                        <span>Versión @OcVigente.Version</span>
+                        @if (OcVigente.FechaCarga is DateTime fecha)
+                        {
+                            <span class="text-muted">· Enviada el @fecha.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@enviando"
+                                @onclick="() => Descargar(OcVigente.IdDocumento)">Descargar</button>
+                    </div>
+                    @if (OcVigente.EstadoValidacion == "PENDIENTE")
+                    {
+                        <p class="mb-0 text-muted">En revisión por el administrador.</p>
+                    }
+                    else if (OcVigente.EstadoValidacion == "VALIDADO")
+                    {
+                        <p class="mb-0 text-success">Orden de compra aprobada.</p>
+                    }
+                    else if (OcVigente.EstadoValidacion == "RECHAZADO")
+                    {
+                        <p class="mb-1 text-danger">Orden de compra rechazada.</p>
+                        @if (!string.IsNullOrWhiteSpace(OcVigente.MotivoRechazo))
+                        {
+                            <p class="mb-1">Motivo: @OcVigente.MotivoRechazo</p>
+                        }
+                        @if (!OcVigente.HabilitarResubida)
+                        {
+                            <p class="mb-0 text-muted">El administrador no habilitó una nueva versión.</p>
+                        }
+                    }
+                }
+            </div>
+        </div>
+
+        @if (PuedeEnviar)
+        {
+            <div class="card mb-3">
+                <div class="card-header">@(OcVigente is null ? "Adjuntar orden de compra" : "Subir documento corregido")</div>
+                <div class="card-body">
+                    <label class="form-label" for="oc">Archivo de orden de compra</label>
+                    <InputFile id="oc" class="form-control" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                               OnChange="Seleccionar" disabled="@enviando" />
+                    <div class="form-text">PDF, PNG o JPEG, hasta 5 MB.</div>
+                    @if (archivo is not null)
+                    {
+                        <p class="small mt-2 mb-0">Seleccionado: <strong>@archivo.Name</strong></p>
+                    }
+                </div>
+                <div class="card-footer">
+                    <button type="button" class="btn btn-primary" disabled="@(archivo is null || enviando)" @onclick="Enviar">
+                        @(enviando ? "Enviando…" : OcVigente is null ? "Adjuntar orden de compra" : "Subir documento corregido")
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (Ordenes.Count > 1)
+        {
+            <div class="card">
+                <div class="card-header">Historial de versiones</div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Versión</th><th>Fecha de carga</th><th>Estado</th><th>Archivo</th></tr></thead>
+                        <tbody>
+                            @foreach (var orden in Ordenes)
+                            {
+                                <tr>
+                                    <td>@orden.Version @(orden.IdDocumento == OcVigente?.IdDocumento ? "(vigente)" : "")</td>
+                                    <td>@(orden.FechaCarga?.ToString("dd/MM/yyyy HH:mm") ?? "No registrada")</td>
+                                    <td><DocumentoEstadoBadge Estado="@orden.EstadoValidacion" /></td>
+                                    <td><button type="button" class="btn btn-sm btn-outline-secondary" disabled="@enviando"
+                                                @onclick="() => Descargar(orden.IdDocumento)">Descargar</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CirugiaDetalleViewModel? c;
+    private List<DocumentoIngresoDTO> documentos = [];
+    private IBrowserFile? archivo;
+    private string? mensajeError;
+    private string? mensajeOk;
+    private bool cargando = true;
+    private bool enviando;
+    private bool consultaFallida;
+
+    private bool EsClinica => c is not null && c.TipoCliente == "CLINICA_HOSPITAL";
+
+    // El backend expone FINALIZADA; la etiqueta que ve el usuario es "Culminada".
+    private bool EstaCulminada => c is not null
+        && (c.EstadoCodigo == "FINALIZADA" || c.Estado == "Culminada");
+
+    private List<DocumentoIngresoDTO> Ordenes => documentos
+        .Where(d => d.TipoDocumento == "ORDEN_COMPRA")
+        .OrderByDescending(d => d.Version)
+        .ThenByDescending(d => d.IdDocumento)
+        .ToList();
+
+    private DocumentoIngresoDTO? OcVigente => Ordenes.FirstOrDefault();
+    private bool PuedeEnviar => OcVigente is null
+        || (OcVigente.EstadoValidacion == "RECHAZADO" && OcVigente.HabilitarResubida);
+
+    protected override async Task OnParametersSetAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        cargando = true;
+        mensajeError = null;
+        consultaFallida = false;
+        documentos = [];
+        c = null;
+        try
+        {
+            c = await Cirugias.FindById(Id);
+            if (c is not null && EsClinica && EstaCulminada)
+            {
+                documentos = await Documentos.ListarPorCirugiaAsync(Id);
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or ServicioException or OperationCanceledException)
+        {
+            mensajeError = ex.Message;
+            consultaFallida = c is not null;
+        }
+        finally { cargando = false; }
+    }
+
+    private void Seleccionar(InputFileChangeEventArgs e)
+    {
+        mensajeOk = null;
+        mensajeError = ArchivoDocumentoSeleccion.Validar(e.File);
+        archivo = mensajeError is null ? e.File : null;
+    }
+
+    private async Task Enviar()
+    {
+        if (archivo is null || enviando || c is null || !EsClinica || !EstaCulminada || !PuedeEnviar || consultaFallida) return;
+        mensajeError = null;
+        mensajeOk = null;
+        enviando = true;
+        try
+        {
+            if (OcVigente is { EstadoValidacion: "RECHAZADO", HabilitarResubida: true } rechazada)
+                await Documentos.ResubirArchivoAsync(rechazada.IdDocumento, archivo);
+            else
+                await Documentos.AdjuntarOrdenCompraAsync(Id, archivo);
+            archivo = null;
+            mensajeOk = "Orden de compra enviada. Queda pendiente de revisión por administración.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or ServicioException or OperationCanceledException)
+        {
+            mensajeError = ex.Message;
+        }
+        try
+        {
+            if (mensajeOk is not null)
+            {
+                try { documentos = await Documentos.ListarPorCirugiaAsync(Id); }
+                catch (Exception ex) when (ex is HttpRequestException or ServicioException or OperationCanceledException)
+                {
+                    consultaFallida = true;
+                    mensajeError = "La orden se envió, pero no se pudo actualizar su estado: " + ex.Message;
+                }
+            }
+        }
+        finally { enviando = false; }
+    }
+
+    private async Task Descargar(int idDocumento)
+    {
+        if (enviando) return;
+        enviando = true;
+        mensajeError = null;
+        try
+        {
+            var archivoDescargado = await Documentos.DescargarAsync(idDocumento);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivoDescargado.Contenido,
+                archivoDescargado.Nombre, archivoDescargado.TipoContenido);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JSException or ServicioException or OperationCanceledException)
+        {
+            mensajeError = ex.Message;
+        }
+        finally { enviando = false; }
+    }
+}
