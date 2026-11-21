@@ -23,6 +23,8 @@ builder.Services.AddHttpClient<IDocumentoIngresoService, DocumentoIngresoService
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<IClienteService, ClienteService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient<ICotizacionService, CotizacionService>(client =>
+    client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<ISolicitudCirugiaService, SolicitudCirugiaService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["RestApi:BaseUrl"]!.TrimEnd('/') + "/"));
 builder.Services.AddHttpClient<ISolicitudClienteService, SolicitudClienteService>(client =>

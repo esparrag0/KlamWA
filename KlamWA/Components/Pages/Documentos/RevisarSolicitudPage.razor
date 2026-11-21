@@ -8,6 +8,8 @@
 @using KlamWA.Servicios
 @inject IDocumentoIngresoService DocumentoService
 @inject ISolicitudCirugiaService SolicitudService
+@inject ICotizacionService CotizacionService
+@inject NavigationManager Navegacion
 @inject IJSRuntime JS
 
 <PageTitle>Revisión de solicitud | Klam</PageTitle>
@@ -140,7 +142,29 @@ else if (Solicitud is not null)
                             <a class="btn btn-outline-danger" href="/solicitudes/rechazo/@Id">Rechazar solicitud</a>
                         }
                     </div>
-                    @if (!DocumentacionCompleta)
+                    @if (Solicitud.Estado == "APROBADA")
+                    {
+                        <div class="border-top pt-3 mt-3">
+                            <h3 class="h6">Siguiente paso</h3>
+                            @if (Elegibilidad is null) { <p class="text-muted">Elegibilidad no disponible. Reintenta con «Actualizar».</p> }
+                            else
+                            {
+                                <p class="small mb-2">Documentación: @Elegibilidad.EstadoDocumental.
+                                    @(Elegibilidad.MotivoBloqueo ?? "La solicitud está habilitada para registrar cirugía.")</p>
+                                @if (Elegibilidad.RequiereCotizacion)
+                                { <a class="btn btn-outline-primary me-2" href="/cotizaciones">Gestionar cotización</a> }
+                                @if (Elegibilidad.PuedeRegistrarCirugia)
+                                {
+                                    @if (!ConfirmarRegistro)
+                                    { <button type="button" class="btn btn-primary" disabled="@Ocupado" @onclick="() => ConfirmarRegistro = true">Registrar cirugía desde solicitud</button> }
+                                    else
+                                    { <div class="mt-2"><p>¿Confirmas registrar la cirugía de esta solicitud?</p>
+                                        <button type="button" class="btn btn-primary me-2" disabled="@Ocupado" @onclick="RegistrarCirugiaAsync">Confirmar registro</button>
+                                        <button type="button" class="btn btn-outline-secondary" disabled="@Ocupado" @onclick="() => ConfirmarRegistro = false">Cancelar</button></div> }
+                                }
+                            }
+                        </div>
+                    }                    @if (!DocumentacionCompleta)
                     {
                         <div class="form-text mt-2">Primero deben validarse todos los documentos obligatorios.</div>
                     }
@@ -167,6 +191,8 @@ else if (Solicitud is not null)
     private IBrowserFile? ArchivoNuevo { get; set; }
     private string TipoNuevo { get; set; } = "RECETA_MEDICA";
     private bool DocumentacionCompleta { get; set; }
+    private ElegibilidadCirugiaDTO? Elegibilidad { get; set; }
+    private bool ConfirmarRegistro { get; set; }
     private bool Cargando { get; set; }
     private bool Ocupado { get; set; }
     private bool RequiereLogin { get; set; }
@@ -191,6 +217,13 @@ else if (Solicitud is not null)
             Solicitud = await SolicitudService.ConsultarAsync(Id);
             Documentos = await DocumentoService.ListarPorSolicitudAsync(Id);
             DocumentacionCompleta = (await DocumentoService.VerificarDocumentosAsync(Id)).DocumentacionCompleta;
+            try { Elegibilidad = await CotizacionService.ElegibilidadAsync(Id); }
+            catch (HttpRequestException ex)
+            {
+                Elegibilidad = null;
+                ErrorAccion = "No se pudo consultar si la solicitud está lista para registrar cirugía: " + ex.Message;
+            }
+            ConfirmarRegistro = false;
             if (TiposDisponibles.Count > 0 && !TiposDisponibles.Contains(TipoNuevo)) TipoNuevo = TiposDisponibles[0];
         }
         catch (HttpRequestException ex)
@@ -276,6 +309,24 @@ else if (Solicitud is not null)
         if (ErrorAccion is null) CancelarRechazo();
     }
 
+    private async Task RegistrarCirugiaAsync()
+    {
+        if (Ocupado || !ConfirmarRegistro || Elegibilidad?.PuedeRegistrarCirugia != true) return;
+        Ocupado = true; ErrorAccion = null; Mensaje = null;
+        try
+        {
+            // El backend vuelve a evaluar elegibilidad y evita el registro duplicado.
+            int idCirugia = await SolicitudService.RegistrarCirugiaDesdeSolicitudAsync(Id);
+            Navegacion.NavigateTo($"/agenda/cirugia/{idCirugia}");
+        }
+        catch (HttpRequestException ex)
+        {
+            ErrorAccion = MostrarError(ex);
+            try { Elegibilidad = await CotizacionService.ElegibilidadAsync(Id); }
+            catch (HttpRequestException consulta) { ErrorAccion += " No se pudo actualizar la elegibilidad: " + consulta.Message; }
+        }
+        finally { Ocupado = false; ConfirmarRegistro = false; }
+    }
     private async Task AprobarAsync() =>
         await EjecutarAccionAsync(() => SolicitudService.AprobarAsync(Id), "Solicitud aprobada.");
 

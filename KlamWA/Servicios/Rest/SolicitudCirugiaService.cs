@@ -27,6 +27,14 @@ public sealed class SolicitudCirugiaService(
             client, $"solicitudes/{idSolicitud}", await tokens.ObtenerAsync(autenticacion))
             ?? throw new HttpRequestException("La respuesta de la solicitud está vacía.");
 
+    public async Task<int> RegistrarCirugiaDesdeSolicitudAsync(int idSolicitud)
+    {
+        var respuesta = await HttpUtils.DoPostAutenticado<object, Dictionary<string, int>>(
+            client, $"solicitudes/{idSolicitud}/cirugia", await tokens.ObtenerAsync(autenticacion), new { });
+        return respuesta is not null && respuesta.TryGetValue("idCirugia", out var id)
+            ? id : throw new HttpRequestException("La respuesta de la cirugía está vacía.");
+    }
+
     public async Task AprobarAsync(int idSolicitud) =>
         await HttpUtils.DoPostAutenticado(client, $"solicitudes/{idSolicitud}/aprobacion",
             await tokens.ObtenerAsync(autenticacion), new { });

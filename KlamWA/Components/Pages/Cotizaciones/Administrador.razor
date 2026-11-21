@@ -1,28 +1,132 @@
 @page "/cotizaciones"
-@using KlamWA.Components.Shared
-<PageTitle>Cotizaciones | Klam</PageTitle>
-<PageHeader Titulo="Cotizaciones" Subtitulo="Administrador">
-</PageHeader>
-<div class="card mb-3"><div class="card-header">Solicitud de reserva</div><div class="card-body">
-    <dl class="row mb-0">
-        <dt class="col-sm-3">Cliente</dt><dd class="col-sm-9">Clínica San Felipe</dd>
-        <dt class="col-sm-3">Paciente</dt><dd class="col-sm-9">María López Pérez</dd>
-        <dt class="col-sm-3">Procedimiento</dt><dd class="col-sm-9">Craneotomía · Dr. Luis Rojas</dd>
-        <dt class="col-sm-3">Fecha solicitada</dt><dd class="col-sm-9">02/11/2026 · 09:00</dd>
-        <dt class="col-sm-3">Receta médica</dt><dd class="col-sm-9">receta_SOL-028.pdf <span class="badge text-bg-success">Validada por el administrador</span></dd>
-        <dt class="col-sm-3">Programación</dt><dd class="col-sm-9"><span class="badge text-bg-secondary">Pendiente de aprobación del cliente</span></dd>
-    </dl>
-</div></div>
-<div class="row g-3">
-    <div class="col-lg-6"><div class="card h-80"><div class="card-header">Adjuntar cotización</div><div class="card-body">
-        <input id="archivo-cotizacion" type="file" class="form-control" disabled aria-describedby="archivo-ayuda" />
-        <button type="button" class="btn btn-primary mt-3" disabled>Enviar al cliente</button>
-    </div></div></div>
-    <div class="col-lg-6"><div class="card h-100"><div class="card-header">Cotización adjunta · Ejemplo</div><div class="card-body">
-        <h4 class="h6">COT-2026-028.pdf</h4>
-        <p class="small text-muted">Adjuntado el 27/10/2026</p>
-        <p><span class="badge text-bg-warning">Pendiente de aprobación</span></p>
-        <div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-primary" href="/cotizaciones/documento">Ver documento de ejemplo</a><button type="button" class="btn btn-outline-secondary" disabled>Descargar</button></div>
-    </div></div></div>
-</div>
-<p class="small text-muted mt-3">La solicitud podrá programarse después de la aprobación del cliente. </p>
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject ISolicitudCirugiaService Solicitudes
+@inject ICotizacionService Cotizaciones
+@inject IJSRuntime JS
+
+<PageTitle>Cotizaciones | BIOKLAM</PageTitle>
+<PageHeader Titulo="Cotizaciones" Subtitulo="Documentos elaborados en el ERP externo y decisiones de las clínicas" />
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (mensaje is not null) { <div class="alert alert-success" role="status">@mensaje</div> }
+@if (cargando) { <p class="text-muted">Consultando solicitudes y cotizaciones…</p> }
+else
+{
+    <div class="card mb-3"><div class="card-body">
+        <label for="solicitud-cotizacion" class="form-label">Solicitud de clínica</label>
+        <select id="solicitud-cotizacion" class="form-select" @bind="idSeleccionado" @bind:after="SeleccionarAsync">
+            <option value="0">Seleccione una solicitud</option>
+            @foreach (var s in solicitudes) { <option value="@s.IdSolicitud">@s.Codigo · @s.Cliente · @s.Estado</option> }
+        </select>
+        @if (solicitudes.Count == 0) { <p class="text-muted mt-2 mb-0">No hay solicitudes de clínicas.</p> }
+    </div></div>
+    @if (seleccionada is not null)
+    {
+        <div class="row g-3">
+            <div class="col-lg-5"><div class="card h-100"><div class="card-header">Solicitud y documentación</div><div class="card-body">
+                <dl class="row mb-2"><dt class="col-5">Cliente</dt><dd class="col-7">@seleccionada.Cliente</dd>
+                    <dt class="col-5">Paciente</dt><dd class="col-7">@seleccionada.PacienteNombre</dd>
+                    <dt class="col-5">Procedimiento</dt><dd class="col-7">@seleccionada.TipoProcedimiento</dd>
+                    <dt class="col-5">Solicitud</dt><dd class="col-7">@seleccionada.Estado</dd></dl>
+                <a class="btn btn-outline-primary btn-sm" href="/solicitudes/revision/@idSeleccionado">Revisar documentos</a>
+                @if (elegibilidad is not null)
+                {
+                    <div class="alert @(elegibilidad.EstadoDocumental == "VALIDADA" ? "alert-success" : "alert-warning") mt-3 mb-0">
+                        Documentación: @elegibilidad.EstadoDocumental. @(elegibilidad.MotivoBloqueo ?? "Puede continuar según el estado de la cotización.")
+                    </div>
+                }
+            </div></div></div>
+            <div class="col-lg-7"><div class="card mb-3"><div class="card-header">Cotización vigente</div><div class="card-body">
+                @if (vigente is null) { <p class="text-muted mb-0">Aún no se ha adjuntado una cotización.</p> }
+                else { <p class="mb-2">Versión @vigente.Version · <strong>@vigente.Estado</strong> · @vigente.FechaEmision.ToString("dd/MM/yyyy HH:mm")</p>
+                    <button type="button" class="btn btn-outline-primary btn-sm" disabled="@ocupado" @onclick="() => DescargarAsync(vigente.IdCotizacion)">Descargar archivo</button> }
+            </div></div>
+            <div class="card"><div class="card-header">Adjuntar cotización del ERP</div><div class="card-body">
+                <label for="precio-cotizacion" class="form-label">Importe indicado en el ERP (S/)</label>
+                <input id="precio-cotizacion" type="number" min="0" step="0.01" class="form-control mb-2" @bind="precio" disabled="@ocupado" />
+                <InputFile OnChange="ElegirArchivo" accept=".pdf,.png,.jpg,.jpeg" disabled="@ocupado" />
+                <div class="form-text">PDF, PNG o JPEG; máximo 5 MB. BIOKLAM guarda el archivo, no calcula la cotización.</div>
+                <button type="button" class="btn btn-primary mt-3" disabled="@(ocupado || !PuedeAdjuntar)" @onclick="AdjuntarAsync">@(ocupado ? "Procesando…" : "Adjuntar cotización")</button>
+            </div></div></div>
+        </div>
+        <div class="card mt-3"><div class="card-header">Historial de versiones</div><div class="card-body">
+            @if (historial.Count == 0) { <p class="text-muted mb-0">No hay versiones registradas.</p> }
+            else { <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Versión</th><th>Estado</th><th>Emisión</th><th>Decisión</th><th>Archivo</th></tr></thead><tbody>
+                @foreach (var c in historial) { <tr><td>@c.Version @(c.Vigente ? "(vigente)" : "")</td><td>@c.Estado</td><td>@c.FechaEmision.ToString("dd/MM/yyyy HH:mm")</td><td>@(c.FechaDecision?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td><td><button class="btn btn-outline-primary btn-sm" disabled="@ocupado" @onclick="() => DescargarAsync(c.IdCotizacion)">Descargar</button></td></tr> }
+            </tbody></table></div> }
+        </div></div>
+        @if (elegibilidad?.PuedeRegistrarCirugia == true)
+        { <div class="alert alert-success mt-3">Solicitud habilitada para el registro administrativo de cirugía.</div> }
+    }
+}
+
+@code {
+    private List<SolicitudCirugiaDTO> solicitudes = [];
+    private SolicitudCirugiaDTO? seleccionada;
+    private List<CotizacionDTO> historial = [];
+    private CotizacionDTO? vigente;
+    private ElegibilidadCirugiaDTO? elegibilidad;
+    private int idSeleccionado;
+    private decimal precio;
+    private IBrowserFile? archivo;
+    private bool cargando = true, ocupado;
+    private string? error, mensaje;
+    private bool PuedeAdjuntar => seleccionada?.Estado == "APROBADA" && elegibilidad?.EstadoDocumental == "VALIDADA"
+        && vigente is null or { Estado: "RECHAZADA" or "VENCIDA" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { solicitudes = (await Solicitudes.ListarAsync())
+            .Where(s => s.TipoCliente is "CLINICA" or "CLINICA_HOSPITAL").ToList(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException) { error = ex.Message; }
+        finally { cargando = false; }
+    }
+    private async Task SeleccionarAsync()
+    {
+        error = mensaje = null;
+        seleccionada = solicitudes.FirstOrDefault(s => s.IdSolicitud == idSeleccionado);
+        historial = [];
+        vigente = null;
+        elegibilidad = null;
+        archivo = null;
+        if (seleccionada is null) return;
+        try { await RecargarAsync(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException) { error = ex.Message; }
+    }
+    private async Task RecargarAsync()
+    {
+        if (seleccionada is null) return;
+        historial = await Cotizaciones.ListarAsync(idSeleccionado);
+        vigente = await Cotizaciones.VigenteAsync(idSeleccionado);
+        elegibilidad = await Cotizaciones.ElegibilidadAsync(idSeleccionado);
+    }
+    private void ElegirArchivo(InputFileChangeEventArgs e)
+    {
+        error = ArchivoDocumentoSeleccion.Validar(e.File);
+        archivo = error is null ? e.File : null;
+    }
+    private async Task AdjuntarAsync()
+    {
+        if (ocupado || !PuedeAdjuntar || archivo is null) return;
+        ocupado = true; error = mensaje = null;
+        try { var creada = await Cotizaciones.AdjuntarAsync(idSeleccionado, precio, archivo);
+            mensaje = $"Cotización versión {creada.Version} adjuntada; espera la decisión de la clínica.";
+            archivo = null; await RecargarAsync(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or InvalidOperationException or JSException or OperationCanceledException) { error = ex.Message; }
+        finally { ocupado = false; }
+    }
+    private async Task DescargarAsync(int id)
+    {
+        if (ocupado) return;
+        ocupado = true; error = null;
+        try { var archivoDescargado = await Cotizaciones.DescargarAsync(id);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivoDescargado.Contenido,
+                archivoDescargado.Nombre, archivoDescargado.TipoContenido); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or JSException) { error = ex.Message; }
+        finally { ocupado = false; }
+    }
+}
