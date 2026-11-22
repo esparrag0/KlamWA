@@ -1,0 +1,137 @@
+/* Barra superior y menú de cuenta. La estructura .app-* y la paleta están en
+   wwwroot/klam-design-system.css; aquí solo lo propio de este componente. */
+
+.app-topbar { position: sticky; top: 0; z-index: 30; min-height: 64px; }
+
+.topbar-brand { color: #0B3B45; font-size: .82rem; font-weight: 750; letter-spacing: .12em; text-decoration: none; }
+.topbar-brand:hover { color: #0F766E; }
+
+.header-bell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 10px;
+    color: #3F565E;
+    text-decoration: none;
+    transition: background .15s ease, color .15s ease;
+}
+.header-bell:hover { background: #ECFDF8; color: #0F766E; }
+
+.notification-count {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #BE123C;
+    color: #fff;
+    font-size: .64rem;
+    line-height: 17px;
+    text-align: center;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.profile-menu { position: relative; }
+.profile-menu summary {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    min-height: 40px;
+    padding: .2rem .5rem .2rem .25rem;
+    border-radius: 10px;
+    color: #0E2A31;
+    cursor: pointer;
+    list-style: none;
+    transition: background .15s ease;
+}
+.profile-menu summary::-webkit-details-marker { display: none; }
+.profile-menu summary:hover, .profile-menu[open] summary { background: #EEF3F5; }
+.profile-menu summary:focus-visible, .header-bell:focus-visible { outline: 2px solid #0F766E; outline-offset: 2px; }
+
+.profile-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .845rem;
+    font-weight: 600;
+}
+.profile-chevron {
+    width: .42rem; height: .42rem;
+    margin: -.2rem .15rem 0;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    opacity: .55;
+}
+
+.profile-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + .5rem);
+    width: 232px;
+    padding: .4rem;
+    background: #fff;
+    border: 1px solid #E1E9EC;
+    border-radius: 14px;
+    box-shadow: 0 12px 34px rgba(14, 42, 49, .13);
+}
+.profile-caption {
+    display: block;
+    padding: .55rem .7rem;
+    margin-bottom: .2rem;
+    border-bottom: 1px solid #E1E9EC;
+    color: #6E858D;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+.profile-dropdown a, .profile-dropdown button {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    width: 100%;
+    padding: .6rem .7rem;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #3F565E;
+    text-align: left;
+    text-decoration: none;
+    font-size: .855rem;
+    font-weight: 550;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+.profile-dropdown a:hover, .profile-dropdown button:hover { background: #ECFDF8; color: #0F766E; }
+.profile-dropdown form { margin: 0; }
+
+@media (max-width: 600px) {
+    .profile-name { max-width: 90px; }
+    .topbar-actions { width: auto; margin-left: auto; }
+}
+
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(560px, calc(100% - 2rem));
+    z-index: 1000;
+    padding: .9rem 1.1rem;
+    background: #fff;
+    border: 1px solid #FBE3B6;
+    border-left: 4px solid #B45309;
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(14, 42, 49, .18);
+    color: #92400E;
+    font-size: .875rem;
+}
+#blazor-error-ui .dismiss { float: right; border: 0; background: transparent; color: inherit; font-size: 1.1rem; line-height: 1; }

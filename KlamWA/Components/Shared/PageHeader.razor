@@ -1,0 +1,76 @@
+@* Encabezado estándar de pantalla.
+   Estructura: ficha de icono · rótulo de módulo · título (con etiqueta de estado opcional) · subtítulo · acciones.
+
+   El icono y el rótulo se deducen de la ruta, así que ninguna pantalla necesita declararlos
+   y todas quedan iguales. Se pueden forzar con Glifo="..." y Modulo="...", y se quitan con Glifo="".
+   Si se usa Etiqueta, los botones van dentro de <ChildContent>...</ChildContent>. *@
+@inject NavigationManager Nav
+
+<div class="page-heading d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3">
+        @if (!string.IsNullOrEmpty(NombreIcono))
+        {
+            <span class="page-glyph"><Icono Nombre="@NombreIcono" Tamano="21" /></span>
+        }
+        <div>
+            @if (!string.IsNullOrEmpty(NombreModulo))
+            {
+                <div class="page-eyebrow">@NombreModulo</div>
+            }
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <h1 class="mb-0">@Titulo</h1>
+                @Etiqueta
+            </div>
+            @if (!string.IsNullOrEmpty(Subtitulo))
+            {
+                <small class="text-muted d-block mt-1">@Subtitulo</small>
+            }
+        </div>
+    </div>
+    @if (ChildContent is not null)
+    {
+        <div class="page-actions d-flex flex-wrap gap-2">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string? Subtitulo { get; set; }
+    [Parameter] public RenderFragment? Etiqueta { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Icono de la ficha. Vacío lo oculta; si no se indica, se deduce de la ruta.</summary>
+    [Parameter] public string? Glifo { get; set; }
+
+    /// <summary>Rótulo sobre el título. Vacío lo oculta; si no se indica, se deduce de la ruta.</summary>
+    [Parameter] public string? Modulo { get; set; }
+
+    private string? NombreIcono => Glifo ?? Deducido.icono;
+    private string? NombreModulo => Modulo ?? Deducido.modulo;
+
+    // Un único mapa ruta → módulo para toda la aplicación: lo que cambie aquí
+    // se refleja en las 39 pantallas a la vez.
+    private (string icono, string modulo) Deducido
+    {
+        get
+        {
+            var ruta = new Uri(Nav.Uri).AbsolutePath.ToLowerInvariant();
+            bool Es(params string[] prefijos) => prefijos.Any(p => ruta == p || ruta.StartsWith(p + "/"));
+
+            if (Es("/usuarios")) return ("usuarios", "Administración");
+            if (Es("/bitacora-cirugias", "/historial-documental")) return ("reloj", "Auditoría");
+            if (Es("/clientes")) return ("edificio", "Clientes");
+            if (Es("/cotizaciones")) return ("recibo", "Cotizaciones");
+            if (Es("/reportes")) return ("grafico", "Reportes");
+            if (Es("/inventario")) return ("caja", "Inventario y logística");
+            if (Es("/solicitudes", "/mis-solicitudes", "/cliente/solicitudes")) return ("documento", "Solicitudes y documentos");
+            if (Es("/notificaciones")) return ("campana", "Notificaciones");
+            if (Es("/cuenta")) return ("llave", "Mi cuenta");
+            if (Es("/agenda")) return ("calendario", "Cirugías");
+            if (Es("/inicio")) return ("inicio", "Panel");
+            return ("lista", "");
+        }
+    }
+}

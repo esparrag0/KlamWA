@@ -1,0 +1,169 @@
+@page "/bitacora-documental"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@using System.Net
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IAuditoriaDocumentalService Auditoria
+@inject IDocumentoIngresoService Documentos
+@inject IJSRuntime JS
+
+<PageTitle>Bitácora documental | BIOKLAM</PageTitle>
+<PageHeader Titulo="Bitácora documental"
+            Subtitulo="Historial y seguimiento de operaciones documentales" />
+
+<section class="filter-card" aria-label="Filtros de bitácora documental">
+    <div class="section-heading"><Icono Nombre="buscar" Tamano="18" /><h2>Filtros de búsqueda</h2></div>
+    <div class="filter-grid">
+        <div class="field"><label for="bit-cliente">Cliente o institución</label><input id="bit-cliente" class="form-control" placeholder="Clínica o particular" @bind="Cliente" /></div>
+        <div class="field"><label for="bit-paciente">Paciente intervenido</label><input id="bit-paciente" class="form-control" placeholder="Nombre del paciente" @bind="Paciente" /></div>
+        <div class="field"><label for="bit-desde">Desde</label><input id="bit-desde" type="date" class="form-control" @bind="Desde" /></div>
+        <div class="field"><label for="bit-hasta">Hasta</label><input id="bit-hasta" type="date" class="form-control" @bind="Hasta" /></div>
+        <div class="field"><label for="bit-tipo">Tipo de documento</label>
+            <select id="bit-tipo" class="form-select" @bind="TipoDocumento"><option value="">Todos</option><option value="SOLICITUD">Solicitud de cirugía</option><option value="DNI">DNI</option><option value="RECETA_MEDICA">Receta médica</option><option value="COMPROBANTE_PAGO">Comprobante de pago</option><option value="ORDEN_COMPRA">Orden de compra</option></select>
+        </div>
+        <div class="field"><label for="bit-accion">Acción</label>
+            <select id="bit-accion" class="form-select" @bind="Accion"><option value="">Todas</option><option value="REGISTRO">Registro</option><option value="CARGA">Carga</option><option value="RESUBIDA">Resubida</option><option value="VALIDACION">Validación</option><option value="RECHAZO">Rechazo documental</option><option value="APROBACION">Aprobación</option><option value="RECHAZO_SOLICITUD">Rechazo de solicitud</option><option value="REENVIO">Reenvío</option><option value="CAMBIO_ESTADO">Cambio de estado</option></select>
+        </div>
+        <div class="field"><label for="bit-responsable">Usuario responsable</label><input id="bit-responsable" class="form-control" placeholder="Usuario autenticado" @bind="Responsable" /></div>
+        <div class="field"><label for="bit-solicitud">ID de solicitud</label><input id="bit-solicitud" type="number" min="1" class="form-control" @bind="IdSolicitud" /></div>
+        <div class="field"><label for="bit-cirugia">ID de cirugía</label><input id="bit-cirugia" type="number" min="1" class="form-control" @bind="IdCirugia" /></div>
+    </div>
+    <div class="filter-actions"><button type="button" class="btn btn-primary" disabled="@Cargando" @onclick="BuscarAsync"><Icono Nombre="buscar" Tamano="17" /> Buscar</button><button type="button" class="btn btn-outline-secondary" disabled="@Cargando" @onclick="LimpiarAsync">Limpiar filtros</button></div>
+</section>
+
+@if (Cargando) { <div class="message-card" role="status"><span class="spinner-border spinner-border-sm"></span> Consultando eventos documentales…</div> }
+else if (Error is not null) { <div class="message-card error" role="alert">@Error</div> }
+else
+{
+    <div class="results-layout">
+        <section class="history-card" aria-label="Operaciones documentales">
+            <div class="section-heading results-heading"><div><h2>Operaciones documentales</h2><p>Página @Pagina · @Eventos.Count evento(s)</p></div></div>
+            @if (Eventos.Count == 0) { <div class="empty-results"><Icono Nombre="lista" Tamano="27" /><strong>Sin registros</strong><p>No se encontraron eventos con los filtros actuales.</p></div> }
+            else
+            {
+                <div class="table-responsive"><table class="table history-table">
+                    <thead><tr><th>Fecha y hora</th><th>Cliente</th><th>Paciente</th><th>Solicitud / cirugía</th><th>Documento</th><th>Acción</th><th>Responsable</th><th>Estado</th><th>Detalle</th></tr></thead>
+                    <tbody>@foreach (var evento in Eventos)
+                    {
+                        <tr class="@(Seleccionado?.IdEvento == evento.IdEvento ? "selected-row" : "")">
+                            <td class="text-nowrap">@evento.FechaHora.ToString("dd/MM/yyyy HH:mm")</td><td>@Valor(evento.Cliente)</td><td>@Valor(evento.Paciente)</td>
+                            <td class="text-nowrap">@Origen(evento)</td><td><strong>@NombreDocumento(evento.TipoDocumento)</strong></td><td>@NombreAccion(evento.Accion)</td>
+                            <td>@Valor(evento.Responsable)</td><td><span class="status-chip @ClaseEstado(evento.EstadoNuevo)">@NombreEstado(evento.EstadoNuevo)</span></td>
+                            <td><button type="button" class="detail-button" @onclick="() => SeleccionarAsync(evento.IdEvento)">Ver detalle <Icono Nombre="flecha" Tamano="15" /></button></td>
+                        </tr>
+                    }</tbody>
+                </table></div>
+            }
+            <div class="pagination-actions"><button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(Pagina <= 1 || Cargando)" @onclick="AnteriorAsync">Anterior</button><span>Página @Pagina</span><button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(!HaySiguiente || Cargando)" @onclick="SiguienteAsync">Siguiente</button></div>
+        </section>
+        <aside class="detail-card" aria-label="Detalle del evento documental">
+            <div class="section-heading"><Icono Nombre="lista" Tamano="18" /><h2>Detalle del evento</h2></div>
+            @if (DetalleCargando) { <div class="detail-placeholder">Cargando detalle…</div> }
+            else if (ErrorDetalle is not null) { <div class="detail-placeholder" role="alert">@ErrorDetalle</div> }
+            else if (Seleccionado is null) { <div class="detail-placeholder">Selecciona «Ver detalle» para consultar un evento.</div> }
+            else
+            {
+                <div class="detail-content"><span class="status-chip @ClaseEstado(Seleccionado.EstadoNuevo)">@NombreEstado(Seleccionado.EstadoNuevo)</span><h3>@NombreDocumento(Seleccionado.TipoDocumento)</h3>
+                    <dl>
+                        <div><dt>Referencia</dt><dd>@Origen(Seleccionado)</dd></div>
+                        <div><dt>Documento</dt><dd>@(Seleccionado.IdDocumento is null ? "No asociado" : $"#{Seleccionado.IdDocumento}")</dd></div>
+                        <div><dt>Cliente</dt><dd>@Valor(Seleccionado.Cliente)</dd></div><div><dt>Paciente</dt><dd>@Valor(Seleccionado.Paciente)</dd></div>
+                        <div><dt>Acción</dt><dd>@NombreAccion(Seleccionado.Accion)</dd></div><div><dt>Fecha y hora</dt><dd>@Seleccionado.FechaHora.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        <div><dt>Responsable</dt><dd>@Valor(Seleccionado.Responsable)</dd></div><div><dt>Estado anterior</dt><dd>@NombreEstado(Seleccionado.EstadoAnterior)</dd></div><div><dt>Estado nuevo</dt><dd>@NombreEstado(Seleccionado.EstadoNuevo)</dd></div>
+                        <div><dt>Descripción</dt><dd>@Seleccionado.Descripcion</dd></div>
+                        @if (!string.IsNullOrWhiteSpace(Seleccionado.Referencia)) { <div><dt>Referencia del archivo</dt><dd>@Seleccionado.Referencia</dd></div> }
+                    </dl>
+                    @if (Seleccionado.IdDocumento is > 0 && !string.IsNullOrWhiteSpace(Seleccionado.Referencia)) { <button type="button" class="btn btn-outline-primary w-100" disabled="@Descargando" @onclick="() => DescargarAsync(Seleccionado.IdDocumento.Value)">@(Descargando ? "Abriendo documento…" : "Abrir documento asociado")</button> }
+                    @if (ErrorDescarga is not null) { <p class="download-error" role="alert">@ErrorDescarga</p> }
+                </div>
+            }
+        </aside>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "solicitud")] public int? SolicitudInicial { get; set; }
+    private const int Tamano = 20;
+    private string Cliente = "", Paciente = "", TipoDocumento = "", Accion = "", Responsable = "";
+    private DateTime? Desde, Hasta;
+    private int? IdSolicitud, IdCirugia, UltimaSolicitudInicial;
+    private int Pagina = 1;
+    private bool Cargando, DetalleCargando, Descargando, HaySiguiente;
+    private string? Error, ErrorDetalle, ErrorDescarga;
+    private List<AuditoriaDocumentalDTO> Eventos = [];
+    private AuditoriaDocumentalDTO? Seleccionado;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SolicitudInicial is > 0 && SolicitudInicial != UltimaSolicitudInicial)
+        { UltimaSolicitudInicial = SolicitudInicial; IdSolicitud = SolicitudInicial; }
+        await ConsultarAsync();
+    }
+
+    private async Task BuscarAsync() { Pagina = 1; await ConsultarAsync(); }
+    private async Task AnteriorAsync() { Pagina--; await ConsultarAsync(); }
+    private async Task SiguienteAsync() { Pagina++; await ConsultarAsync(); }
+
+    private async Task ConsultarAsync()
+    {
+        if (Cargando) return;
+        Error = ErrorDetalle = ErrorDescarga = null; Seleccionado = null;
+        if (Desde.HasValue && Hasta.HasValue && Desde > Hasta) { Error = "La fecha inicial no puede ser posterior a la final."; return; }
+        if (IdSolicitud is <= 0 || IdCirugia is <= 0) { Error = "Los identificadores deben ser mayores que cero."; return; }
+        Cargando = true;
+        try
+        {
+            Eventos = await Auditoria.BuscarAsync(Cliente, Paciente, Desde, Hasta, TipoDocumento, Accion, Responsable, IdSolicitud, IdCirugia, Pagina, Tamano);
+            HaySiguiente = Eventos.Count == Tamano;
+        }
+        catch (HttpRequestException ex)
+        {
+            Eventos = [];
+            Error = ex.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => "Tu sesión expiró. Inicia sesión nuevamente.",
+                HttpStatusCode.Forbidden => "No tienes permiso para consultar la bitácora documental.",
+                HttpStatusCode.NotFound => "El servicio de bitácora documental no está disponible.",
+                _ => "No se pudo consultar la bitácora documental. Inténtalo de nuevo."
+            };
+        }
+        catch (TaskCanceledException) { Error = "La consulta tardó demasiado. Inténtalo de nuevo."; }
+        finally { Cargando = false; }
+    }
+
+    private async Task SeleccionarAsync(int idEvento)
+    {
+        DetalleCargando = true; ErrorDetalle = ErrorDescarga = null; Seleccionado = null;
+        try { Seleccionado = await Auditoria.ObtenerAsync(idEvento); if (Seleccionado is null) ErrorDetalle = "Evento no encontrado."; }
+        catch (HttpRequestException ex) { ErrorDetalle = ex.StatusCode == HttpStatusCode.NotFound ? "Evento no encontrado." : "No se pudo consultar el detalle del evento."; }
+        finally { DetalleCargando = false; }
+    }
+
+    private async Task LimpiarAsync()
+    {
+        Cliente = Paciente = TipoDocumento = Accion = Responsable = ""; Desde = Hasta = null;
+        IdSolicitud = IdCirugia = null; Pagina = 1; await ConsultarAsync();
+    }
+
+    private async Task DescargarAsync(int idDocumento)
+    {
+        Descargando = true; ErrorDescarga = null;
+        try { var archivo = await Documentos.DescargarAsync(idDocumento); await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido); }
+        catch (Exception ex) when (ex is HttpRequestException or JSException)
+        { ErrorDescarga = ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound } ? "El archivo asociado ya no está disponible." : "No se pudo abrir el documento."; }
+        finally { Descargando = false; }
+    }
+
+    private static string Valor(string? texto) => string.IsNullOrWhiteSpace(texto) ? "No registrado" : texto;
+    private static string Origen(AuditoriaDocumentalDTO evento) => evento.IdSolicitud is > 0 ? $"SOL-{evento.IdSolicitud:000}" : evento.IdCirugia is > 0 ? $"CIR-{evento.IdCirugia:000}" : "Sin referencia";
+    private static string NombreDocumento(string? tipo) => tipo switch
+    { "SOLICITUD" => "Solicitud de cirugía", "DNI" => "DNI", "RECETA_MEDICA" => "Receta médica", "COMPROBANTE_PAGO" => "Comprobante de pago", "ORDEN_COMPRA" => "Orden de compra", null or "" => "No registrado", _ => tipo.Replace('_', ' ') };
+    private static string NombreAccion(string? accion) => accion switch
+    { "REGISTRO" => "Registro", "CARGA" => "Carga", "RESUBIDA" => "Resubida", "VALIDACION" => "Validación", "RECHAZO" => "Rechazo documental", "APROBACION" => "Aprobación", "RECHAZO_SOLICITUD" => "Rechazo de solicitud", "REENVIO" => "Reenvío", "CAMBIO_ESTADO" => "Cambio de estado", null or "" => "No registrada", _ => accion.Replace('_', ' ') };
+    private static string NombreEstado(string? estado) => estado switch
+    { "VALIDADO" => "Validado", "RECHAZADO" => "Rechazado", "PENDIENTE" => "Pendiente", null or "" => "No aplica", _ => estado };
+    private static string ClaseEstado(string? estado) => estado switch
+    { "VALIDADO" => "validated", "RECHAZADO" => "rejected", "PENDIENTE" => "pending", _ => "neutral" };
+}

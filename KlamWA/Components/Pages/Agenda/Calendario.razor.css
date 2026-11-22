@@ -1,0 +1,57 @@
+.agenda-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: stretch; }
+.calendar-surface, .day-panel { min-width: 0; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio); background: #fff; box-shadow: 0 4px 18px var(--klam-marca-800)0d; }
+.calendar-surface { padding: .85rem; }
+.calendar-toolbar { display: flex; align-items: center; gap: .65rem; min-height: 42px; margin-bottom: .75rem; }
+.calendar-toolbar h2 { margin: 0 .35rem; color: var(--klam-tinta); font-size: 1rem; font-weight: 700; text-transform: capitalize; }
+.month-button, .today-button { min-height: 35px; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-sm); background: #fff; color: var(--klam-tinta); cursor: pointer; }
+.month-button { width: 35px; font-size: 1.4rem; line-height: 1; }
+.today-button { padding: 0 .8rem; font-size: .82rem; font-weight: 600; }
+.month-button:hover, .today-button:hover { background: var(--klam-marca-50); border-color: var(--klam-primario); }
+.month-button:focus-visible, .today-button:focus-visible, .day-number:focus-visible, .surgery-card:focus-visible { outline: 2px solid var(--klam-primario); outline-offset: 2px; }
+.calendar-scroll { border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-sm); }
+.calendario { table-layout: fixed; width: 100%; min-width: 650px; margin: 0; border-collapse: collapse; }
+.calendario th { padding: .5rem .2rem; border: 1px solid var(--klam-borde); background: var(--klam-marca-50); color: var(--klam-tinta); text-align: center; font-size: .78rem; }
+.calendario td { width: 14.28%; height: 92px; padding: .3rem; border: 1px solid var(--klam-borde); vertical-align: top; cursor: pointer; transition: background .12s ease; }
+.calendario td:hover { background: var(--klam-marca-50); }
+.calendario td.fuera-de-mes { background: var(--klam-superficie-2); color: var(--klam-tenue); cursor: default; }
+.calendario td.seleccionado { background: var(--klam-marca-50); box-shadow: inset 0 0 0 2px var(--klam-primario); }
+.day-number { width: 25px; height: 25px; margin-bottom: .25rem; padding: 0; border: 0; border-radius: var(--klam-radio-xs); background: transparent; color: var(--klam-tinta); text-align: center; font-weight: 700; font-size: .78rem; }
+.fuera-de-mes .day-number { color: var(--klam-tenue); }
+.day-number.hoy { border-radius: 50%; background: var(--klam-marca-800); color: #fff; }
+.seleccionado .day-number { color: var(--klam-primario); }
+.seleccionado .day-number.hoy { color: #fff; }
+.evento { display: block; margin-bottom: .2rem; padding: .26rem .35rem; overflow: hidden; border-radius: var(--klam-radio-xs); color: var(--klam-texto); font-size: .69rem; font-weight: 600; line-height: 1.2; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.evento:hover { filter: brightness(.95); color: var(--klam-tinta); }
+.more-events { display: block; color: var(--klam-primario); font-size: .7rem; font-weight: 700; }
+.state-scheduled.evento { background: var(--klam-aviso-suave); }
+.state-progress.evento { background: var(--klam-exito-suave); }
+.state-finished.evento { background: var(--klam-superficie-3); }
+.state-cancelled.evento { background: var(--klam-peligro-suave); }
+.calendar-empty { margin: .8rem 0 .2rem; color: var(--klam-suave); text-align: center; font-size: .85rem; }
+.day-panel { display: flex; flex-direction: column; padding: 1rem; }
+.day-panel-header { display: flex; gap: .65rem; align-items: flex-start; padding-bottom: .9rem; border-bottom: 1px solid var(--klam-borde); }
+.panel-icon { flex: none; color: var(--klam-primario); }
+.day-panel-header h2 { margin: 0; color: var(--klam-tinta); font-size: .94rem; line-height: 1.35; text-transform: capitalize; }
+.day-panel-header p { margin: .2rem 0 0; color: var(--klam-suave); font-size: .78rem; }
+.day-list { display: flex; flex-direction: column; gap: .65rem; padding-top: .9rem; }
+.surgery-card { display: block; padding: .75rem .8rem; border: 1px solid var(--klam-borde); border-left: 4px solid var(--klam-aviso); border-radius: var(--klam-radio-sm); background: #fff; box-shadow: 0 2px 7px var(--klam-marca-800)0b; color: var(--klam-texto); text-decoration: none; }
+.surgery-card:hover { background: var(--klam-superficie-2); border-color: var(--klam-borde-fuerte); color: var(--klam-texto); }
+.surgery-card.state-scheduled { border-left-color: var(--klam-aviso); }
+.surgery-card.state-progress { border-left-color: var(--klam-exito); }
+.surgery-card.state-finished { border-left-color: var(--klam-tenue); }
+.surgery-card.state-cancelled { border-left-color: var(--klam-peligro); }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: .4rem; font-size: .8rem; }
+.card-top strong { color: var(--klam-tinta); }
+.status-pill { padding: .2rem .45rem; border-radius: var(--klam-radio-xs); background: var(--klam-aviso-suave); font-size: .68rem; font-weight: 700; white-space: nowrap; }
+.state-progress .status-pill { background: var(--klam-exito-suave); color: var(--klam-exito); }
+.state-finished .status-pill { background: var(--klam-superficie-3); color: var(--klam-suave); }
+.state-cancelled .status-pill { background: var(--klam-peligro-suave); color: var(--klam-peligro); }
+.surgery-card h3 { margin: .45rem 0; font-size: .85rem; font-weight: 700; }
+.surgery-card p { margin: .2rem 0; color: var(--klam-suave); font-size: .76rem; }
+.surgery-card p span { color: var(--klam-suave); }
+.detail-link { display: block; margin-top: .55rem; color: var(--klam-primario); font-size: .75rem; font-weight: 700; }
+.day-empty { display: flex; flex-direction: column; align-items: center; gap: .4rem; margin: auto 0; padding: 2.5rem 1rem; color: var(--klam-suave); text-align: center; font-size: .8rem; }
+.day-empty strong { color: var(--klam-tinta); font-size: .88rem; }
+@media (max-width: 1180px) { .agenda-grid { grid-template-columns: minmax(0, 1fr) 320px; } }
+@media (max-width: 950px) { .agenda-grid { grid-template-columns: 1fr; } .day-panel { min-height: 220px; } }
+@media (max-width: 600px) { .calendar-surface { padding: .55rem; } .day-panel { padding: .85rem; } }
