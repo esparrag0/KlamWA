@@ -1,126 +1,135 @@
-/* Lateral de navegación. Los colores y radios salen del Design System
-   (wwwroot/klam-design-system.css); aquí solo se arma la estructura. */
+/* Lateral de navegación.
+   La paleta, los radios y el degradado salen del Design System
+   (wwwroot/klam-design-system.css); aquí solo se arma la estructura.
+
+   Es la única superficie oscura de la aplicación y lo que fija la marca en
+   pantalla. Por eso va plano y callado: el único punto brillante es la barra
+   de agua del elemento activo, que dice dónde estás. */
 
 .sidebar-brand {
-    min-height: 72px;
-    padding: 1.05rem 1.25rem;
-    margin: 0 .85rem;
+    min-height: 58px;
+    padding: 0 1.1rem;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, .11);
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
-.sidebar-brand img { width: 118px; height: 36px; object-fit: contain; object-position: left; }
+.sidebar-brand img { width: 102px; height: 30px; object-fit: contain; object-position: left; }
 
 .sidebar-body { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
+.sidebar-body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .16); background-clip: content-box; }
 
-nav { padding: 1rem .75rem 1.5rem; display: flex; flex-direction: column; gap: .15rem; }
+nav { padding: .85rem .6rem 1.5rem; display: flex; flex-direction: column; gap: 1px; }
 
 /* Rótulo de agrupación entre bloques del menú */
 nav ::deep .nav-caption {
-    padding: .9rem .85rem .35rem;
-    color: rgba(214, 238, 240, .5);
-    font-size: .67rem;
-    font-weight: 700;
-    letter-spacing: .13em;
+    padding: 1rem .75rem .3rem;
+    color: rgba(190, 221, 225, .45);
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .1em;
     text-transform: uppercase;
 }
 
 nav ::deep .nav-group-link, .nav-group-button {
     display: flex;
     align-items: center;
-    gap: .78rem;
+    gap: .7rem;
     width: 100%;
-    min-height: 42px;
-    padding: .58rem .8rem;
+    min-height: 38px;
+    padding: .45rem .7rem;
     border: 0;
-    border-radius: 10px;
+    border-radius: 7px;
     background: transparent;
-    color: #CFE4E7;
+    color: #BCD6DB;
     text-decoration: none;
     text-align: left;
     font-size: .875rem;
-    font-weight: 550;
-    line-height: 1.25;
+    font-weight: 500;
+    line-height: 1.3;
     cursor: pointer;
     position: relative;
-    transition: background .15s ease, color .15s ease;
+    transition: background .14s ease, color .14s ease;
 }
 .nav-group-button { font-family: inherit; }
 
 nav ::deep .nav-group-link:hover, .nav-group-button:hover {
-    background: rgba(255, 255, 255, .07);
+    background: rgba(255, 255, 255, .06);
     color: #fff;
 }
 
-/* Activo: fondo translúcido y marca vertical de color a la izquierda */
+/* Activo: fondo apenas encendido y barra de agua a la izquierda.
+   La barra es lo único saturado del lateral; por eso se ve desde lejos. */
 nav ::deep .nav-group-link.active, .nav-group-button.is-expanded {
-    background: rgba(45, 212, 191, .13);
+    background: rgba(79, 209, 197, .11);
     color: #fff;
-    font-weight: 650;
+    font-weight: 600;
 }
+/* La barra va a ras del borde del lateral y ocupa todo el alto del elemento:
+   así se lee como un marcador de pestaña y no como un trocito suelto. */
 nav ::deep .nav-group-link.active::before, .nav-group-button.is-expanded::before {
     content: "";
     position: absolute;
-    left: -.75rem;
-    top: 50%;
-    transform: translateY(-50%);
+    left: -.6rem;
+    top: 0;
+    bottom: 0;
     width: 3px;
-    height: 20px;
-    border-radius: 0 3px 3px 0;
-    background: linear-gradient(180deg, #2DD4BF 0%, #0D9488 100%);
+    border-radius: 0 2px 2px 0;
+    background: #4FD1C5;
 }
-nav ::deep .nav-group-link .klam-icon, .nav-group-button .klam-icon { opacity: .82; }
-nav ::deep .nav-group-link.active .klam-icon, .nav-group-button.is-expanded .klam-icon { opacity: 1; color: #5EEAD4; }
+nav ::deep .nav-group-link .klam-icon, .nav-group-button .klam-icon { opacity: .68; }
+nav ::deep .nav-group-link:hover .klam-icon, .nav-group-button:hover .klam-icon { opacity: .9; }
+nav ::deep .nav-group-link.active .klam-icon, .nav-group-button.is-expanded .klam-icon { opacity: 1; color: #4FD1C5; }
 
 nav ::deep .nav-group-link:focus-visible, .nav-group-button:focus-visible,
-.nav-submenu ::deep a:focus-visible { outline: 2px solid #5EEAD4; outline-offset: 2px; }
+.nav-submenu ::deep a:focus-visible { outline: 2px solid #4FD1C5; outline-offset: 2px; }
 
 .nav-chevron {
-    width: .44rem; height: .44rem;
+    width: .4rem; height: .4rem;
     margin-left: auto; flex: none;
     border-right: 1.5px solid currentColor;
     border-bottom: 1.5px solid currentColor;
     transform: rotate(-45deg);
-    opacity: .65;
-    transition: transform .18s ease;
+    opacity: .5;
+    transition: transform .18s ease, opacity .18s ease;
 }
-.is-expanded .nav-chevron { transform: rotate(45deg); opacity: 1; }
+.is-expanded .nav-chevron { transform: rotate(45deg); opacity: .85; }
 
+/* El submenú cuelga de una guía: deja claro de qué grupo depende cada enlace */
 .nav-submenu {
     display: flex;
     flex-direction: column;
-    gap: .05rem;
-    margin: .2rem 0 .45rem 1.55rem;
-    padding-left: .7rem;
-    border-left: 1px solid rgba(255, 255, 255, .14);
+    gap: 1px;
+    margin: .2rem 0 .4rem 1.45rem;
+    padding-left: .65rem;
+    border-left: 1px solid rgba(255, 255, 255, .13);
 }
 .nav-submenu ::deep a {
     display: block;
-    padding: .46rem .7rem;
-    border-radius: 8px;
-    color: #A9C7CD;
+    padding: .4rem .65rem;
+    border-radius: 6px;
+    color: #9DBBC2;
     text-decoration: none;
-    font-size: .84rem;
-    font-weight: 500;
-    transition: background .15s ease, color .15s ease;
+    font-size: .8125rem;
+    font-weight: 400;
+    transition: background .14s ease, color .14s ease;
 }
-.nav-submenu ::deep a:hover { color: #fff; background: rgba(255, 255, 255, .07); }
-.nav-submenu ::deep a.active { color: #fff; background: rgba(45, 212, 191, .16); font-weight: 650; }
+.nav-submenu ::deep a:hover { color: #fff; background: rgba(255, 255, 255, .06); }
+.nav-submenu ::deep a.active { color: #fff; background: rgba(79, 209, 197, .13); font-weight: 600; }
 
 .mobile-toggle { display: none; }
 
 @media (max-width: 900px) {
-    .sidebar-brand { min-height: 60px; margin: 0; padding: .6rem 1rem; justify-content: space-between; }
-    .sidebar-brand img { width: 108px; height: 31px; }
+    .sidebar-brand { min-height: 56px; padding: .5rem 1rem; justify-content: space-between; }
+    .sidebar-brand img { width: 96px; height: 28px; }
     .mobile-toggle {
         display: grid; place-items: center;
-        width: 40px; height: 38px;
-        border: 1px solid rgba(255, 255, 255, .3);
-        border-radius: 9px;
+        width: 38px; height: 36px;
+        border: 1px solid rgba(255, 255, 255, .22);
+        border-radius: 7px;
         background: rgba(255, 255, 255, .06);
         color: #fff;
     }
     .sidebar-body { display: none; }
-    .sidebar-body.is-open { display: flex; max-height: calc(100dvh - 60px); }
+    .sidebar-body.is-open { display: flex; max-height: calc(100dvh - 56px); }
     nav { padding-bottom: 1rem; }
 }
