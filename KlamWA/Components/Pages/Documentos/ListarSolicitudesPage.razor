@@ -35,7 +35,7 @@
 
 @if (Cargando)
 {
-    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando solicitudes…</p>
+    <div class="card"><Espera Texto="Consultando solicitudes" Filas="4" /></div>
 }
 else if (Error is not null)
 {
@@ -123,7 +123,7 @@ else
             RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
             Error = ex.StatusCode switch
             {
-                HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
+                HttpStatusCode.Unauthorized => "Tu sesión expiró. Vuelve a iniciar sesión.",
                 HttpStatusCode.Forbidden => "No tienes permiso para consultar las solicitudes.",
                 _ => MensajeDeError.Texto(ex)
             };

@@ -27,7 +27,7 @@
 <div class="card mb-3">
     <div class="card-header fw-bold">Documentos observados</div>
     <div class="card-body">
-        @if (Cargando) { <div class="alert alert-info">Consultando documentos...</div> }
+        @if (Cargando) { <Espera Texto="Consultando documentos" /> }
         else if (Vigentes.Count == 0)
         {
             <div class="alert alert-info mb-0">No hay documentos presentados por tu usuario para corregir.</div>
@@ -65,7 +65,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="form-text mb-0">PDF, PNG o JPEG hasta 5 MB. La autorización y la identidad se vuelven a comprobar en Java.</p>
+            <p class="form-text mb-0">PDF, PNG o JPEG hasta 5 MB. Se vuelve a comprobar tu permiso y tu identidad al subirlo.</p>
         }
     </div>
 </div>

@@ -627,6 +627,44 @@ textarea.form-control { min-height: 96px; line-height: 1.55; }
 }
 .alert-dismissible .btn-close:hover { opacity: .85; }
 
+/* Espera. El esqueleto reserva el sitio de lo que viene, así la página no da
+   un salto al llegar los datos y la espera se percibe más corta. */
+.cargando-esqueleto { padding: .2rem 0; }
+.esqueleto-fila {
+    display: flex;
+    align-items: center;
+    gap: 1.6rem;
+    padding: .9rem 1.15rem;
+    border-bottom: 1px solid var(--klam-borde);
+}
+.esqueleto-fila:last-child { border-bottom: 0; }
+.esqueleto {
+    display: block;
+    height: 9px;
+    border-radius: var(--klam-radio-pill);
+    background: linear-gradient(90deg,
+        var(--klam-superficie-3) 25%,
+        var(--klam-superficie-2) 38%,
+        var(--klam-superficie-3) 62%);
+    background-size: 400% 100%;
+    animation: klam-esqueleto 1.5s ease infinite;
+}
+@keyframes klam-esqueleto {
+    from { background-position: 100% 50%; }
+    to   { background-position: 0 50%; }
+}
+
+.cargando-linea {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin: 0;
+    padding: 1.6rem 1.15rem;
+    color: var(--klam-suave);
+    font-size: .875rem;
+}
+.cargando-linea .spinner-border { color: var(--klam-primario); border-width: .14em; }
+
 .demo-note { color: var(--klam-suave); font-size: .79rem; }
 .demo-feedback { color: #115E59; background: var(--klam-marca-50); border-radius: var(--klam-radio-sm); padding: .6rem .75rem; font-size: .8rem; }
 
