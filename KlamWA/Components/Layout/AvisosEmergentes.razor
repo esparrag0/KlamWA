@@ -1,0 +1,41 @@
+@implements IDisposable
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject AvisosSinLeer Avisos
+
+<div class="toast-stack" aria-live="polite" aria-atomic="false">
+    @foreach (var aviso in visibles)
+    {
+        <div class="toast-aviso" role="status" @key="aviso.Id">
+            <a class="toast-cuerpo" href="@($"/notificaciones/detalle/{aviso.Id}")" @onclick="() => Cerrar(aviso)">
+                <strong>@aviso.Titulo</strong>
+                <span>@aviso.Mensaje</span>
+            </a>
+            <button type="button" class="toast-cerrar" aria-label="Cerrar aviso" @onclick="() => Cerrar(aviso)">×</button>
+        </div>
+    }
+</div>
+
+@code {
+    private const int SegundosVisible = 8;
+    private readonly List<NotificacionDTO> visibles = [];
+    private bool descartado;
+
+    protected override void OnInitialized() => Avisos.Nuevo += Mostrar;
+
+    private void Mostrar(NotificacionDTO aviso) => _ = InvokeAsync(async () =>
+    {
+        if (descartado || visibles.Any(v => v.Id == aviso.Id)) return;
+        visibles.Add(aviso);
+        StateHasChanged();
+        await Task.Delay(TimeSpan.FromSeconds(SegundosVisible));
+        if (!descartado) Cerrar(aviso);
+    });
+
+    private void Cerrar(NotificacionDTO aviso)
+    {
+        if (visibles.RemoveAll(v => v.Id == aviso.Id) > 0) StateHasChanged();
+    }
+
+    public void Dispose() { descartado = true; Avisos.Nuevo -= Mostrar; }
+}
