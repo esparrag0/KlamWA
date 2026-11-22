@@ -11,7 +11,7 @@
 @* RF10: el cliente ve su historial; el administrador lo consulta eligiendo un cliente. *@
 <PageTitle>@Titulo</PageTitle>
 <PageHeader Titulo="@Titulo" Subtitulo="Cirugías culminadas y canceladas">
-    <a class="btn btn-outline-secondary" href="@(EsAdmin ? "/agenda" : "/agenda/lista")">@(EsAdmin ? "Volver a la agenda" : "Ver mis cirugías")</a>
+    <a class="btn btn-outline-secondary" href="@(EsAdmin ? "/agenda" : "/agenda/lista")">@(EsAdmin ? "Volver al calendario" : "Ver mis cirugías")</a>
 </PageHeader>
 
 @if (EsAdmin)
@@ -19,15 +19,26 @@
     <div class="card mb-3">
         <div class="card-body">
             <div class="row g-2 align-items-end">
+                @* Búsqueda por escritura: la cartera de clientes crece y un
+                   desplegable obliga a desplazarse a ciegas. *@
                 <div class="col-md-6">
                     <label for="historial-cliente" class="form-label small mb-1">Cliente</label>
-                    <select id="historial-cliente" class="form-select form-select-sm" @bind="clienteElegido" @bind:after="CargarDeCliente">
-                        <option value="">-- Seleccione un cliente --</option>
-                        @foreach (var c in clientes)
+                    <input id="historial-cliente" class="form-control form-control-sm" list="lista-clientes-historial"
+                           autocomplete="off" placeholder="Escribe el nombre de la clínica, el hospital o el paciente"
+                           value="@busquedaCliente" @onchange="ElegirCliente" />
+                    <datalist id="lista-clientes-historial">
+                        @foreach (var c in clientes) { <option value="@EtiquetaCliente(c)"></option> }
+                    </datalist>
+                    <div class="form-text">
+                        @if (clienteElegido != "")
                         {
-                            <option value="@($"{c.Tipo}|{c.Id}")">@c.Nombre (@(c.Tipo == "CLINICA_HOSPITAL" ? "clínica" : "particular"))</option>
+                            <span class="text-success">Mostrando el historial de @busquedaCliente</span>
                         }
-                    </select>
+                        else
+                        {
+                            @($"{clientes.Count} cliente(s). Escribe para ir filtrando.")
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -80,6 +91,26 @@ else
     private List<CirugiaHistorialDTO> historial = [];
     private List<ClienteOpcionViewModel> clientes = [];
     private string clienteElegido = "";
+    private string busquedaCliente = "";
+
+    private static string EtiquetaCliente(ClienteOpcionViewModel c) =>
+        $"{c.Nombre} ({(c.Tipo == "CLINICA_HOSPITAL" ? "clínica" : "particular")})";
+
+    /// Lo escrito se casa con la etiqueta completa o con el nombre a secas.
+    /// Sin coincidencia se vuelve al estado inicial, para no dejar una tabla
+    /// mostrando el historial de un cliente que ya no está en el campo.
+    private async Task ElegirCliente(ChangeEventArgs e)
+    {
+        busquedaCliente = e.Value?.ToString()?.Trim() ?? "";
+        var cliente = clientes.FirstOrDefault(c =>
+                string.Equals(EtiquetaCliente(c), busquedaCliente, StringComparison.OrdinalIgnoreCase))
+            ?? clientes.FirstOrDefault(c =>
+                string.Equals(c.Nombre, busquedaCliente, StringComparison.OrdinalIgnoreCase));
+
+        clienteElegido = cliente is null ? "" : $"{cliente.Tipo}|{cliente.Id}";
+        if (cliente is not null) busquedaCliente = EtiquetaCliente(cliente);
+        await CargarDeCliente();
+    }
 
     private bool EsAdmin => Vista.Perfil.Clave == "administrador";
     private string Titulo => EsAdmin ? "Historial de cirugías por cliente" : "Mis cirugías anteriores";

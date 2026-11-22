@@ -9,31 +9,39 @@
 
 <PageTitle>Historial documental</PageTitle>
 
-<PageHeader Titulo="Historial documental" Subtitulo="Versiones y cambios de estado de los documentos de una solicitud" />
+@* Se llega aquí desde una solicitud concreta. Cuando viene preseleccionada no
+   se pinta el selector: la pantalla es el historial de ESA solicitud, no un
+   buscador suelto. El selector queda solo para quien entre por la URL pelada. *@
+<div class="surgery-breadcrumb mb-2">
+    <a class="volver-atras" href="/solicitudes" aria-label="Volver a las solicitudes"><Icono Nombre="volver" Tamano="16" /> Solicitudes</a>
+    <span>/</span><span>Historial documental</span>
+</div>
+<PageHeader Titulo="Historial documental" Subtitulo="@SubtituloPantalla">
+    <button type="button" class="btn btn-outline-secondary" disabled="@(IdOperacion <= 0 || Cargando)" @onclick="ActualizarAsync"
+            title="Volver a consultar" aria-label="Volver a consultar el historial">
+        <Icono Nombre="recargar" Tamano="17" />
+    </button>
+</PageHeader>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-8">
-                <label for="historial-solicitud" class="form-label small mb-1">Solicitud</label>
-                <select id="historial-solicitud" class="form-select form-select-sm" @bind="IdOperacion" @bind:after="ActualizarAsync">
-                    <option value="0">-- Seleccione una solicitud --</option>
-                    @foreach (var s in Solicitudes)
-                    {
-                        <option value="@s.IdSolicitud">@s.Codigo · @s.Cliente · @s.TipoProcedimiento</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-4">
-                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(IdOperacion <= 0 || Cargando)" @onclick="ActualizarAsync">Actualizar</button>
-            </div>
+@if (IdSolicitud is null)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <label for="historial-solicitud" class="form-label small mb-1">Solicitud</label>
+            <input id="historial-solicitud" class="form-control form-control-sm" list="lista-solicitudes-historial"
+                   autocomplete="off" placeholder="Escribe el código de la solicitud o el nombre del cliente"
+                   value="@busquedaSolicitud" @onchange="ElegirSolicitud" />
+            <datalist id="lista-solicitudes-historial">
+                @foreach (var s in Solicitudes) { <option value="@EtiquetaSolicitud(s)"></option> }
+            </datalist>
+            <div class="form-text">@($"{Solicitudes.Count} solicitud(es). Escribe para ir filtrando.")</div>
         </div>
     </div>
-</div>
+}
 
 @if (Cargando)
 {
-    <p class="text-muted"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Consultando historial…</p>
+    <div class="card"><Espera Texto="Consultando el historial documental" Filas="4" /></div>
 }
 else if (Error is not null)
 {
@@ -78,6 +86,33 @@ else
     private const int PorPagina = 10;
     private int Pagina { get; set; } = 1;
     private List<SolicitudCirugiaDTO> Solicitudes { get; set; } = [];
+    private string busquedaSolicitud = "";
+
+    private SolicitudCirugiaDTO? SolicitudActual =>
+        Solicitudes.FirstOrDefault(s => s.IdSolicitud == IdOperacion);
+
+    private string SubtituloPantalla => SolicitudActual is SolicitudCirugiaDTO s
+        ? $"{s.Codigo} · {s.Cliente} · {s.TipoProcedimiento}"
+        : "Versiones y cambios de estado de los documentos de una solicitud";
+
+    private static string EtiquetaSolicitud(SolicitudCirugiaDTO s) =>
+        $"{s.Codigo} · {s.Cliente} · {s.TipoProcedimiento}";
+
+    private async Task ElegirSolicitud(ChangeEventArgs e)
+    {
+        busquedaSolicitud = e.Value?.ToString()?.Trim() ?? "";
+        var elegida = Solicitudes.FirstOrDefault(s =>
+                string.Equals(EtiquetaSolicitud(s), busquedaSolicitud, StringComparison.OrdinalIgnoreCase))
+            ?? Solicitudes.FirstOrDefault(s =>
+                string.Equals(s.Codigo, busquedaSolicitud, StringComparison.OrdinalIgnoreCase));
+
+        IdOperacion = elegida?.IdSolicitud ?? 0;
+        if (elegida is not null)
+        {
+            busquedaSolicitud = EtiquetaSolicitud(elegida);
+            await ActualizarAsync();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {

@@ -14,10 +14,16 @@
 }
 
 <div class="row g-2 mb-3">
+    @* Sugerencias con lo que ya está cargado: código de despacho, código de
+       cirugía y cliente, para no tener que recordar el texto exacto. *@
     <div class="col-md-8">
         <label for="buscar-despacho" class="form-label">Búsqueda</label>
-        <input id="buscar-despacho" class="form-control" placeholder="Despacho, cirugía, cliente o equipo"
+        <input id="buscar-despacho" class="form-control" list="lista-despachos" autocomplete="off"
+               placeholder="Código de despacho, cirugía, cliente o equipo"
                value="@busqueda" @oninput="OnBusquedaChanged" />
+        <datalist id="lista-despachos">
+            @foreach (var sugerencia in Sugerencias) { <option value="@sugerencia"></option> }
+        </datalist>
     </div>
     <div class="col-md-4">
         <label for="retorno-despacho" class="form-label">Retorno</label>
@@ -94,6 +100,17 @@ else
     private string? mensajeError;
     private TipoAviso tonoMensaje = TipoAviso.Error;
     private List<DespachoDTO> despachos = [];
+
+    // Código del despacho, código de la cirugía y cliente: las tres formas por
+    // las que alguien busca un despacho.
+    private IEnumerable<string> Sugerencias =>
+        despachos.Select(d => d.Codigo)
+            .Concat(despachos.Select(d => $"CIR-{d.IdCirugia:000}"))
+            .Concat(despachos.Select(d => d.Cliente ?? ""))
+            .Concat(despachos.Select(d => d.Equipo ?? ""))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order();
 
     protected override async Task OnInitializedAsync()
     {

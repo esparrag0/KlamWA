@@ -49,29 +49,42 @@ else
                         </td>
                         <td>
                             @fila.Cliente
-                            <div class="text-muted small">@(fila.EsClinica ? "Orden de compra" : "Comprobante de pago")</div>
+                            <div class="text-muted small">@(fila.EsClinica ? "Orden de compra" : "Paciente particular")</div>
                         </td>
                         <td>@(fila.Inicio?.ToString("dd MMM") ?? "—")</td>
-                        <td><DocumentoEstadoBadge Estado="@fila.DocumentacionTexto" /></td>
-                        <td><DocumentoEstadoBadge Estado="@fila.EstadoConsumoTexto" /></td>
-                        <td class="text-start text-nowrap pe-0">
-                            @if (fila.PuedeRegistrarConsumo)
-                            {
-                                <a href="/inventario/consumos/registrar/@fila.IdCirugia" class="btn btn-sm btn-accion btn-primary">Registrar consumo</a>
-                            }
-                            else if (fila.PuedeVerComparativo)
-                            {
-                                <a href="/reportes/comparativo/@fila.IdCirugia" class="btn btn-sm btn-accion btn-outline-primary">Ver comparativo</a>
-                            }
-                            else if (fila.PuedeRevisarOc)
-                            {
-                                <a href="/agenda/cirugia/@fila.IdCirugia/revisar-oc" class="btn btn-sm btn-accion btn-outline-primary">Revisar OC</a>
-                            }
-                            else
-                            {
-                                <a href="/agenda/cirugia/@fila.IdCirugia" class="btn btn-sm btn-accion btn-outline-secondary">Ver cirugía</a>
-                            }
-                        </td>
+                        @* El cierre documental es cosa de clínicas y hospitales: son los
+                           únicos que compran a crédito y emiten orden de compra. Para un
+                           particular, que paga por adelantado, estas tres columnas no
+                           aplican y se marcan con un guion. *@
+                        @if (!fila.EsClinica)
+                        {
+                            <td class="text-muted">—</td>
+                            <td class="text-muted">—</td>
+                            <td class="text-start text-nowrap pe-0 text-muted">—</td>
+                        }
+                        else
+                        {
+                            <td><DocumentoEstadoBadge Estado="@fila.DocumentacionTexto" /></td>
+                            <td><DocumentoEstadoBadge Estado="@fila.EstadoConsumoTexto" /></td>
+                            <td class="text-start text-nowrap pe-0">
+                                @if (fila.PuedeRegistrarConsumo)
+                                {
+                                    <a href="/inventario/consumos/registrar/@fila.IdCirugia" class="btn btn-sm btn-accion btn-primary">Registrar consumo</a>
+                                }
+                                else if (fila.PuedeVerComparativo)
+                                {
+                                    <a href="/reportes/comparativo/@fila.IdCirugia" class="btn btn-sm btn-accion btn-outline-primary">Ver comparativo</a>
+                                }
+                                else if (fila.PuedeRevisarOc)
+                                {
+                                    <a href="/agenda/cirugia/@fila.IdCirugia/revisar-oc" class="btn btn-sm btn-accion btn-outline-primary">Revisar OC</a>
+                                }
+                                else
+                                {
+                                    <a href="/agenda/cirugia/@fila.IdCirugia" class="btn btn-sm btn-accion btn-outline-secondary">Ver cirugía</a>
+                                }
+                            </td>
+                        }
                     </tr>
                 }
                 @if (!filas.Any())

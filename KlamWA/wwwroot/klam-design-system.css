@@ -753,6 +753,9 @@ textarea.form-control { min-height: 96px; line-height: 1.55; }
     border-radius: var(--klam-radio);
     padding: 3rem 2rem;
     box-shadow: none;
+    /* El estado vacío también lleva .card, y Bootstrap la pone en flex column:
+       por eso text-align: center no centraba el glifo, que tiene ancho fijo. */
+    align-items: center;
 }
 .empty-state h2 { font-size: 1.05rem; font-weight: 650; margin: 1rem 0 .35rem; }
 .empty-state p { color: var(--klam-suave); font-size: .9rem; max-width: 46ch; margin: 0 auto; }

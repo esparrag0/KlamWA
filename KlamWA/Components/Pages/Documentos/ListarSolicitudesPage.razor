@@ -9,21 +9,34 @@
 <PageTitle>Solicitudes de cirugía | Klam</PageTitle>
 
 <PageHeader Titulo="Solicitudes de cirugía" Subtitulo="Revisa la documentación y decide sobre las solicitudes recibidas">
-    <button type="button" class="btn btn-outline-secondary" @onclick="CargarAsync" disabled="@Cargando">Actualizar</button>
+    <button type="button" class="btn btn-outline-secondary" @onclick="CargarAsync" disabled="@Cargando"
+            title="Volver a consultar" aria-label="Volver a consultar las solicitudes">
+        <Icono Nombre="recargar" Tamano="17" />
+    </button>
 </PageHeader>
 
 <div class="card mb-3">
     <div class="card-body">
         <div class="row g-2 align-items-end">
+            @* Sugerencias con el código y el cliente de cada solicitud: se puede
+               escribir SOL-012 o el nombre y el campo va filtrando. *@
             <div class="col-md-8">
                 <label for="buscar-solicitud" class="form-label small mb-1">Buscar</label>
-                <input id="buscar-solicitud" class="form-control form-control-sm" placeholder="Número, cliente, paciente o procedimiento" @bind="Busqueda" @bind:event="oninput" @bind:after="() => Pagina = 1" />
+                <input id="buscar-solicitud" class="form-control form-control-sm" list="lista-solicitudes" autocomplete="off"
+                       placeholder="Código de solicitud, cliente, paciente o procedimiento"
+                       @bind="Busqueda" @bind:event="oninput" @bind:after="() => Pagina = 1" />
+                <datalist id="lista-solicitudes">
+                    @foreach (var sugerencia in Sugerencias) { <option value="@sugerencia"></option> }
+                </datalist>
             </div>
+            @* Los estados salen del catálogo, no de lo que haya cargado: antes se
+               construían con Solicitudes.Select(...), así que al filtrar y quedarse
+               sin filas el desplegable se vaciaba y solo dejaba «Todos». *@
             <div class="col-md-4">
                 <label for="estado-solicitud" class="form-label small mb-1">Estado</label>
                 <select id="estado-solicitud" class="form-select form-select-sm" @bind="EstadoFiltro" @bind:after="() => Pagina = 1">
                     <option value="">Todos</option>
-                    @foreach (var estado in Solicitudes.Select(s => s.Estado).Distinct().Order())
+                    @foreach (var estado in EstadosSolicitud)
                     {
                         <option value="@estado">@EstadoSolicitudTexto.Texto(estado)</option>
                     }
@@ -72,7 +85,7 @@ else
                     <td><DocumentoEstadoBadge Estado="@s.Estado" /></td>
                     <td class="acciones">
                         <a class="btn btn-sm btn-primary" href="/solicitudes/revision/@s.IdSolicitud">Revisar</a>
-                        <a class="btn btn-sm btn-outline-primary ms-1" href="/historial-documental?solicitud=@s.IdSolicitud">Historial</a>
+                        <a class="btn btn-sm btn-outline-primary ms-1" href="/historial-documental?solicitud=@s.IdSolicitud">Ver historial documental</a>
                     </td>
                 </tr>
             }
@@ -87,6 +100,20 @@ else
 
 @code {
     private List<SolicitudCirugiaDTO> Solicitudes { get; set; } = [];
+
+    // Catálogo fijo de estados, el mismo que maneja el backend.
+    private static readonly string[] EstadosSolicitud =
+        ["POR_REVISAR", "DOCUMENTACION_INCOMPLETA", "APROBADA", "RECHAZADA"];
+
+    // Sugerencias de búsqueda: código y cliente de cada solicitud cargada.
+    private IEnumerable<string> Sugerencias =>
+        Solicitudes.Select(s => s.Codigo)
+            .Concat(Solicitudes.Select(s => s.Cliente))
+            .Concat(Solicitudes.Select(s => s.PacienteNombre))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order();
+
     private string Busqueda { get; set; } = "";
     private string EstadoFiltro { get; set; } = "";
     private string? Error { get; set; }

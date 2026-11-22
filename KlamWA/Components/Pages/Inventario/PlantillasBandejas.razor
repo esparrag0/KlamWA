@@ -63,18 +63,22 @@
                 </div>
                 <div class="mb-2">
                     <label class="form-label" for="nueva-procedimiento">Procedimiento</label>
-                    <select id="nueva-procedimiento" class="form-select" @bind="nueva.Procedimiento">
+                    <select id="nueva-procedimiento" class="form-select" value="@SeleccionProcedimiento" @onchange="CambiarProcedimiento">
                         <option value="">-- Seleccione --</option>
                         @foreach (string procedimiento in Procedimientos)
                         {
                             <option value="@procedimiento">@procedimiento</option>
                         }
+                        <option value="@OtroProcedimiento">Otros (escribirlo abajo)</option>
                     </select>
+                    @if (esOtroProcedimiento)
+                    {
+                        <input class="form-control mt-2" placeholder="Nombre del procedimiento"
+                               value="@nueva.Procedimiento" @onchange="EscribirProcedimiento" />
+                    }
                 </div>
-                <div class="form-check mb-3">
-                    <input id="nueva-esterilizada" class="form-check-input" type="checkbox" @bind="nueva.Esterilizado" />
-                    <label class="form-check-label" for="nueva-esterilizada">Esterilizada</label>
-                </div>
+                @* Todas las bandejas se despachan esterilizadas, así que la casilla
+                   solo era una forma de equivocarse: se da por cierta y no se muestra. *@
                 <button type="button" class="btn btn-primary" disabled="@procesando" @onclick="CrearPlantilla">Registrar plantilla</button>
             </div>
         </div>
@@ -91,7 +95,6 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span>@seleccionada.Tipo · @seleccionada.Procedimiento</span>
                     <span class="small text-muted">
-                        @(seleccionada.Esterilizado ? "Esterilizada" : "Sin esterilizar")
                         @if (seleccionada.IdCirugia is int idCirugia)
                         {
                             <text> · asignada a la cirugía #@idCirugia</text>
@@ -164,7 +167,24 @@
     private List<ConsumibleDTO> consumibles = [];
     private BandejaDTO? seleccionada;
     private Dictionary<int, int> cantidades = new();
-    private BandejaFormDTO nueva = new();
+    private BandejaFormDTO nueva = new() { Esterilizado = true };
+
+    // --- Procedimiento «Otros» ---------------------------------------------
+    private const string OtroProcedimiento = "__otro";
+    private bool esOtroProcedimiento;
+
+    private string SeleccionProcedimiento =>
+        esOtroProcedimiento ? OtroProcedimiento : nueva.Procedimiento;
+
+    private void CambiarProcedimiento(ChangeEventArgs e)
+    {
+        string valor = e.Value?.ToString() ?? "";
+        esOtroProcedimiento = valor == OtroProcedimiento;
+        nueva.Procedimiento = esOtroProcedimiento ? "" : valor;
+    }
+
+    private void EscribirProcedimiento(ChangeEventArgs e) =>
+        nueva.Procedimiento = e.Value?.ToString()?.Trim() ?? "";
     private string filtro = "";
     private int idConsumibleNuevo;
     private int cantidadNueva = 1;
@@ -210,7 +230,8 @@
             BandejaDTO creada = await BandejaService.RegistrarAsync(nueva);
             todas = await BandejaService.ListarAsync(null);
             bandejas = await BandejaService.ListarAsync(filtro);
-            nueva = new BandejaFormDTO();
+            nueva = new BandejaFormDTO { Esterilizado = true };
+            esOtroProcedimiento = false;
             // abre la plantilla nueva para agregarle consumibles
             Nav.NavigateTo($"/inventario/plantillas/{creada.IdBandeja}");
         });

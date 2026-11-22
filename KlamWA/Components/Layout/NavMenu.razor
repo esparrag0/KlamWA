@@ -32,8 +32,9 @@
                 <div id="nav-solicitudes" class="nav-submenu">
                     @if (Perfil.Clave == "administrador")
                     {
-                        <NavLink href="/solicitudes">Revisar solicitudes</NavLink>
-                        <NavLink href="/historial-documental">Historial documental</NavLink>
+                        @* El historial documental ya no es una pantalla suelta: se llega a él desde
+   cada solicitud, que es donde tiene sentido mirarlo. *@
+                        <NavLink href="/solicitudes">Solicitudes</NavLink>
                     }
                     @if (Perfil.Clave == "vendedor")
                     {

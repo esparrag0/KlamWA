@@ -6,37 +6,44 @@
 
 <PageTitle>Clientes</PageTitle>
 
+@* «Solicitudes de cirugía» llevaba a /mis-solicitudes, que es la bandeja del
+   vendedor, no de clientes. Esta pantalla solo necesita su propia acción. *@
 <PageHeader Titulo="Clientes" Subtitulo="Pacientes particulares y clínicas/hospitales">
-    <a class="btn btn-outline-secondary" href="/mis-solicitudes">Solicitudes de cirugía</a>
-    <a class="btn btn-primary" href="/clientes/nuevo">Nuevo cliente</a>
+    <a class="btn btn-primary" href="/clientes/nuevo"><Icono Nombre="mas" Tamano="17" /> Nuevo cliente</a>
 </PageHeader>
 
-@* Barra de filtros solo visual (Lab 9: no filtra datos) *@
+@* Esta barra era decorativa: ningún control estaba enlazado y el botón no
+   hacía nada. Ahora filtra de verdad, sobre la lista ya cargada. *@
 <div class="card mb-3">
     <div class="card-body">
         <div class="row g-2 align-items-end">
             <div class="col-md-5">
-                <label class="form-label small mb-1">Buscar</label>
-                <input type="text" class="form-control form-control-sm" placeholder="Nombre, DNI o RUC" />
+                <label class="form-label small mb-1" for="buscar-cliente">Buscar</label>
+                <input id="buscar-cliente" type="text" class="form-control form-control-sm" list="lista-clientes-gestion"
+                       autocomplete="off" placeholder="Nombre, DNI o RUC"
+                       @bind="busqueda" @bind:event="oninput" />
+                <datalist id="lista-clientes-gestion">
+                    @foreach (var sugerencia in Sugerencias) { <option value="@sugerencia"></option> }
+                </datalist>
             </div>
             <div class="col-md-3">
-                <label class="form-label small mb-1">Tipo de cliente</label>
-                <select class="form-select form-select-sm">
-                    <option>Todos</option>
-                    <option>@DatosClientes.Particular</option>
-                    <option>@DatosClientes.Clinica</option>
+                <label class="form-label small mb-1" for="tipo-cliente">Tipo de cliente</label>
+                <select id="tipo-cliente" class="form-select form-select-sm" @bind="filtroTipo">
+                    <option value="">Todos</option>
+                    <option value="PACIENTE_PARTICULAR">@DatosClientes.Particular</option>
+                    <option value="CLINICA_HOSPITAL">@DatosClientes.Clinica</option>
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label small mb-1">Estado</label>
-                <select class="form-select form-select-sm">
-                    <option>Todos</option>
-                    <option>Activo</option>
-                    <option>Inactivo</option>
+                <label class="form-label small mb-1" for="estado-cliente">Estado</label>
+                <select id="estado-cliente" class="form-select form-select-sm" @bind="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
                 </select>
             </div>
             <div class="col-md-2 d-grid">
-                <button type="button" class="btn btn-secondary btn-sm">Filtrar</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="LimpiarFiltros">Limpiar</button>
             </div>
         </div>
     </div>
@@ -59,7 +66,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var c in clientes)
+            @foreach (var c in Filtrados)
             {
                 <tr>
                     <td>@c.Nombre</td>
@@ -87,6 +94,29 @@
 @code {
     private List<ClienteGestionDTO> clientes = [];
     private string? error;
+    private string busqueda = "";
+    private string filtroTipo = "";
+    private string filtroEstado = "";
+
+    private IEnumerable<string> Sugerencias =>
+        clientes.Select(c => c.Nombre)
+            .Concat(clientes.Select(c => c.Documento))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order();
+
+    private IEnumerable<ClienteGestionDTO> Filtrados => clientes.Where(c =>
+        (filtroTipo == "" || c.TipoCliente == filtroTipo)
+        && (filtroEstado == "" || (filtroEstado == "activo") == c.Activo)
+        && (string.IsNullOrWhiteSpace(busqueda)
+            || c.Nombre.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+            || c.Documento.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
+            || (c.EmailContacto ?? "").Contains(busqueda, StringComparison.OrdinalIgnoreCase)));
+
+    private void LimpiarFiltros()
+    {
+        busqueda = filtroTipo = filtroEstado = "";
+    }
 
     protected override async Task OnInitializedAsync()
     {
