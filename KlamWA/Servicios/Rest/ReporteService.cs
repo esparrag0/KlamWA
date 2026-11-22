@@ -55,7 +55,7 @@ public sealed class ReporteService(HttpClient client, AuthenticationStateProvide
             await HttpUtils.VerificarRespuestaAsync(respuesta);
             return new ArchivoReporteDTO
             {
-                Nombre = respuesta.Content.Headers.ContentDisposition?.FileName ?? "reporte",
+                Nombre = NombreDeArchivo(respuesta),
                 Contenido = await respuesta.Content.ReadAsByteArrayAsync(),
                 TipoContenido = respuesta.Content.Headers.ContentType?.MediaType ?? "application/octet-stream"
             };
@@ -64,6 +64,17 @@ public sealed class ReporteService(HttpClient client, AuthenticationStateProvide
         {
             throw new ServicioException(ex.Message, (int?)ex.StatusCode, ex);
         }
+    }
+
+    // El backend manda Content-Disposition con el nombre entre comillas y .NET las
+    // conserva, asi que el archivo se guardaba llamandose «"uso-insumos_....pdf"»,
+    // con comillas incluidas. Windows no admite ese caracter en un nombre de archivo.
+    private static string NombreDeArchivo(HttpResponseMessage respuesta)
+    {
+        string? nombre = respuesta.Content.Headers.ContentDisposition?.FileNameStar
+            ?? respuesta.Content.Headers.ContentDisposition?.FileName;
+        nombre = nombre?.Trim().Trim('"').Trim();
+        return string.IsNullOrWhiteSpace(nombre) ? "reporte" : nombre;
     }
 
     private static Dictionary<string, string?> Consulta(FiltroUsoInsumos f) => Agregar(new()

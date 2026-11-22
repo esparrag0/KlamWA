@@ -75,11 +75,13 @@
         </div>
         <div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center">
             <small class="text-muted">Diferencia: cantidad despachada menos cantidad consumida.</small>
+            @* Generar el PDF toma unos segundos (la primera vez el servidor compila
+               la plantilla de Jasper), asi que el boton avisa y no admite dos clics. *@
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(_reporte.Cirugias.Count == 0)"
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(_reporte.Cirugias.Count == 0 || _descargando)"
                         @onclick='() => ExportarAsync("excel")'>Descargar Excel</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(_reporte.Cirugias.Count == 0)"
-                        @onclick='() => ExportarAsync("pdf")'>Descargar PDF</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(_reporte.Cirugias.Count == 0 || _descargando)"
+                        @onclick='() => ExportarAsync("pdf")'>@(_descargando ? "Generando..." : "Descargar PDF")</button>
             </div>
         </div>
     </div>
@@ -158,6 +160,7 @@
     private ReporteComparativoDTO? _reporte;
     private FiltroComparativo? _filtroUsado;
     private bool _cargando;
+    private bool _descargando;
     private string? _error;
     private TipoAviso tonoError = TipoAviso.Error;
     private int? _ultimoIdRuta;
@@ -225,8 +228,9 @@
 
     private async Task ExportarAsync(string formato)
     {
-        if (_filtroUsado is null) return;
+        if (_filtroUsado is null || _descargando) return;
         _error = null;
+        _descargando = true;
         try
         {
             var archivo = await ReporteService.ExportarComparativoAsync(_filtroUsado, formato);
@@ -235,6 +239,10 @@
         catch (ServicioException ex)
         {
             (_error, tonoError) = MensajeDeError.De(ex);
+        }
+        finally
+        {
+            _descargando = false;
         }
     }
 

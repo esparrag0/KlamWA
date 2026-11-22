@@ -125,9 +125,13 @@
             <small class="text-muted">
                 Frecuencia: número de cirugías en las que se utilizó el insumo. Solo cuentan cirugías finalizadas con consumo completo.
             </small>
+            @* Generar el PDF toma unos segundos (la primera vez el servidor compila
+               la plantilla de Jasper), asi que el boton avisa y no admite dos clics. *@
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick='() => ExportarAsync("excel")'>Descargar Excel</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick='() => ExportarAsync("pdf")'>Descargar PDF</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@_descargando"
+                        @onclick='() => ExportarAsync("excel")'>Descargar Excel</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@_descargando"
+                        @onclick='() => ExportarAsync("pdf")'>@(_descargando ? "Generando..." : "Descargar PDF")</button>
             </div>
         </div>
     </div>
@@ -148,6 +152,7 @@
     // Criterios con los que se generó la vista: la descarga usa estos mismos, así archivo y pantalla coinciden.
     private FiltroUsoInsumos? _filtroUsado;
     private bool _cargando;
+    private bool _descargando;
     private string? _error;
     private TipoAviso tonoError = TipoAviso.Error;
 
@@ -201,8 +206,9 @@
 
     private async Task ExportarAsync(string formato)
     {
-        if (_filtroUsado is null) return;
+        if (_filtroUsado is null || _descargando) return;
         _error = null;
+        _descargando = true;
         try
         {
             var archivo = await ReporteService.ExportarUsoInsumosAsync(_filtroUsado, formato);
@@ -211,6 +217,10 @@
         catch (ServicioException ex)
         {
             (_error, tonoError) = MensajeDeError.De(ex);
+        }
+        finally
+        {
+            _descargando = false;
         }
     }
 
