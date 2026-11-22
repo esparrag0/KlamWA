@@ -128,7 +128,7 @@ else
                 HttpStatusCode.NotFound => "No existe la solicitud indicada.",
                 HttpStatusCode.Conflict => "El historial cambió. Vuelve a consultarlo.",
                 HttpStatusCode.InternalServerError => MensajeDeError.Texto(ex),
-                _ => "No se pudo consultar el backend. Inténtalo de nuevo."
+                _ => "No se pudo consultar el historial. Inténtalo de nuevo."
             };
         }
         catch (TaskCanceledException)

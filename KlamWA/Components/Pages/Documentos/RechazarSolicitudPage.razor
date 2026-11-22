@@ -14,7 +14,7 @@
     <div class="card-body">
         @if (Cargando)
         {
-            <div class="alert alert-info">Consultando solicitud...</div>
+            <Espera Texto="Consultando la solicitud" />
         }
         else if (Error is not null)
         {
@@ -125,7 +125,7 @@
         return ex.StatusCode switch
         {
             HttpStatusCode.BadRequest => MensajeDeError.Texto(ex),
-            HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
+            HttpStatusCode.Unauthorized => "Tu sesión expiró. Vuelve a iniciar sesión.",
             HttpStatusCode.Forbidden => "No tienes permiso de administrador para esta acción.",
             HttpStatusCode.NotFound => "La solicitud ya no existe.",
             HttpStatusCode.Conflict => MensajeDeError.Texto(ex),

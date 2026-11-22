@@ -43,7 +43,7 @@
 <section class="card">
     <div class="section-heading">
         <h2>Directorio de usuarios <span class="count-label">@(usuarios?.Count ?? 0)</span></h2>
-        <span>Registros en MySQL</span>
+        <span>Cuentas del equipo y de los clientes</span>
     </div>
 
     <div class="filter-toolbar">
@@ -80,12 +80,7 @@
 
     @if (cargando)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando usuarios...</span>
-            </div>
-            <p class="text-muted mt-2">Consultando usuarios en MySQL...</p>
-        </div>
+        <Espera Texto="Consultando usuarios" Filas="5" />
     }
     else if (usuarios == null || usuarios.Count == 0)
     {
