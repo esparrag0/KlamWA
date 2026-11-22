@@ -117,6 +117,7 @@ else
                     <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarDestino">@(procesando && operacionActual == "registrar-destino" ? "Registrando clínica..." : "Registrar y seleccionar clínica de destino")</button></div>
                 }
                 @if (mensajeDestino is not null) { <div class="col-12"><div class="alert alert-@tipoMensajeDestino mb-0" role="@(tipoMensajeDestino == "danger" ? "alert" : "status")">@mensajeDestino</div></div> }
+                }
                 <CampoForm Obligatorio="true" Etiqueta="Nombre del paciente" Columnas="col-12" Para="paciente"><InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" /><ValidationMessage For="() => ViewModel.PacienteNombre" /></CampoForm>
                 <CampoForm Obligatorio="true" Etiqueta="Diagnóstico" Columnas="col-12" Para="diagnostico"><InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" /><ValidationMessage For="() => ViewModel.Diagnostico" /></CampoForm>
                 <CampoForm Obligatorio="true" Etiqueta="Procedimiento" Para="procedimiento"><InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" /><ValidationMessage For="() => ViewModel.Procedimiento" /></CampoForm>
@@ -189,13 +190,12 @@ else
 
     private void CambiarTipo()
     {
-        seleccionado = null; resultados = []; ViewModel.IdCliente = 0;
-                }
+        seleccionado = null; resultados = []; ViewModel.IdCliente = 0; ViewModel.ClinicaNuevaLista = false;
         mostrarRegistro = false; nuevo = new(); mensajeCliente = null;
     }
     private void InvalidarCliente()
     {
-        seleccionado = null; ViewModel.IdCliente = 0; resultados = [];
+        seleccionado = null; ViewModel.IdCliente = 0; resultados = []; ViewModel.ClinicaNuevaLista = false;
         mostrarRegistro = false; mensajeCliente = null;
     }
     private void InvalidarDestino()
