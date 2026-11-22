@@ -1,0 +1,84 @@
+@* Aviso de pantalla: el único modo de dar una noticia en Klam.
+
+   Cuatro tonos, y el criterio para elegirlos es quién puede arreglar lo que pasó:
+
+     Info      contexto, no es un problema              teal
+     Exito     la acción se completó                    verde
+     Atencion  no se pudo, y depende de quien lo usa    ámbar
+               (un dato, un estado, un permiso)
+     Error     falló el sistema; toca reintentar        rosa
+
+   Si el aviso nace de una excepción se le pasa la excepción entera, no su
+   Message: MensajeDeError traduce el texto y escoge el tono de una vez.
+
+       <Aviso Excepcion="@fallo" AlCerrar="() => fallo = null" />
+       <Aviso Tipo="TipoAviso.Exito" Mensaje="Se guardó el consumo." /> *@
+
+<div class="klam-aviso klam-aviso-@Clase" role="@Rol">
+    <span class="klam-aviso-glifo" aria-hidden="true"><Icono Nombre="@Glifo" Tamano="18" /></span>
+    <div class="klam-aviso-texto">
+        @if (!string.IsNullOrWhiteSpace(Titulo))
+        {
+            <strong>@Titulo</strong>
+        }
+        @if (!string.IsNullOrWhiteSpace(TextoFinal))
+        {
+            <p>@TextoFinal</p>
+        }
+        @ChildContent
+    </div>
+    @if (Accion is not null)
+    {
+        <div class="klam-aviso-accion">@Accion</div>
+    }
+    @if (AlCerrar.HasDelegate)
+    {
+        <button type="button" class="klam-aviso-cerrar" @onclick="AlCerrar" aria-label="Cerrar aviso">
+            <Icono Nombre="cerrar" Tamano="15" />
+        </button>
+    }
+</div>
+
+@code {
+    /// <summary>Tono del aviso. Lo ignora si se pasa Excepcion: ahí lo decide el traductor.</summary>
+    [Parameter] public TipoAviso Tipo { get; set; } = TipoAviso.Info;
+
+    /// <summary>Encabezado opcional, para cuando el mensaje necesita un titular.</summary>
+    [Parameter] public string? Titulo { get; set; }
+
+    /// <summary>Texto del aviso, ya redactado para quien usa la plataforma.</summary>
+    [Parameter] public string? Mensaje { get; set; }
+
+    /// <summary>Excepción de origen. Si se pasa, el texto y el tono salen de MensajeDeError.</summary>
+    [Parameter] public Exception? Excepcion { get; set; }
+
+    /// <summary>Botón o enlace a la derecha: "Reintentar", "Volver a usuarios"…</summary>
+    [Parameter] public RenderFragment? Accion { get; set; }
+
+    /// <summary>Si se enlaza, aparece la equis para descartar el aviso.</summary>
+    [Parameter] public EventCallback AlCerrar { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string? TextoFinal => Excepcion is null ? Mensaje : MensajeDeError.Texto(Excepcion);
+    private TipoAviso TipoFinal => Excepcion is null ? Tipo : MensajeDeError.Tono(Excepcion);
+
+    private string Clase => TipoFinal switch
+    {
+        TipoAviso.Exito => "exito",
+        TipoAviso.Atencion => "atencion",
+        TipoAviso.Error => "error",
+        _ => "info"
+    };
+
+    private string Glifo => TipoFinal switch
+    {
+        TipoAviso.Exito => "check",
+        TipoAviso.Atencion => "alerta",
+        TipoAviso.Error => "error",
+        _ => "info"
+    };
+
+    // Lo que interrumpe se anuncia a los lectores de pantalla; lo que solo informa, no.
+    private string Rol => TipoFinal is TipoAviso.Error or TipoAviso.Atencion ? "alert" : "status";
+}

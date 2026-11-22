@@ -1,5 +1,5 @@
 .agenda-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: stretch; }
-.calendar-surface, .day-panel { min-width: 0; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio); background: #fff; box-shadow: 0 4px 18px var(--klam-marca-800)0d; }
+.calendar-surface, .day-panel { min-width: 0; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio); background: #fff; box-shadow: var(--klam-sombra-sm); }
 .calendar-surface { padding: .85rem; }
 .calendar-toolbar { display: flex; align-items: center; gap: .65rem; min-height: 42px; margin-bottom: .75rem; }
 .calendar-toolbar h2 { margin: 0 .35rem; color: var(--klam-tinta); font-size: 1rem; font-weight: 700; text-transform: capitalize; }
@@ -15,7 +15,7 @@
 .calendario td:hover { background: var(--klam-marca-50); }
 .calendario td.fuera-de-mes { background: var(--klam-superficie-2); color: var(--klam-tenue); cursor: default; }
 .calendario td.seleccionado { background: var(--klam-marca-50); box-shadow: inset 0 0 0 2px var(--klam-primario); }
-.day-number { width: 25px; height: 25px; margin-bottom: .25rem; padding: 0; border: 0; border-radius: var(--klam-radio-xs); background: transparent; color: var(--klam-tinta); text-align: center; font-weight: 700; font-size: .78rem; }
+.day-number { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-bottom: .25rem; padding: 0; border: 0; border-radius: var(--klam-radio-xs); background: transparent; color: var(--klam-tinta); font-weight: 700; font-size: .78rem; font-variant-numeric: tabular-nums; }
 .fuera-de-mes .day-number { color: var(--klam-tenue); }
 .day-number.hoy { border-radius: 50%; background: var(--klam-marca-800); color: #fff; }
 .seleccionado .day-number { color: var(--klam-primario); }
@@ -31,10 +31,12 @@
 .day-panel { display: flex; flex-direction: column; padding: 1rem; }
 .day-panel-header { display: flex; gap: .65rem; align-items: flex-start; padding-bottom: .9rem; border-bottom: 1px solid var(--klam-borde); }
 .panel-icon { flex: none; color: var(--klam-primario); }
-.day-panel-header h2 { margin: 0; color: var(--klam-tinta); font-size: .94rem; line-height: 1.35; text-transform: capitalize; }
+.day-panel-header h2 { margin: 0; color: var(--klam-tinta); font-size: .94rem; line-height: 1.35; text-transform: none; }
+/* capitalize convertía «miércoles 28 de octubre» en «Miércoles 28 De Octubre». */
+.day-panel-header h2::first-letter { text-transform: uppercase; }
 .day-panel-header p { margin: .2rem 0 0; color: var(--klam-suave); font-size: .78rem; }
 .day-list { display: flex; flex-direction: column; gap: .65rem; padding-top: .9rem; }
-.surgery-card { display: block; padding: .75rem .8rem; border: 1px solid var(--klam-borde); border-left: 4px solid var(--klam-aviso); border-radius: var(--klam-radio-sm); background: #fff; box-shadow: 0 2px 7px var(--klam-marca-800)0b; color: var(--klam-texto); text-decoration: none; }
+.surgery-card { display: block; padding: .75rem .8rem; border: 1px solid var(--klam-borde); border-left: 4px solid var(--klam-aviso); border-radius: var(--klam-radio-sm); background: #fff; box-shadow: var(--klam-sombra-xs); color: var(--klam-texto); text-decoration: none; }
 .surgery-card:hover { background: var(--klam-superficie-2); border-color: var(--klam-borde-fuerte); color: var(--klam-texto); }
 .surgery-card.state-scheduled { border-left-color: var(--klam-aviso); }
 .surgery-card.state-progress { border-left-color: var(--klam-exito); }

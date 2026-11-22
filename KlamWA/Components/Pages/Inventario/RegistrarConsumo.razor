@@ -53,10 +53,7 @@ else
 
     @if (mensajeError != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @mensajeError
-            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
-        </div>
+        <Aviso Tipo="@tonoMensaje" Mensaje="@mensajeError" AlCerrar="() => mensajeError = null" />
     }
     @if (mensajeExito != null)
     {
@@ -162,6 +159,7 @@ else
     private bool guardando;
     private bool mostrarConfirmacion;
     private string? mensajeError;
+    private TipoAviso tonoMensaje = TipoAviso.Error;
     private string? mensajeExito;
     private List<string> erroresValidacion = [];
 
@@ -180,7 +178,8 @@ else
         catch (Exception ex)
         {
             consumo = null;
-            mensajeError = "No se pudo obtener el consumo: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudo obtener el consumo: " + MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -218,7 +217,8 @@ else
         }
         catch (Exception ex)
         {
-            mensajeError = "No se pudo guardar el consumo: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudo guardar el consumo: " + MensajeDeError.Texto(ex);
         }
         finally
         {

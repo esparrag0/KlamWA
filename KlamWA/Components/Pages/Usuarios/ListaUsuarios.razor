@@ -89,7 +89,7 @@
     }
     else if (usuarios == null || usuarios.Count == 0)
     {
-        <EstadoVacio Mensaje="No se encontraron usuarios que coincidan con los filtros aplicados." />
+        <EstadoVacio Titulo="Ningún usuario coincide" Descripcion="Prueba con otro nombre, rol o estado, o limpia los filtros para ver el directorio completo." />
     }
     else
     {
@@ -205,12 +205,12 @@
         }
         catch (ServicioException ex)
         {
-            mensajeError = ex.Message;
+            mensajeError = MensajeDeError.Texto(ex);
             usuarios = [];
         }
         catch (Exception ex)
         {
-            mensajeError = "No se pudo cargar la lista de usuarios: " + ex.Message;
+            mensajeError = "No se pudo cargar la lista de usuarios: " + MensajeDeError.Texto(ex);
             usuarios = [];
         }
         finally
@@ -237,7 +237,7 @@
         }
         catch (Exception ex)
         {
-            mensajeError = "No se pudo reactivar el usuario: " + ex.Message;
+            mensajeError = "No se pudo reactivar el usuario: " + MensajeDeError.Texto(ex);
         }
     }
 }

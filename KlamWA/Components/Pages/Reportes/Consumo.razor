@@ -13,10 +13,7 @@
 
 @if (_error != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @_error
-        <button type="button" class="btn-close" aria-label="Cerrar" @onclick="() => _error = null"></button>
-    </div>
+    <Aviso Tipo="@tonoError" Mensaje="@_error" AlCerrar="() => _error = null" />
 }
 
 <div class="card mb-3">
@@ -152,6 +149,7 @@
     private FiltroUsoInsumos? _filtroUsado;
     private bool _cargando;
     private string? _error;
+    private TipoAviso tonoError = TipoAviso.Error;
 
     protected override async Task OnInitializedAsync()
     {
@@ -170,7 +168,7 @@
         }
         catch (ServicioException ex)
         {
-            _error = ex.Message;
+            (_error, tonoError) = MensajeDeError.De(ex);
         }
         await GenerarAsync();
     }
@@ -193,7 +191,7 @@
         }
         catch (ServicioException ex)
         {
-            _error = ex.Message;
+            (_error, tonoError) = MensajeDeError.De(ex);
         }
         finally
         {
@@ -212,7 +210,7 @@
         }
         catch (ServicioException ex)
         {
-            _error = ex.Message;
+            (_error, tonoError) = MensajeDeError.De(ex);
         }
     }
 

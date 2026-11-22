@@ -29,10 +29,7 @@ else
     }
     @if (mensajeError != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @mensajeError
-            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
-        </div>
+        <Aviso Tipo="@tonoMensaje" Mensaje="@mensajeError" AlCerrar="() => mensajeError = null" />
     }
 
     <div class="card mb-3">
@@ -135,6 +132,7 @@ else
     private bool mostrarModal;
     private string? mensajeOk;
     private string? mensajeError;
+    private TipoAviso tonoMensaje = TipoAviso.Error;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -147,7 +145,8 @@ else
         catch (Exception ex)
         {
             despacho = null;
-            mensajeError = "No se pudo cargar el detalle del despacho: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudo cargar el detalle del despacho: " + MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -171,7 +170,7 @@ else
         catch (Exception ex)
         {
             mostrarModal = false;
-            mensajeError = ex.Message;
+            (mensajeError, tonoMensaje) = MensajeDeError.De(ex);
         }
         finally
         {

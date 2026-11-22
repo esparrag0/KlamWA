@@ -42,7 +42,7 @@
 }
 else if (Id.HasValue && !usuarioExiste)
 {
-    <EstadoVacio Enlace="/usuarios" TextoEnlace="Volver a usuarios" Mensaje="No se encontró el usuario a editar." />
+    <EstadoVacio Titulo="No encontramos ese usuario" Tono="aviso" Descripcion="Puede que lo hayan dado de baja o que el enlace esté desactualizado." Enlace="/usuarios" TextoEnlace="Volver a usuarios" />
 }
 else
 {
@@ -209,7 +209,7 @@ else
             }
             catch (Exception ex)
             {
-                errorMensaje = "Error al cargar usuario: " + ex.Message;
+                errorMensaje = "Error al cargar usuario: " + MensajeDeError.Texto(ex);
                 usuarioExiste = false;
             }
             finally
@@ -294,11 +294,11 @@ else
         }
         catch (ServicioException ex)
         {
-            errorMensaje = ex.Message;
+            errorMensaje = MensajeDeError.Texto(ex);
         }
         catch (Exception ex)
         {
-            errorMensaje = "Error al guardar usuario: " + ex.Message;
+            errorMensaje = "Error al guardar usuario: " + MensajeDeError.Texto(ex);
         }
         finally
         {

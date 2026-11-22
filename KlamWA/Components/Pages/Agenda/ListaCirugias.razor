@@ -64,7 +64,7 @@ else
         }
         catch (ServicioException ex)
         {
-            error = ex.Message;
+            error = MensajeDeError.Texto(ex);
             filas = new();
         }
         finally

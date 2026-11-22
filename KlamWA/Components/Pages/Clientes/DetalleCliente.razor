@@ -69,6 +69,6 @@ else
     {
         c = null; error = null;
         try { c = await Api.ObtenerAsync(Tipo, Id); }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (HttpRequestException ex) { error = MensajeDeError.Texto(ex); }
     }
 }

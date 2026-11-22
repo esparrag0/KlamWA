@@ -90,7 +90,7 @@ else if (registro is not null)
         }
         catch (HttpRequestException ex)
         {
-            error = ex.Message;
+            error = MensajeDeError.Texto(ex);
         }
         finally
         {

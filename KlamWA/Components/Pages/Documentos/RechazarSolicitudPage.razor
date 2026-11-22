@@ -124,13 +124,13 @@
         RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
         return ex.StatusCode switch
         {
-            HttpStatusCode.BadRequest => $"Datos no válidos: {ex.Message}",
+            HttpStatusCode.BadRequest => MensajeDeError.Texto(ex),
             HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
             HttpStatusCode.Forbidden => "No tienes permiso de administrador para esta acción.",
             HttpStatusCode.NotFound => "La solicitud ya no existe.",
-            HttpStatusCode.Conflict => $"No se puede rechazar la solicitud: {ex.Message}",
-            HttpStatusCode.InternalServerError => $"Error del servidor: {ex.Message}",
-            _ => ex.Message
+            HttpStatusCode.Conflict => MensajeDeError.Texto(ex),
+            HttpStatusCode.InternalServerError => MensajeDeError.Texto(ex),
+            _ => MensajeDeError.Texto(ex)
         };
     }
 }

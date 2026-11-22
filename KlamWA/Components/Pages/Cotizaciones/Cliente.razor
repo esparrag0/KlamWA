@@ -80,7 +80,7 @@ else
         try { var estado = await Autenticacion.GetAuthenticationStateAsync();
             esClinica = estado.User.IsInRole("CLINICA_HOSPITAL");
             if (esClinica) solicitudes = await Solicitudes.ListarPropiasAsync(); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException) { error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException) { error = MensajeDeError.Texto(ex); }
         finally { cargando = false; }
     }
     private async Task SeleccionarAsync()
@@ -91,7 +91,7 @@ else
         historial = []; vigente = null;
         if (seleccionada is null) return;
         try { await RecargarAsync(); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException) { error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException) { error = MensajeDeError.Texto(ex); }
     }
     private async Task RecargarAsync()
     {
@@ -107,7 +107,7 @@ else
             decision = null; motivo = ""; await RecargarAsync(); }
         catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException)
         {
-            error = ex.Message;
+            error = MensajeDeError.Texto(ex);
             try { await RecargarAsync(); }
             catch (HttpRequestException consulta) { error += " No se pudo actualizar el estado: " + consulta.Message; }
         }
@@ -119,7 +119,7 @@ else
         ocupado = true; error = null;
         try { var archivo = await Cotizaciones.DescargarAsync(id);
             await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException or JSException) { error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException or JSException) { error = MensajeDeError.Texto(ex); }
         finally { ocupado = false; }
     }
 }

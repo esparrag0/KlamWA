@@ -118,7 +118,7 @@ else
         }
         catch (HttpRequestException ex)
         {
-            error = ex.Message;
+            error = MensajeDeError.Texto(ex);
         }
         finally
         {

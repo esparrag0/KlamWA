@@ -64,7 +64,7 @@ else
         }
         catch (ServicioException ex)
         {
-            MensajeError = ex.Message;
+            MensajeError = MensajeDeError.Texto(ex);
         }
         catch (HttpRequestException)
         {
@@ -87,7 +87,7 @@ else
         }
         catch (ServicioException ex)
         {
-            MensajeError = ex.Message;
+            MensajeError = MensajeDeError.Texto(ex);
             mostrarModal = false;
         }
         finally

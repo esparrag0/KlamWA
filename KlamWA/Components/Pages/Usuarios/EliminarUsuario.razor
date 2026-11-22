@@ -28,7 +28,7 @@
 }
 else if (usuario is null)
 {
-    <EstadoVacio Enlace="/usuarios" TextoEnlace="Volver a usuarios" Mensaje="No se encontró la cuenta seleccionada." />
+    <EstadoVacio Titulo="No encontramos esa cuenta" Tono="aviso" Descripcion="Puede que ya la hayan dado de baja." Enlace="/usuarios" TextoEnlace="Volver a usuarios" />
 }
 else
 {
@@ -104,7 +104,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMensaje = "Error al consultar usuario: " + ex.Message;
+            errorMensaje = "Error al consultar usuario: " + MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -131,11 +131,11 @@ else
         }
         catch (ServicioException ex)
         {
-            errorMensaje = ex.Message;
+            errorMensaje = MensajeDeError.Texto(ex);
         }
         catch (Exception ex)
         {
-            errorMensaje = "Error al procesar la solicitud: " + ex.Message;
+            errorMensaje = "Error al procesar la solicitud: " + MensajeDeError.Texto(ex);
         }
         finally
         {

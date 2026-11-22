@@ -2,7 +2,7 @@
 .heading-icon { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: .75rem; background: var(--klam-marca-50); color: var(--klam-primario); }
 .bitacora-heading h1 { margin: 0; color: var(--klam-tinta); font-size: clamp(1.4rem, 2.3vw, 1.85rem); font-weight: 750; }
 .bitacora-heading p { margin: .2rem 0 0; color: var(--klam-suave); font-size: .9rem; }
-.filter-card, .history-card, .detail-card { min-width: 0; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio); background: #fff; box-shadow: 0 4px 18px var(--klam-marca-800)0d; }
+.filter-card, .history-card, .detail-card { min-width: 0; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio); background: #fff; box-shadow: var(--klam-sombra-sm); }
 .filter-card { padding: 1.15rem 1.25rem; margin-bottom: 1.1rem; }
 .section-heading { display: flex; align-items: center; gap: .55rem; margin-bottom: 1rem; color: var(--klam-primario); }
 .section-heading h2 { margin: 0; color: var(--klam-tinta); font-size: .98rem; font-weight: 700; }
@@ -10,7 +10,7 @@
 .field { min-width: 0; }
 .field label { display: block; margin-bottom: .35rem; color: var(--klam-tinta); font-size: .79rem; font-weight: 650; }
 .field .form-control, .field .form-select { min-height: 39px; border-color: var(--klam-borde); color: var(--klam-tinta); font-size: .86rem; }
-.field .form-control:focus, .field .form-select:focus { border-color: var(--klam-primario); box-shadow: 0 0 0 .18rem var(--klam-primario)21; }
+.field .form-control:focus, .field .form-select:focus { border-color: var(--klam-primario); box-shadow: var(--klam-anillo); }
 .origin-input { display: grid; grid-template-columns: minmax(105px, 1fr) minmax(80px, 1fr); gap: .45rem; }
 .filter-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .55rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--klam-borde); }
 .filter-actions .btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; padding-inline: 1rem; font-size: .84rem; font-weight: 650; }

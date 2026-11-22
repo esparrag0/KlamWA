@@ -189,7 +189,7 @@ else if (opciones != null)
         }
         catch (ServicioException ex)
         {
-            MensajeError = ex.Message;
+            MensajeError = MensajeDeError.Texto(ex);
         }
         catch (HttpRequestException)
         {
@@ -244,7 +244,7 @@ else if (opciones != null)
         }
         catch (ServicioException ex)
         {
-            MensajeError = ex.Message;
+            MensajeError = MensajeDeError.Texto(ex);
         }
     }
 
@@ -277,7 +277,7 @@ else if (opciones != null)
         catch (ServicioException ex)
         {
             // Muestra la validación devuelta por la BL.
-            MensajeError = ex.Message;
+            MensajeError = MensajeDeError.Texto(ex);
         }
         catch (HttpRequestException)
         {

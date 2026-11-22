@@ -17,27 +17,30 @@ public sealed class RestConSesion(HttpClient client, AuthenticationStateProvider
         using var respuesta = await client.SendAsync(peticion);
         if (!respuesta.IsSuccessStatusCode)
         {
-            string mensaje = (int)respuesta.StatusCode == 404
-                ? $"El backend no tiene el servicio {peticion.RequestUri?.AbsolutePath} (404). Verifique que esté desplegada la versión actual del backend."
-                : $"El servidor respondió {(int)respuesta.StatusCode}.";
+            string? delServidor = null;
             try {
                 using var json = JsonDocument.Parse(await respuesta.Content.ReadAsStringAsync());
-                if (json.RootElement.TryGetProperty("error", out var error)) mensaje = error.GetString() ?? mensaje;
+                if (json.RootElement.TryGetProperty("error", out var error)) delServidor = error.GetString();
             } catch (JsonException) { }
-            throw new ServicioException(mensaje, (int)respuesta.StatusCode);
+            // Antes aquí salía "El backend no tiene el servicio /klam-rest/... (404).
+            // Verifique que esté desplegada la versión actual del backend", que es una
+            // instrucción para quien desarrolla, no para quien usa la plataforma.
+            throw new ServicioException(
+                MensajeDeError.Humanizar(delServidor, (int)respuesta.StatusCode),
+                (int)respuesta.StatusCode);
         }
         if (typeof(T) == typeof(object) || respuesta.Content.Headers.ContentLength == 0) return default;
         return await respuesta.Content.ReadFromJsonAsync<T>();
     }
 
     public async Task<T> DoGet<T>(string url) => await Enviar<T>(HttpMethod.Get, url)
-        ?? throw new ServicioException("Respuesta vacía", 500);
+        ?? throw new ServicioException(MensajeDeError.PorCodigo(500).Texto, 500);
     public async Task<T> DoPost<TRequest, T>(string url, TRequest datos) =>
-        await Enviar<T>(HttpMethod.Post, url, datos) ?? throw new ServicioException("Respuesta vacía", 500);
+        await Enviar<T>(HttpMethod.Post, url, datos) ?? throw new ServicioException(MensajeDeError.PorCodigo(500).Texto, 500);
     public Task DoPost<TRequest>(string url, TRequest datos) => Enviar<object>(HttpMethod.Post, url, datos);
     public Task DoPost(string url) => Enviar<object>(HttpMethod.Post, url);
     public async Task<T> DoPut<TRequest, T>(string url, TRequest datos) =>
-        await Enviar<T>(HttpMethod.Put, url, datos) ?? throw new ServicioException("Respuesta vacía", 500);
+        await Enviar<T>(HttpMethod.Put, url, datos) ?? throw new ServicioException(MensajeDeError.PorCodigo(500).Texto, 500);
     public Task DoPut<TRequest>(string url, TRequest datos) => Enviar<object>(HttpMethod.Put, url, datos);
     public Task DoDelete(string url) => Enviar<object>(HttpMethod.Delete, url);
 }

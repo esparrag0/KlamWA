@@ -142,7 +142,7 @@
         }
         catch (ServicioException ex)
         {
-            error = ex.Message;
+            error = MensajeDeError.Texto(ex);
             cirugiasDelMes = new();
         }
         finally

@@ -82,7 +82,7 @@ else
     {
         try { solicitudes = (await Solicitudes.ListarAsync())
             .Where(s => s.TipoCliente is "CLINICA" or "CLINICA_HOSPITAL").ToList(); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException) { error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException) { error = MensajeDeError.Texto(ex); }
         finally { cargando = false; }
     }
     private async Task SeleccionarAsync()
@@ -95,7 +95,7 @@ else
         archivo = null;
         if (seleccionada is null) return;
         try { await RecargarAsync(); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException) { error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException) { error = MensajeDeError.Texto(ex); }
     }
     private async Task RecargarAsync()
     {
@@ -116,7 +116,7 @@ else
         try { var creada = await Cotizaciones.AdjuntarAsync(idSeleccionado, precio, archivo);
             mensaje = $"Cotización versión {creada.Version} adjuntada; espera la decisión de la clínica.";
             archivo = null; await RecargarAsync(); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or InvalidOperationException or JSException or OperationCanceledException) { error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or InvalidOperationException or JSException or OperationCanceledException) { error = MensajeDeError.Texto(ex); }
         finally { ocupado = false; }
     }
     private async Task DescargarAsync(int id)
@@ -126,7 +126,7 @@ else
         try { var archivoDescargado = await Cotizaciones.DescargarAsync(id);
             await JS.InvokeVoidAsync("klamDescargarDocumento", archivoDescargado.Contenido,
                 archivoDescargado.Nombre, archivoDescargado.TipoContenido); }
-        catch (Exception ex) when (ex is HttpRequestException or IOException or JSException) { error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or JSException) { error = MensajeDeError.Texto(ex); }
         finally { ocupado = false; }
     }
 }

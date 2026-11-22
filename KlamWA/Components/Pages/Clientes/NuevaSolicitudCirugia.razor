@@ -301,7 +301,7 @@ else
                     await Documentos.RegistrarArchivoAsync(idSolicitudGuardada.Value, tipo, archivo);
                     cargados.Add(tipo); erroresArchivo.Remove(tipo);
                 } catch (Exception ex) when (ex is HttpRequestException or InvalidDataException or IOException) {
-                    erroresArchivo[tipo] = ex.Message;
+                    erroresArchivo[tipo] = MensajeDeError.Texto(ex);
                 }
             }
             if (TiposRequeridos.All(cargados.Contains)) Mensaje("Solicitud y documentos registrados correctamente.", "success");
@@ -331,12 +331,12 @@ else
         try { await accion(); }
         catch (HttpRequestException ex) {
             var error = ex.StatusCode switch {
-                HttpStatusCode.BadRequest => "Revise los datos ingresados. " + ex.Message,
+                HttpStatusCode.BadRequest => MensajeDeError.Texto(ex),
                 HttpStatusCode.Unauthorized => "La sesión expiró. Vuelva a iniciar sesión.",
                 HttpStatusCode.Forbidden => "Su usuario no tiene permiso para esta operación.",
                 HttpStatusCode.NotFound => "El registro ya no está disponible. Repita la búsqueda.",
-                HttpStatusCode.Conflict => "El cliente ya existe o la solicitud cambió. " + ex.Message,
-                _ => ex.Message
+                HttpStatusCode.Conflict => "El cliente ya existe o la solicitud cambió. " + MensajeDeError.Texto(ex),
+                _ => MensajeDeError.Texto(ex)
             };
             NotificarOperacion(operacion, error);
         }

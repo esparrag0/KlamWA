@@ -267,7 +267,7 @@ else
         }
         catch (ServicioException ex)
         {
-            error = ex.Message;
+            error = MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -297,7 +297,7 @@ else
         }
         catch (ServicioException ex)
         {
-            mensajeError = ex.Message;
+            mensajeError = MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -333,7 +333,7 @@ else
         catch (ServicioException ex)
         {
             // p. ej. "Debe indicar el motivo de la cancelación" (validado en la BL)
-            errorModal = ex.Message;
+            errorModal = MensajeDeError.Texto(ex);
         }
         finally
         {

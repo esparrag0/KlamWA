@@ -9,10 +9,7 @@
 
 @if (mensajeError != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @mensajeError
-        <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
-    </div>
+    <Aviso Tipo="@tonoMensaje" Mensaje="@mensajeError" AlCerrar="() => mensajeError = null" />
 }
 
 <div class="row g-2 mb-3">
@@ -92,6 +89,7 @@ else
     private DateTime? hasta;
     private bool cargando = true;
     private string? mensajeError;
+    private TipoAviso tonoMensaje = TipoAviso.Error;
     private List<ConsumoCirugiaViewModel> filas = [];
 
     private string? DesdeTexto => desde?.ToString("yyyy-MM-dd");
@@ -134,7 +132,8 @@ else
         catch (Exception ex)
         {
             filas = [];
-            mensajeError = "No se pudieron obtener los consumos: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudieron obtener los consumos: " + MensajeDeError.Texto(ex);
         }
         finally
         {

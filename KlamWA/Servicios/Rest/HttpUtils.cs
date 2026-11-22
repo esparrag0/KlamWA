@@ -46,18 +46,18 @@ public static class HttpUtils
         await VerificarRespuesta(response);
     }
 
-    // En vez de solo EnsureSuccessStatusCode: el 404 se lanza igual que el profesor (HttpRequestException)
-    // y los demás errores llevan el mensaje {"error": "..."} de la BL, para mostrarlo en la pantalla
+    // El 404 sigue saliendo como HttpRequestException con su código, porque varias
+    // pantallas ramifican por ex.StatusCode; lo único que cambia es que el texto ya
+    // está en lenguaje de la plataforma en vez de "Response status code does not
+    // indicate success". Los demás errores llevan el mensaje {"error": "..."} de la BL.
     private static async Task VerificarRespuesta(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
         {
             return;
         }
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            response.EnsureSuccessStatusCode();
-        }
+        var codigo = (int)response.StatusCode;
+
         Dictionary<string, string>? error = null;
         try
         {
@@ -67,11 +67,14 @@ public static class HttpUtils
         {
             // el cuerpo no era JSON
         }
-        if (error != null && error.ContainsKey("error"))
+        var delServidor = error != null && error.TryGetValue("error", out var e) ? e : null;
+        var mensaje = MensajeDeError.Humanizar(delServidor, codigo);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            throw new ServicioException(error["error"]);
+            throw new HttpRequestException(mensaje, null, HttpStatusCode.NotFound);
         }
-        throw new ServicioException($"Error del servicio ({(int)response.StatusCode})");
+        throw new ServicioException(mensaje, codigo);
     }
 
     // ---- Login y servicios con sesión (HttpClient inyectado y token) ----
@@ -79,7 +82,9 @@ public static class HttpUtils
     public static async Task<TRespuesta?> DoGet<TRespuesta>(HttpClient client, string ruta)
     {
         using var response = await client.GetAsync(ruta);
-        response.EnsureSuccessStatusCode();
+        // VerificarRespuestaAsync en lugar de EnsureSuccessStatusCode: lanza la misma
+        // HttpRequestException con el mismo código, pero con un mensaje legible.
+        await VerificarRespuestaAsync(response);
         return await response.Content.ReadFromJsonAsync<TRespuesta>();
     }
 
@@ -90,7 +95,7 @@ public static class HttpUtils
         if (response.StatusCode == HttpStatusCode.Unauthorized)
             return default;
 
-        response.EnsureSuccessStatusCode();
+        await VerificarRespuestaAsync(response);
         return await response.Content.ReadFromJsonAsync<TRespuesta>();
     }
 
@@ -144,9 +149,7 @@ public static class HttpUtils
             // Los errores sin cuerpo JSON conservan el código HTTP.
         }
         throw new HttpRequestException(
-            string.IsNullOrWhiteSpace(mensaje)
-                ? $"El servidor respondió {(int)response.StatusCode} ({response.ReasonPhrase})."
-                : mensaje,
+            MensajeDeError.Humanizar(mensaje, (int)response.StatusCode),
             null, response.StatusCode);
     }
 }

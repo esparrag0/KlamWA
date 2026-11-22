@@ -221,7 +221,7 @@ else if (Solicitud is not null)
             catch (HttpRequestException ex)
             {
                 Elegibilidad = null;
-                ErrorAccion = "No se pudo consultar si la solicitud está lista para registrar cirugía: " + ex.Message;
+                ErrorAccion = "No se pudo consultar si la solicitud está lista para registrar cirugía: " + MensajeDeError.Texto(ex);
             }
             ConfirmarRegistro = false;
             if (TiposDisponibles.Count > 0 && !TiposDisponibles.Contains(TipoNuevo)) TipoNuevo = TiposDisponibles[0];
@@ -268,7 +268,7 @@ else if (Solicitud is not null)
         }
         catch (Exception ex) when (ex is HttpRequestException or JSException)
         {
-            ErrorAccion = ex.Message;
+            ErrorAccion = MensajeDeError.Texto(ex);
         }
         finally { Ocupado = false; }
     }
@@ -348,11 +348,11 @@ else if (Solicitud is not null)
         }
         catch (IOException ex)
         {
-            ErrorAccion = ex.Message;
+            ErrorAccion = MensajeDeError.Texto(ex);
         }
         catch (InvalidDataException ex)
         {
-            ErrorAccion = ex.Message;
+            ErrorAccion = MensajeDeError.Texto(ex);
         }
         catch (TaskCanceledException)
         {
@@ -369,13 +369,13 @@ else if (Solicitud is not null)
         RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
         return ex.StatusCode switch
         {
-            HttpStatusCode.BadRequest => $"Datos no válidos: {ex.Message}",
+            HttpStatusCode.BadRequest => MensajeDeError.Texto(ex),
             HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
             HttpStatusCode.Forbidden => "No tienes permiso de administrador para esta acción.",
             HttpStatusCode.NotFound => "La solicitud o el documento ya no existe.",
-            HttpStatusCode.Conflict => $"No se puede completar la operación: {ex.Message}",
-            HttpStatusCode.InternalServerError => $"Error del servidor: {ex.Message}",
-            _ => ex.Message
+            HttpStatusCode.Conflict => MensajeDeError.Texto(ex),
+            HttpStatusCode.InternalServerError => MensajeDeError.Texto(ex),
+            _ => MensajeDeError.Texto(ex)
         };
     }
 

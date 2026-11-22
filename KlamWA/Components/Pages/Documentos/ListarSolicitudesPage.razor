@@ -125,7 +125,7 @@ else
             {
                 HttpStatusCode.Unauthorized => "La sesión del backend expiró. Inicia sesión nuevamente.",
                 HttpStatusCode.Forbidden => "No tienes permiso para consultar las solicitudes.",
-                _ => ex.Message
+                _ => MensajeDeError.Texto(ex)
             };
         }
         catch (TaskCanceledException)

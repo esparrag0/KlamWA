@@ -116,7 +116,7 @@
         {
             Documentos = [];
             RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
-            Error = ex.Message;
+            Error = MensajeDeError.Texto(ex);
         }
         finally { Cargando = false; }
     }
@@ -146,7 +146,7 @@
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException)
         {
             RequiereLogin = ex is HttpRequestException http && http.StatusCode == HttpStatusCode.Unauthorized;
-            Error = ex.Message;
+            Error = MensajeDeError.Texto(ex);
         }
         finally { Ocupado = false; }
     }
@@ -162,7 +162,7 @@
         }
         catch (Exception ex) when (ex is HttpRequestException or JSException)
         {
-            Error = ex.Message;
+            Error = MensajeDeError.Texto(ex);
         }
         finally { Ocupado = false; }
     }

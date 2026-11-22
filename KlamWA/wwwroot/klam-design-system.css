@@ -559,42 +559,103 @@ textarea.form-control { min-height: 96px; line-height: 1.55; }
 }
 
 /* ---------------------------------------------------------------- 10 AVISOS */
-.alert {
+/* Cuatro tonos y uno solo por situación. El criterio no es la gravedad, es
+   quién puede arreglar lo que pasó:
+     info      contexto, no es un problema                       azul
+     exito     la acción se completó                             verde
+     atencion  no se pudo y depende de quien lo usa:
+               un dato, un estado, un permiso                    ámbar
+     error     falló el sistema; lo que toca es reintentar       rosa
+   El componente Aviso.razor pinta .klam-aviso; las pantallas que todavía
+   usan .alert de Bootstrap comparten exactamente los mismos colores, así que
+   ninguna se queda fuera del sistema mientras se van migrando. */
+
+.klam-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: .7rem;
+    padding: .85rem 1rem;
+    margin-bottom: 1.15rem;
     border: 1px solid transparent;
     border-radius: var(--klam-radio);
-    padding: .9rem 1.1rem;
     font-size: .875rem;
-    box-shadow: var(--klam-sombra-xs);
+    line-height: 1.5;
 }
+.klam-aviso-glifo { display: grid; place-items: center; flex: none; width: 20px; height: 20px; margin-top: .06rem; opacity: .85; }
+.klam-aviso-texto { flex: 1; min-width: 0; }
+.klam-aviso-texto strong { display: block; color: inherit; font-weight: 650; margin-bottom: .08rem; }
+.klam-aviso-texto p { margin: 0; color: inherit; }
+.klam-aviso-texto p + p { margin-top: .3rem; }
+.klam-aviso-accion { flex: none; display: flex; align-items: center; gap: .4rem; }
+.klam-aviso-accion .btn { background: rgba(255, 255, 255, .72); border-color: currentColor; color: inherit; }
+.klam-aviso-accion .btn:hover { background: #fff; border-color: currentColor; color: inherit; }
+.klam-aviso-cerrar {
+    flex: none;
+    display: inline-flex;
+    padding: .2rem;
+    border: 0;
+    border-radius: var(--klam-radio-xs);
+    background: transparent;
+    color: inherit;
+    opacity: .5;
+    cursor: pointer;
+    transition: opacity .14s ease, background .14s ease;
+}
+.klam-aviso-cerrar:hover { opacity: 1; background: rgba(14, 42, 49, .08); }
+
+.alert, .klam-aviso-info {
+    border: 1px solid transparent;
+    border-radius: var(--klam-radio);
+    font-size: .875rem;
+    box-shadow: none;
+}
+.alert { padding: .85rem 1rem; }
 .alert .fw-bold, .alert strong { color: inherit; }
-.alert-success { background: var(--klam-exito-suave); border-color: #BBF0DC; color: #065F46; }
-.alert-info    { background: var(--klam-accion-suave); border-color: #CFDEFB; color: #1E3A8A; }
-.alert-warning { background: var(--klam-aviso-suave); border-color: #FBE3B6; color: #92400E; }
-.alert-danger  { background: var(--klam-peligro-suave); border-color: #F7CBD4; color: #9F1239; }
+.alert-success, .klam-aviso-exito    { background: var(--klam-exito-suave);   border-color: #BBF0DC; color: #065F46; }
+.alert-info,    .klam-aviso-info     { background: var(--klam-accion-suave);  border-color: #CFDEFB; color: #1E3A8A; }
+.alert-warning, .klam-aviso-atencion { background: var(--klam-aviso-suave);   border-color: #FBE3B6; color: #92400E; }
+.alert-danger,  .klam-aviso-error    { background: var(--klam-peligro-suave); border-color: #F7CBD4; color: #9F1239; }
 .alert-secondary { background: var(--klam-superficie-2); border-color: var(--klam-borde); color: var(--klam-texto); }
+/* La equis de Bootstrap es bastante más grande que la de Aviso.razor; se iguala
+   para que los bloques que aún no están migrados no desentonen. */
+.alert-dismissible .btn-close {
+    width: .65em;
+    height: .65em;
+    padding: .95rem;
+    background-size: .65em;
+    opacity: .4;
+}
+.alert-dismissible .btn-close:hover { opacity: .85; }
 
 .demo-note { color: var(--klam-suave); font-size: .79rem; }
 .demo-feedback { color: #115E59; background: var(--klam-marca-50); border-radius: var(--klam-radio-sm); padding: .6rem .75rem; font-size: .8rem; }
 
-/* Estado vacío: centrado, sobrio, con el glifo en ficha */
+/* Estado vacío. No es un error y no debe parecerlo: el glifo es un círculo
+   apagado y no una ficha de color, porque antes la lupa teal pesaba más que
+   el propio mensaje. La salida es secundaria y solo aparece si hay a dónde ir. */
 .empty-state {
     background: var(--klam-superficie);
-    border: 1px dashed var(--klam-borde-fuerte);
-    border-radius: var(--klam-radio-lg);
-    padding: 2.6rem 2rem;
-    box-shadow: none;
-}
-.empty-state h2 { font-size: 1.12rem; margin: .95rem 0 .4rem; }
-.empty-state p { color: var(--klam-suave); font-size: .9rem; }
-.empty-icon, .notification-symbol {
-    color: var(--klam-primario);
-    background: var(--klam-grad-destacado);
     border: 1px solid var(--klam-borde);
     border-radius: var(--klam-radio);
-    width: 46px;
-    height: 46px;
+    padding: 3rem 2rem;
+    box-shadow: none;
 }
-.empty-icon.danger { color: var(--klam-peligro); background: var(--klam-peligro-suave); border-color: #F7CBD4; }
+.empty-state h2 { font-size: 1.05rem; font-weight: 650; margin: 1rem 0 .35rem; }
+.empty-state p { color: var(--klam-suave); font-size: .9rem; max-width: 46ch; margin: 0 auto; }
+.empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; margin-top: 1.5rem; }
+.empty-icon, .notification-symbol {
+    color: var(--klam-tenue);
+    background: var(--klam-superficie-3);
+    border: 0;
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+}
+.empty-state-aviso .empty-icon, .empty-icon.danger {
+    color: var(--klam-peligro);
+    background: var(--klam-peligro-suave);
+    border: 0;
+}
 .not-found-code { font-size: 3.6rem; font-weight: 700; color: var(--klam-tenue); letter-spacing: -.04em; }
 
 /* ----------------------------------------------------------- 11 NAVEGACIÓN */

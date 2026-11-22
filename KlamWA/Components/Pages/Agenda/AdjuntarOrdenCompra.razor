@@ -182,7 +182,7 @@ else
         }
         catch (Exception ex) when (ex is HttpRequestException or ServicioException or OperationCanceledException)
         {
-            mensajeError = ex.Message;
+            mensajeError = MensajeDeError.Texto(ex);
             consultaFallida = c is not null;
         }
         finally { cargando = false; }
@@ -212,7 +212,7 @@ else
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or ServicioException or OperationCanceledException)
         {
-            mensajeError = ex.Message;
+            mensajeError = MensajeDeError.Texto(ex);
         }
         try
         {
@@ -222,7 +222,7 @@ else
                 catch (Exception ex) when (ex is HttpRequestException or ServicioException or OperationCanceledException)
                 {
                     consultaFallida = true;
-                    mensajeError = "La orden se envió, pero no se pudo actualizar su estado: " + ex.Message;
+                    mensajeError = "La orden se envió, pero no se pudo actualizar su estado: " + MensajeDeError.Texto(ex);
                 }
             }
         }
@@ -242,7 +242,7 @@ else
         }
         catch (Exception ex) when (ex is HttpRequestException or JSException or ServicioException or OperationCanceledException)
         {
-            mensajeError = ex.Message;
+            mensajeError = MensajeDeError.Texto(ex);
         }
         finally { enviando = false; }
     }

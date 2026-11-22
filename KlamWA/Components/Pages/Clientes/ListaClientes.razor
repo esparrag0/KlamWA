@@ -91,6 +91,6 @@
     protected override async Task OnInitializedAsync()
     {
         try { clientes = await Api.ListarAsync(); }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (HttpRequestException ex) { error = MensajeDeError.Texto(ex); }
     }
 }

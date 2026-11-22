@@ -62,15 +62,11 @@ public static class HttpUtilsAutenticado
             // Los errores sin cuerpo JSON conservan el código HTTP.
         }
 
-        if (string.IsNullOrWhiteSpace(mensaje))
-        {
-            mensaje = response.StatusCode switch
-            {
-                HttpStatusCode.Unauthorized => "Su sesión no es válida o expiró. Vuelva a iniciar sesión.",
-                HttpStatusCode.Forbidden => "Su perfil no tiene permiso para realizar esta acción.",
-                _ => $"El servidor respondió {(int)response.StatusCode} ({response.ReasonPhrase})."
-            };
-        }
-        throw new HttpRequestException(mensaje, null, response.StatusCode);
+        // El texto se decide en un solo sitio (MensajeDeError) para que todas las
+        // pantallas digan lo mismo ante el mismo código, y para que nunca salga
+        // hacia el cliente un mensaje fabricado por .NET.
+        throw new HttpRequestException(
+            MensajeDeError.Humanizar(mensaje, (int)response.StatusCode),
+            null, response.StatusCode);
     }
 }
