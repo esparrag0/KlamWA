@@ -18,13 +18,23 @@
         <label for="bit-hasta" class="form-label">Hasta</label>
         <input id="bit-hasta" type="date" class="form-control" @bind="hasta" />
     </div>
+    @* Cirugías y responsables que ya han aparecido en la bitácora. Se acumulan
+       y no se reemplazan: al filtrar, la lista de sugerencias no se vacía. *@
     <div class="col-md-2">
         <label for="bit-cirugia" class="form-label">ID de cirugía</label>
-        <input id="bit-cirugia" type="number" min="1" class="form-control" @bind="idCirugia" />
+        <input id="bit-cirugia" type="text" class="form-control" list="lista-cirugias-bitacora"
+               autocomplete="off" placeholder="Todas" @bind="idCirugiaTexto" />
+        <datalist id="lista-cirugias-bitacora">
+            @foreach (var sugerencia in cirugiasVistas) { <option value="@sugerencia"></option> }
+        </datalist>
     </div>
     <div class="col-md-2">
         <label for="bit-responsable" class="form-label">Responsable</label>
-        <input id="bit-responsable" type="text" class="form-control" @bind="responsable" />
+        <input id="bit-responsable" type="text" class="form-control" list="lista-responsables-bitacora"
+               autocomplete="off" placeholder="Todos" @bind="responsable" />
+        <datalist id="lista-responsables-bitacora">
+            @foreach (var sugerencia in responsablesVistos) { <option value="@sugerencia"></option> }
+        </datalist>
     </div>
     <div class="col-md-2">
         <label for="bit-accion" class="form-label">Acción</label>
@@ -86,12 +96,28 @@ else
 @code {
     private DateTime? desde;
     private DateTime? hasta;
-    private int? idCirugia;
+    private string idCirugiaTexto = "";
     private string responsable = "";
     private string accion = "";
     private bool cargando;
     private string? error;
     private List<RegistroBitacoraViewModel> registros = [];
+
+    private readonly SortedSet<string> cirugiasVistas = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SortedSet<string> responsablesVistos = new(StringComparer.OrdinalIgnoreCase);
+
+    // Acepta «1», «CIR-001» o la etiqueta de una sugerencia: se toma la primera
+    // secuencia de dígitos que aparezca.
+    private static int? LeerIdCirugia(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return null;
+        int inicio = 0;
+        while (inicio < texto.Length && !char.IsDigit(texto[inicio])) inicio++;
+        if (inicio == texto.Length) return null;
+        int fin = inicio;
+        while (fin < texto.Length && char.IsDigit(texto[fin])) fin++;
+        return int.TryParse(texto[inicio..fin], out var id) && id > 0 ? id : null;
+    }
 
     protected override async Task OnInitializedAsync() => await BuscarAsync();
 
@@ -109,12 +135,17 @@ else
         {
             // "Hasta" incluye todo el dia seleccionado (el backend recibe 23:59:59).
             List<AuditoriaDTO> filas = await Auditoria.ListarAsync(
-                idCirugia,
+                LeerIdCirugia(idCirugiaTexto),
                 desde?.Date,
                 hasta?.Date.AddDays(1).AddSeconds(-1),
                 accion,
                 responsable);
             registros = filas.Select(RegistroBitacoraViewModel.DesdeDTO).ToList();
+            foreach (var r in registros)
+            {
+                cirugiasVistas.Add(r.Cirugia);
+                if (!string.IsNullOrWhiteSpace(r.Responsable)) responsablesVistos.Add(r.Responsable);
+            }
         }
         catch (HttpRequestException ex)
         {
@@ -130,7 +161,7 @@ else
     {
         desde = null;
         hasta = null;
-        idCirugia = null;
+        idCirugiaTexto = "";
         responsable = "";
         accion = "";
         await BuscarAsync();

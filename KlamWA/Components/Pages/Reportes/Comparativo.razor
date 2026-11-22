@@ -9,7 +9,7 @@
 @inject IJSRuntime JS
 
 <PageTitle>Control de consumo | Klam</PageTitle>
-<PageHeader Titulo="Control de consumo por cirugía" Subtitulo="Despachado, consumido y diferencia de cada cirugía con consumo completo (RF19)">
+<PageHeader Titulo="Control de consumo por cirugía" Subtitulo="Despachado, consumido y diferencia de cada cirugía con consumo completo">
     <a class="btn btn-outline-secondary" href="/reportes/consumo">Ver uso de insumos</a>
 </PageHeader>
 
@@ -30,20 +30,27 @@
                 <label for="hasta-cmp" class="form-label small">Hasta</label>
                 <input id="hasta-cmp" type="date" class="form-control form-control-sm" @bind="_hasta" />
             </div>
+            @* Las sugerencias de cirugía salen de las que ya se han visto en este
+               reporte y se acumulan: filtrar nunca vacía la lista. Se acepta «1»,
+               «CIR-001» o la etiqueta completa. *@
             <div class="col-md-2">
                 <label for="id-cirugia" class="form-label small">ID de cirugía</label>
-                <input id="id-cirugia" type="number" min="1" class="form-control form-control-sm"
-                       placeholder="Todas" @bind="_idCirugiaTexto" />
+                <input id="id-cirugia" type="text" class="form-control form-control-sm" list="lista-cirugias-cmp"
+                       autocomplete="off" placeholder="Todas" @bind="_idCirugiaTexto" />
+                <datalist id="lista-cirugias-cmp">
+                    @foreach (var sugerencia in _cirugiasVistas) { <option value="@sugerencia"></option> }
+                </datalist>
             </div>
             <div class="col-md-6">
                 <label for="cliente-cmp" class="form-label small">Cliente</label>
-                <select id="cliente-cmp" class="form-select form-select-sm" @bind="_cliente">
-                    <option value="">Todos</option>
+                <input id="cliente-cmp" class="form-control form-control-sm" list="lista-clientes-cmp"
+                       autocomplete="off" placeholder="Todos" value="@busquedaCliente" @onchange="ElegirCliente" />
+                <datalist id="lista-clientes-cmp">
                     @foreach (var cliente in _clientes)
                     {
-                        <option value='@($"{cliente.Tipo}|{cliente.Id}")'>@cliente.Nombre (@cliente.TipoEtiqueta)</option>
+                        <option value="@EtiquetaCliente(cliente)"></option>
                     }
-                </select>
+                </datalist>
             </div>
         </div>
         <button type="button" class="btn btn-primary mt-3" disabled="@_cargando" @onclick="GenerarAsync">
@@ -57,7 +64,7 @@
     <div class="card mb-3">
         <div class="card-header">Datos del reporte</div>
         <div class="card-body">
-            <dl class="row mb-0">
+            <dl class="row mb-0 datos-reporte">
                 <dt class="col-sm-3">Generado</dt>
                 <dd class="col-sm-9">@(_reporte.Generado?.ToString("dd/MM/yyyy · HH:mm") ?? "—")</dd>
                 <dt class="col-sm-3">Periodo</dt>
@@ -92,7 +99,7 @@
                 <span class="text-muted small">@(cirugia.Fecha?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
             </div>
             <div class="card-body">
-                <dl class="row mb-3">
+                <dl class="row mb-3 datos-reporte">
                     <dt class="col-sm-2">Paciente</dt>
                     <dd class="col-sm-4">@(cirugia.Paciente ?? "—")</dd>
                     <dt class="col-sm-2">Documento</dt>
@@ -140,7 +147,13 @@
     private DateOnly? _hasta;
     private string _idCirugiaTexto = "";
     private string _cliente = "";
+    private string busquedaCliente = "";
     private List<ClienteOpcionViewModel> _clientes = [];
+
+    // Cirugías ya vistas en este reporte, para sugerirlas en el filtro. Se
+    // acumulan y no se reemplazan: si el filtro deja el reporte en una sola
+    // cirugía, las demás siguen estando a mano para volver atrás.
+    private readonly SortedSet<string> _cirugiasVistas = new(StringComparer.OrdinalIgnoreCase);
 
     private ReporteComparativoDTO? _reporte;
     private FiltroComparativo? _filtroUsado;
@@ -195,6 +208,10 @@
         {
             _reporte = await ReporteService.ComparativoAsync(filtro);
             _filtroUsado = filtro;
+            foreach (var cirugia in _reporte.Cirugias)
+            {
+                _cirugiasVistas.Add($"CIR-{cirugia.IdCirugia:000} · {cirugia.Procedimiento}");
+            }
         }
         catch (ServicioException ex)
         {
@@ -221,9 +238,38 @@
         }
     }
 
+    private static string EtiquetaCliente(ClienteOpcionViewModel c) => $"{c.Nombre} ({c.TipoEtiqueta})";
+
+    // El campo guarda el texto que se ve; _cliente guarda el «tipo|id» que
+    // entiende el backend. Si lo escrito no corresponde a nadie, no se filtra.
+    private void ElegirCliente(ChangeEventArgs e)
+    {
+        busquedaCliente = e.Value?.ToString()?.Trim() ?? "";
+        var elegido = _clientes.FirstOrDefault(c =>
+                string.Equals(EtiquetaCliente(c), busquedaCliente, StringComparison.OrdinalIgnoreCase))
+            ?? _clientes.FirstOrDefault(c =>
+                string.Equals(c.Nombre, busquedaCliente, StringComparison.OrdinalIgnoreCase));
+
+        _cliente = elegido is null ? "" : $"{elegido.Tipo}|{elegido.Id}";
+        if (elegido is not null) busquedaCliente = EtiquetaCliente(elegido);
+    }
+
+    // Acepta «1», «CIR-001» o la etiqueta completa de una sugerencia: se toma
+    // la primera secuencia de dígitos que aparezca.
+    private static int? LeerIdCirugia(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return null;
+        int inicio = 0;
+        while (inicio < texto.Length && !char.IsDigit(texto[inicio])) inicio++;
+        if (inicio == texto.Length) return null;
+        int fin = inicio;
+        while (fin < texto.Length && char.IsDigit(texto[fin])) fin++;
+        return int.TryParse(texto[inicio..fin], CultureInfo.InvariantCulture, out var id) && id > 0 ? id : null;
+    }
+
     private FiltroComparativo FiltroActual()
     {
-        int? idCirugia = int.TryParse(_idCirugiaTexto, out var c) ? (int?)c : null;
+        int? idCirugia = LeerIdCirugia(_idCirugiaTexto);
         string? tipoCliente = null;
         int? idCliente = null;
         if (!string.IsNullOrWhiteSpace(_cliente))

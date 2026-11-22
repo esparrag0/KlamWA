@@ -7,7 +7,7 @@
 @inject IJSRuntime JS
 
 <PageTitle>Uso de insumos | Klam</PageTitle>
-<PageHeader Titulo="Uso de insumos" Subtitulo="Insumos realmente utilizados en cirugías con consumo completo (RF18)">
+<PageHeader Titulo="Uso de insumos" Subtitulo="Insumos realmente utilizados en cirugías con consumo completo">
     <a class="btn btn-outline-secondary" href="/reportes/comparativo">Ver comparativo por cirugía</a>
 </PageHeader>
 
@@ -70,7 +70,7 @@
     <div class="card">
         <div class="card-header">Reporte de consumo</div>
         <div class="card-body">
-            <dl class="row mb-0">
+            <dl class="row mb-0 datos-reporte">
                 <dt class="col-sm-3">Generado</dt>
                 <dd class="col-sm-9">@(_reporte.Generado?.ToString("dd/MM/yyyy · HH:mm") ?? "—")</dd>
                 <dt class="col-sm-3">Periodo</dt>

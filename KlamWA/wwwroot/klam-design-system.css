@@ -818,6 +818,14 @@ textarea.form-control { min-height: 96px; line-height: 1.55; }
 .detail-grid { gap: 1.1rem 1.5rem; padding: 1.15rem; }
 .detail-grid dt { color: var(--klam-suave); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: .2rem; }
 .detail-grid dd { color: var(--klam-tinta); font-size: .9rem; font-weight: 500; margin-bottom: 0; }
+/* Ficha de datos de un reporte: los pares etiqueta/valor que acompañan a una
+   tabla. Heredaban el tamaño del texto corrido (15.5px) y quedaban más grandes
+   que la propia tabla; van al mismo cuerpo denso que las filas. */
+.datos-reporte dt,
+.datos-reporte dd { font-size: .8rem; line-height: 1.55; margin-bottom: .15rem; }
+.datos-reporte dt { font-weight: 650; color: var(--klam-suave); }
+.datos-reporte dd { color: var(--klam-texto); }
+
 .user-detail-header, .notification-detail-title { border-bottom: 1px solid var(--klam-borde); background: var(--klam-superficie-2); border-radius: var(--klam-radio) var(--klam-radio) 0 0; padding: 1.15rem; }
 .user-detail-header h2, .notification-detail-title h2 { font-size: 1.14rem; }
 .profile-summary h2, .role-card h2, .notification-aside h2 { font-size: 1rem; }
