@@ -1,47 +1,47 @@
-.surgery-breadcrumb { display: flex; gap: .5rem; align-items: center; margin-bottom: .9rem; color: var(--klam-suave); font-size: .82rem; }
+.surgery-breadcrumb { display: flex; gap: .5rem; align-items: center; margin-bottom: .9rem; color: var(--klam-suave); font-size: var(--klam-t-base); }
 .surgery-breadcrumb a { color: var(--klam-primario); text-decoration: none; }
 .surgery-breadcrumb a:hover { text-decoration: underline; }
 .surgery-heading { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.1rem; }
-.heading-icon { display: grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: var(--klam-radio-sm); background: var(--klam-marca-50); color: var(--klam-primario); }
+.heading-icon { display: none; }
 .heading-copy { min-width: 0; }
 .heading-title { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
-.heading-title h1 { margin: 0; color: var(--klam-tinta); font-size: 1.5rem; font-weight: 700; }
-.heading-copy p { margin: .18rem 0 0; color: var(--klam-suave); font-size: .9rem; }
+.heading-title h1 { margin: 0; color: var(--klam-tinta); font-size: var(--klam-t-2xl); font-weight: 600; letter-spacing: -.021em; }
+.heading-copy p { margin: .18rem 0 0; color: var(--klam-suave); font-size: var(--klam-t-md); }
 .heading-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-left: auto; }
-.surgery-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1.2rem; padding: .85rem .4rem; border: 1px solid var(--klam-borde); border-radius: .75rem; background: #fff; box-shadow: 0 3px 14px var(--klam-marca-800)0b; }
+.surgery-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1.2rem; padding: .85rem .4rem; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio); background: var(--klam-superficie); box-shadow: var(--klam-sombra-xs); }
 .surgery-summary > div { display: flex; align-items: center; gap: .7rem; min-width: 0; padding: .3rem .9rem; border-right: 1px solid var(--klam-borde); }
 .surgery-summary > div:last-child { border-right: 0; }
-.summary-icon { flex: none; color: var(--klam-primario); }
-.surgery-summary small { display: block; color: var(--klam-suave); font-size: .72rem; }
-.surgery-summary strong { display: block; overflow: hidden; color: var(--klam-tinta); font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
+.summary-icon { flex: none; color: var(--klam-tenue); }
+.surgery-summary small { display: block; color: var(--klam-suave); font-size: var(--klam-t-sm); }
+.surgery-summary strong { display: block; overflow: hidden; color: var(--klam-tinta); font-size: var(--klam-t-md); text-overflow: ellipsis; white-space: nowrap; }
 .surgery-content { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; align-items: start; }
 .surgery-main, .surgery-aside { min-width: 0; }
 .detail-tabs { display: flex; gap: .2rem; margin-bottom: .85rem; overflow-x: auto; border-bottom: 1px solid var(--klam-borde); }
-.detail-tabs button { flex: none; padding: .7rem .8rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--klam-suave); font-size: .82rem; font-weight: 600; cursor: pointer; }
-.detail-tabs button:hover { color: var(--klam-primario); background: var(--klam-superficie-2); }
+.detail-tabs button { flex: none; padding: .7rem .8rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--klam-suave); font-size: var(--klam-t-base); font-weight: 600; cursor: pointer; }
+.detail-tabs button:hover { color: var(--klam-tinta); background: transparent; border-bottom-color: var(--klam-borde-fuerte); }
 .detail-tabs button.active { border-bottom-color: var(--klam-primario); color: var(--klam-primario); }
 .detail-tabs button:focus-visible, .closing-links a:focus-visible { outline: 2px solid var(--klam-primario); outline-offset: 2px; }
-.surgery-content .card { overflow: hidden; border-color: var(--klam-borde); border-radius: .7rem; box-shadow: 0 3px 12px var(--klam-marca-800)0b; }
-.surgery-content .card-header { padding: .75rem 1rem; border-bottom-color: var(--klam-borde); background: var(--klam-superficie-2); color: var(--klam-tinta); font-size: .88rem; font-weight: 700; }
+.surgery-content .card { overflow: hidden; border-color: var(--klam-borde); border-radius: var(--klam-radio); box-shadow: var(--klam-sombra-xs); }
+.surgery-content .card-header { padding: .75rem 1rem; border-bottom-color: var(--klam-borde); background: var(--klam-superficie-2); color: var(--klam-tinta); font-size: var(--klam-t-md); font-weight: 700; }
 .surgery-content .card-body { padding: 1rem; }
-.surgery-main dl dt, .surgery-main dl dd { padding-top: .48rem; padding-bottom: .48rem; margin-bottom: 0; border-bottom: 1px solid var(--klam-superficie-3); font-size: .85rem; }
+.surgery-main dl dt, .surgery-main dl dd { padding-top: .48rem; padding-bottom: .48rem; margin-bottom: 0; border-bottom: 1px solid var(--klam-superficie-3); font-size: var(--klam-t-md); }
 .surgery-main dl dt { color: var(--klam-tinta); }
 .surgery-main dl dd { color: var(--klam-tinta); }
-.surgery-aside .card-body { font-size: .84rem; }
+.surgery-aside .card-body { font-size: var(--klam-t-md); }
 .surgery-status .card-header .klam-icon { color: var(--klam-primario); }
 .status-content { display: flex; align-items: center; gap: .8rem; }
-.status-icon { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: .75rem; background: var(--klam-marca-50); color: var(--klam-primario); }
+.status-icon { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: var(--klam-radio-sm); background: var(--klam-marca-50); color: var(--klam-primario); }
 .status-copy { min-width: 0; }
 .status-copy p { margin: .35rem 0 0; color: var(--klam-suave); line-height: 1.45; }
 .status-copy .status-reason { color: var(--klam-peligro); }
 .status-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--klam-borde); }
-.status-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; flex: 1 1 auto; border-radius: var(--klam-radio-sm); font-size: .82rem; font-weight: 600; }
+.status-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; flex: 1 1 auto; border-radius: var(--klam-radio-sm); font-size: var(--klam-t-base); font-weight: 600; }
 .status-actions .btn-primary { background: var(--klam-primario); border-color: var(--klam-primario); }
 .status-actions .btn-primary:hover { background: var(--klam-primario-hover); border-color: var(--klam-primario-hover); }
 .closing-links { display: flex; flex-direction: column; gap: .35rem; }
-.closing-links a { display: block; padding: .55rem .65rem; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-xs); color: var(--klam-primario); font-size: .8rem; font-weight: 600; text-decoration: none; }
+.closing-links a { display: block; padding: .55rem .65rem; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-xs); color: var(--klam-primario); font-size: var(--klam-t-base); font-weight: 600; text-decoration: none; }
 .closing-links a:hover { background: var(--klam-marca-50); }
 @media (max-width: 1100px) { .surgery-content { grid-template-columns: minmax(0, 1fr) 290px; } .surgery-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .surgery-summary > div:nth-child(2) { border-right: 0; } }
 @media (max-width: 900px) { .surgery-content { grid-template-columns: 1fr; } .surgery-heading { flex-wrap: wrap; } .heading-actions { width: 100%; margin-left: 0; } }
-@media (max-width: 600px) { .surgery-summary { grid-template-columns: 1fr; } .surgery-summary > div { border-right: 0; border-bottom: 1px solid var(--klam-borde); } .surgery-summary > div:last-child { border-bottom: 0; } .heading-title h1 { font-size: 1.25rem; } }
+@media (max-width: 600px) { .surgery-summary { grid-template-columns: 1fr; } .surgery-summary > div { border-right: 0; border-bottom: 1px solid var(--klam-borde); } .surgery-summary > div:last-child { border-bottom: 0; } .heading-title h1 { font-size: var(--klam-t-xl); } }
 @media (max-width: 600px) { .status-actions { flex-direction: column; } .status-actions .btn { width: 100%; } }

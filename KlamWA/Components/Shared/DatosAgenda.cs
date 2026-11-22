@@ -61,23 +61,26 @@ public static class DatosAgenda
     };
     public static string[] Estados = { "Programada", "En curso", "Culminada", "Cancelada" };
 
-    // Texto oscuro sobre mostaza para que se lea bien
+    // Colores de estado del Design System (wwwroot/klam-design-system.css).
+    // Cada estado es el mismo par fondo/texto en toda la aplicación: ámbar lo
+    // que está por venir, teal lo que ocurre ahora, verde lo cerrado y rosa lo
+    // anulado. Si cambian allí, cambian aquí.
     public static string ColorTexto(string estado) => estado switch
     {
-        "Programada" => "#92400E",
-        "En curso" => "#065F46",
-        "Culminada" => "#3F565E",
-        "Cancelada" => "#9F1239",
-        _ => "#3F565E"
+        "Programada" => "#95600D",   // --klam-aviso
+        "En curso" => "#0A6069",     // --klam-marca-600 oscurecido
+        "Culminada" => "#09694A",    // --klam-exito
+        "Cancelada" => "#A81F3A",    // --klam-peligro
+        _ => "#5F7A84"               // --klam-suave
     };
 
     public static string Color(string estado) => estado switch
     {
-        "Programada" => "#FFF8EB",
-        "En curso" => "#ECFDF5",
-        "Culminada" => "#EEF3F5",
-        "Cancelada" => "#FFF1F3",
-        _ => "#F8FAFB"
+        "Programada" => "#FEF6E7",   // --klam-aviso-suave
+        "En curso" => "#EDF8F7",     // --klam-marca-50
+        "Culminada" => "#E8F6EF",    // --klam-exito-suave
+        "Cancelada" => "#FDECEF",    // --klam-peligro-suave
+        _ => "#EDF2F3"               // --klam-superficie-3
     };
 
 }

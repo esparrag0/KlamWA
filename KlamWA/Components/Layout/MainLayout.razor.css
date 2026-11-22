@@ -1,38 +1,48 @@
 /* Barra superior y menú de cuenta. La estructura .app-* y la paleta están en
-   wwwroot/klam-design-system.css; aquí solo lo propio de este componente. */
+   wwwroot/klam-design-system.css; aquí solo lo propio de este componente.
 
-.app-topbar { position: sticky; top: 0; z-index: 30; min-height: 64px; }
+   La barra superior no compite con el lateral: es translúcida, baja y solo
+   contiene lo que cambia por persona (avisos y cuenta). */
 
-.topbar-brand { color: #0B3B45; font-size: .82rem; font-weight: 750; letter-spacing: .12em; text-decoration: none; }
-.topbar-brand:hover { color: #0F766E; }
+.app-topbar { position: sticky; top: 0; z-index: 30; min-height: 58px; }
+
+.topbar-brand {
+    color: var(--klam-suave);
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-decoration: none;
+}
+.topbar-brand:hover { color: var(--klam-primario); }
 
 .header-bell {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 38px;
-    min-height: 38px;
-    border-radius: 10px;
-    color: #3F565E;
+    min-width: 34px;
+    min-height: 34px;
+    border-radius: 7px;
+    color: var(--klam-suave);
     text-decoration: none;
-    transition: background .15s ease, color .15s ease;
+    transition: background .14s ease, color .14s ease;
 }
-.header-bell:hover { background: #ECFDF8; color: #0F766E; }
+.header-bell:hover { background: var(--klam-marca-50); color: var(--klam-primario); }
 
 .notification-count {
     position: absolute;
     top: -2px;
     right: -4px;
-    min-width: 17px;
-    height: 17px;
+    min-width: 16px;
+    height: 16px;
     padding: 0 4px;
     border-radius: 999px;
-    background: #BE123C;
+    background: var(--klam-peligro);
     color: #fff;
-    font-size: .64rem;
-    line-height: 17px;
+    font-size: .625rem;
+    line-height: 16px;
     text-align: center;
-    font-weight: 700;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 2px #fff;
 }
 
@@ -40,76 +50,79 @@
 .profile-menu summary {
     display: flex;
     align-items: center;
-    gap: .55rem;
-    min-height: 40px;
-    padding: .2rem .5rem .2rem .25rem;
-    border-radius: 10px;
-    color: #0E2A31;
+    gap: .5rem;
+    min-height: 36px;
+    padding: .15rem .45rem .15rem .2rem;
+    border-radius: 7px;
+    color: var(--klam-tinta);
     cursor: pointer;
     list-style: none;
-    transition: background .15s ease;
+    transition: background .14s ease;
 }
 .profile-menu summary::-webkit-details-marker { display: none; }
-.profile-menu summary:hover, .profile-menu[open] summary { background: #EEF3F5; }
-.profile-menu summary:focus-visible, .header-bell:focus-visible { outline: 2px solid #0F766E; outline-offset: 2px; }
+.profile-menu summary:hover, .profile-menu[open] summary { background: var(--klam-superficie-3); }
+.profile-menu summary:focus-visible, .header-bell:focus-visible { outline: 2px solid var(--klam-primario); outline-offset: 2px; }
 
 .profile-name {
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: .845rem;
-    font-weight: 600;
+    font-size: .8125rem;
+    font-weight: 500;
 }
 .profile-chevron {
-    width: .42rem; height: .42rem;
-    margin: -.2rem .15rem 0;
+    width: .38rem; height: .38rem;
+    margin: -.18rem .15rem 0;
     border-right: 1.5px solid currentColor;
     border-bottom: 1.5px solid currentColor;
     transform: rotate(45deg);
-    opacity: .55;
+    opacity: .45;
 }
 
 .profile-dropdown {
     position: absolute;
     right: 0;
-    top: calc(100% + .5rem);
-    width: 232px;
-    padding: .4rem;
-    background: #fff;
-    border: 1px solid #E1E9EC;
-    border-radius: 14px;
-    box-shadow: 0 12px 34px rgba(14, 42, 49, .13);
+    top: calc(100% + .45rem);
+    width: 226px;
+    padding: .3rem;
+    background: var(--klam-superficie);
+    border: 1px solid var(--klam-borde);
+    border-radius: 10px;
+    box-shadow: var(--klam-sombra-lg);
 }
 .profile-caption {
     display: block;
-    padding: .55rem .7rem;
-    margin-bottom: .2rem;
-    border-bottom: 1px solid #E1E9EC;
-    color: #6E858D;
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: .07em;
-    text-transform: uppercase;
+    padding: .5rem .6rem;
+    margin-bottom: .15rem;
+    border-bottom: 1px solid var(--klam-borde);
+    color: var(--klam-suave);
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .profile-dropdown a, .profile-dropdown button {
     display: flex;
     align-items: center;
-    gap: .65rem;
+    gap: .6rem;
     width: 100%;
-    padding: .6rem .7rem;
+    padding: .5rem .6rem;
     border: 0;
-    border-radius: 9px;
+    border-radius: 7px;
     background: transparent;
-    color: #3F565E;
+    color: var(--klam-texto);
     text-align: left;
     text-decoration: none;
-    font-size: .855rem;
-    font-weight: 550;
+    font-size: .8125rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: background .15s ease, color .15s ease;
+    transition: background .14s ease, color .14s ease;
 }
-.profile-dropdown a:hover, .profile-dropdown button:hover { background: #ECFDF8; color: #0F766E; }
+.profile-dropdown a:hover, .profile-dropdown button:hover { background: var(--klam-marca-50); color: var(--klam-primario); }
 .profile-dropdown form { margin: 0; }
 
 @media (max-width: 600px) {
@@ -117,21 +130,23 @@
     .topbar-actions { width: auto; margin-left: auto; }
 }
 
+/* El error de circuito aparece como una nota flotante, no como una franja que
+   empuja la página: lo que se estaba leyendo sigue en su sitio. */
 #blazor-error-ui {
     display: none;
     position: fixed;
     bottom: 1rem;
     left: 50%;
     transform: translateX(-50%);
-    width: min(560px, calc(100% - 2rem));
+    width: min(540px, calc(100% - 2rem));
     z-index: 1000;
-    padding: .9rem 1.1rem;
-    background: #fff;
-    border: 1px solid #FBE3B6;
-    border-left: 4px solid #B45309;
-    border-radius: 12px;
-    box-shadow: 0 12px 34px rgba(14, 42, 49, .18);
-    color: #92400E;
-    font-size: .875rem;
+    padding: .8rem 1rem;
+    background: var(--klam-superficie);
+    border: 1px solid var(--klam-aviso-borde);
+    border-left: 3px solid var(--klam-aviso);
+    border-radius: 10px;
+    box-shadow: var(--klam-sombra-lg);
+    color: var(--klam-aviso);
+    font-size: .8125rem;
 }
 #blazor-error-ui .dismiss { float: right; border: 0; background: transparent; color: inherit; font-size: 1.1rem; line-height: 1; }
