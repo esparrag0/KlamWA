@@ -1,0 +1,187 @@
+@page "/inventario/despachos/nuevo"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.Components.Shared
+@inject IDespachoService DespachoService
+@inject NavigationManager Nav
+
+<PageTitle>Registrar despacho</PageTitle>
+<PageHeader Titulo="Registrar despacho" Subtitulo="Salida de equipo y kit para una cirugía programada" />
+
+@if (mensajeError != null)
+{
+    <Aviso Tipo="@tonoMensaje" Mensaje="@mensajeError" AlCerrar="() => mensajeError = null" />
+}
+
+@if (cargando)
+{
+    <div class="card p-4 text-center text-muted" style="max-width:850px">Cargando cirugías candidatas...</div>
+}
+else if (!cirugias.Any())
+{
+    <div class="card p-4 text-center" style="max-width:850px">
+        <p class="text-muted mb-3">No hay cirugías programadas o en curso pendientes de despacho.</p>
+        <div>
+            <a class="btn btn-outline-primary" href="/inventario/despachos">Volver a despachos</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card" style="max-width:850px">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label for="despacho-cirugia" class="form-label fw-bold">Cirugía para despacho</label>
+                    <select id="despacho-cirugia" class="form-select" @onchange="OnCirugiaSeleccionada">
+                        @foreach (var c in cirugias)
+                        {
+                            <option value="@c.IdCirugia" selected="@(c.IdCirugia == idCirugiaSeleccionada)">
+                                CIR-@c.IdCirugia.ToString("000") · @c.Procedimiento · @(c.Clinica) @(c.Despachable ? "" : " (No despachable)")
+                            </option>
+                        }
+                    </select>
+                    <div class="form-text">Solo se muestran cirugías activas en estado Programada o En curso.</div>
+                </div>
+
+                @if (Seleccionada != null)
+                {
+                    <div class="col-12">
+                        <div class="border rounded p-3 bg-light">
+                            <h6 class="fw-bold mb-2">Recursos asignados a la cirugía:</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-3">Procedimiento:</dt>
+                                <dd class="col-sm-9">@Seleccionada.Procedimiento</dd>
+
+                                <dt class="col-sm-3">Cliente / Clínica:</dt>
+                                <dd class="col-sm-9">@(Seleccionada.Clinica) (@Seleccionada.Cliente)</dd>
+
+                                <dt class="col-sm-3">Fecha programada:</dt>
+                                <dd class="col-sm-9">@(Seleccionada.Inicio?.ToString("dd/MM/yyyy HH:mm") ?? Seleccionada.FechaHoraInicio ?? "—")</dd>
+
+                                <dt class="col-sm-3">Equipo médico:</dt>
+                                <dd class="col-sm-9">
+                                    @if (!string.IsNullOrWhiteSpace(Seleccionada.Equipo))
+                                    {
+                                        <span>@Seleccionada.Equipo</span>
+                                        @if (Seleccionada.EquipoDisponible == true)
+                                        {
+                                            <span class="badge bg-success ms-2">Disponible en almacén</span>
+                                        }
+                                        else if (Seleccionada.EquipoDisponible == false)
+                                        {
+                                            <span class="badge bg-danger ms-2">No disponible (en uso / despachado)</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin equipo asignado</span>
+                                    }
+                                </dd>
+
+                                <dt class="col-sm-3">Kit / Bandeja:</dt>
+                                <dd class="col-sm-9">
+                                    @(Seleccionada.Kit ?? "Sin bandeja asignada")
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    @if (!Seleccionada.Despachable)
+                    {
+                        <div class="col-12">
+                            <div class="alert alert-warning mb-0">
+                                <Icono Nombre="alerta" Tamano="18" />
+                                <strong>No se puede despachar:</strong> @Seleccionada.Motivo
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+            <button type="button" class="btn btn-primary"
+                    disabled="@(procesando || Seleccionada == null || !Seleccionada.Despachable)"
+                    @onclick="() => mostrarModal = true">
+                Registrar salida
+            </button>
+            <a class="btn btn-outline-secondary" href="/inventario/despachos">Cancelar</a>
+        </div>
+    </div>
+
+    <ModalConfirmacion Visible="@mostrarModal"
+                      Titulo="Confirmar despacho de recursos"
+                      Mensaje="@($"¿Desea registrar la salida del equipo y kit para la cirugía CIR-{(Seleccionada?.IdCirugia.ToString("000"))}? El equipo pasará a estado no disponible en el inventario.")"
+                      TextoConfirmar="Confirmar despacho"
+                      ClaseConfirmar="btn-primary"
+                      Procesando="@procesando"
+                      OnConfirmar="ConfirmarDespacho"
+                      OnCancelar="() => mostrarModal = false" />
+}
+
+@code {
+    private List<CirugiaDespachableDTO> cirugias = [];
+    private int idCirugiaSeleccionada;
+    private bool cargando = true;
+    private bool procesando;
+    private bool mostrarModal;
+    private string? mensajeError;
+    private TipoAviso tonoMensaje = TipoAviso.Error;
+
+    private CirugiaDespachableDTO? Seleccionada => cirugias.FirstOrDefault(c => c.IdCirugia == idCirugiaSeleccionada);
+
+    protected override async Task OnInitializedAsync()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            cirugias = await DespachoService.CirugiasDespachablesAsync();
+            if (cirugias.Any())
+            {
+                var primeraDespachable = cirugias.FirstOrDefault(c => c.Despachable) ?? cirugias.First();
+                idCirugiaSeleccionada = primeraDespachable.IdCirugia;
+            }
+        }
+        catch (Exception ex)
+        {
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudieron consultar las cirugías: " + MensajeDeError.Texto(ex);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void OnCirugiaSeleccionada(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            idCirugiaSeleccionada = id;
+        }
+    }
+
+    private async Task ConfirmarDespacho()
+    {
+        if (Seleccionada == null || !Seleccionada.Despachable) return;
+
+        procesando = true;
+        mensajeError = null;
+        try
+        {
+            var codigo = await DespachoService.RegistrarAsync(new NuevoDespachoDTO { IdCirugia = Seleccionada.IdCirugia });
+            mostrarModal = false;
+            Nav.NavigateTo($"/inventario/despachos/{codigo}");
+        }
+        catch (Exception ex)
+        {
+            mostrarModal = false;
+            (mensajeError, tonoMensaje) = MensajeDeError.De(ex);
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
+}

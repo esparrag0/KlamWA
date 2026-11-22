@@ -44,7 +44,7 @@ else if (cargando)
 }
 else if (EsAdmin && clienteElegido == "")
 {
-    <EstadoVacio Titulo="Elige un cliente" Descripcion="Selecciona una clínica o un paciente particular para ver sus cirugías culminadas y canceladas." />
+    <EstadoVacio Icono="edificio" Titulo="Elige un cliente" Descripcion="Selecciona una clínica o un paciente particular para ver sus cirugías culminadas y canceladas." />
 }
 else
 {
@@ -94,7 +94,7 @@ else
             if (EsAdmin) clientes = await ClienteSvc.Listar();
             else historial = await Consulta.HistorialClienteAsync();
         }
-        catch (Exception ex) { error = ex.Message; }
+        catch (Exception ex) { error = MensajeDeError.Texto(ex); }
         finally { cargando = false; }
     }
 
@@ -106,7 +106,7 @@ else
         var partes = clienteElegido.Split('|');
         cargando = true;
         try { historial = await Consulta.HistorialDeClienteAsync(partes[0], int.Parse(partes[1])); }
-        catch (Exception ex) { error = ex.Message; }
+        catch (Exception ex) { error = MensajeDeError.Texto(ex); }
         finally { cargando = false; }
     }
 

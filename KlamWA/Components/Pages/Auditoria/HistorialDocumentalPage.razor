@@ -127,7 +127,7 @@ else
                 HttpStatusCode.Forbidden => "No tienes permiso para consultar este historial.",
                 HttpStatusCode.NotFound => "No existe la solicitud indicada.",
                 HttpStatusCode.Conflict => "El historial cambió. Vuelve a consultarlo.",
-                HttpStatusCode.InternalServerError => $"Error del servidor: {ex.Message}",
+                HttpStatusCode.InternalServerError => MensajeDeError.Texto(ex),
                 _ => "No se pudo consultar el backend. Inténtalo de nuevo."
             };
         }

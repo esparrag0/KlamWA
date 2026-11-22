@@ -19,7 +19,7 @@
 }
 else if (solicitudes.Count == 0)
 {
-    <EstadoVacio Titulo="Aún no tienes solicitudes" Descripcion="Crea una nueva solicitud de cirugía para verla aquí." />
+    <EstadoVacio Titulo="Aún no tienes solicitudes" Descripcion="Cuando envíes una solicitud de cirugía, aparecerá aquí con su estado." Enlace="/cliente/solicitudes/nueva" TextoEnlace="Nueva solicitud" />
 }
 else
 {
@@ -86,7 +86,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         try { solicitudes = (await Solicitudes.ListarPropiasAsync()).OrderByDescending(x => x.IdSolicitud).ToList(); }
-        catch (HttpRequestException ex) { error = ex.Message; solicitudes = []; }
+        catch (HttpRequestException ex) { error = MensajeDeError.Texto(ex); solicitudes = []; }
     }
 
     private void Alternar(int id) => abierta = abierta == id ? 0 : id;

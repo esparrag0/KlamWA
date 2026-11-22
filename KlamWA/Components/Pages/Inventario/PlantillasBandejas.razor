@@ -281,7 +281,7 @@
         }
         catch (ServicioException ex)
         {
-            MensajeError = ex.Message;
+            MensajeError = MensajeDeError.Texto(ex);
         }
         catch (HttpRequestException)
         {

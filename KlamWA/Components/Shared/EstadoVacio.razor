@@ -1,0 +1,54 @@
+@* Pantalla sin contenido: no hay resultados, falta elegir algo o el registro no existe.
+
+   No es un error y no debe parecerlo. Por eso el glifo es tenue, la salida es un
+   botón secundario y solo aparece cuando de verdad hay a dónde ir: antes se
+   pintaba siempre un "Volver al inicio" en primario, que gritaba más que el
+   propio mensaje.
+
+   Tono "aviso" para cuando además algo salió mal; "neutro" (por defecto) para
+   el resto. *@
+
+<div class="empty-state card empty-state-@Tono">
+    <span class="empty-icon @(Tono == "aviso" ? "danger" : "")"><Icono Nombre="@GlifoFinal" Tamano="24" /></span>
+    <h2>@Titulo</h2>
+    @if (!string.IsNullOrWhiteSpace(TextoDescripcion))
+    {
+        <p>@TextoDescripcion</p>
+    }
+    @if (HaySalida)
+    {
+        <div class="empty-actions">
+            <a class="btn btn-outline-secondary" href="@(string.IsNullOrWhiteSpace(Enlace) ? "/inicio" : Enlace)">@TextoEnlace</a>
+        </div>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string? Icono { get; set; }
+    [Parameter] public string Titulo { get; set; } = "Sin resultados";
+
+    /// <summary>Línea explicativa bajo el título.</summary>
+    [Parameter] public string? Descripcion { get; set; }
+
+    /// <summary>
+    /// Alias de Descripcion. Existe porque cuatro pantallas ya lo pasaban sin que
+    /// el componente lo declarara, y Blazor revienta en tiempo de ejecución al
+    /// recibir un parámetro que no existe: esas pantallas fallaban justo al
+    /// quedarse sin resultados, que es cuando se muestra este componente.
+    /// </summary>
+    [Parameter] public string? Mensaje { get; set; }
+
+    /// <summary>"neutro" (por defecto) o "aviso" cuando además algo salió mal.</summary>
+    [Parameter] public string Tono { get; set; } = "neutro";
+
+    /// <summary>Destino de la salida. Sin enlace ni texto de enlace no se pinta botón.</summary>
+    [Parameter] public string? Enlace { get; set; }
+    [Parameter] public string? TextoEnlace { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string? TextoDescripcion => string.IsNullOrWhiteSpace(Descripcion) ? Mensaje : Descripcion;
+    private bool HaySalida => !string.IsNullOrWhiteSpace(TextoEnlace);
+    private string GlifoFinal => Icono ?? (Tono == "aviso" ? "alerta" : "sin-datos");
+}

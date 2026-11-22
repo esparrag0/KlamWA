@@ -1,0 +1,125 @@
+@page "/cotizaciones/cliente"
+@attribute [Authorize(Roles = "CLINICA_HOSPITAL,PACIENTE_PARTICULAR")]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject AuthenticationStateProvider Autenticacion
+@inject ISolicitudClienteService Solicitudes
+@inject ICotizacionService Cotizaciones
+@inject IJSRuntime JS
+
+<PageTitle>Mis cotizaciones | BIOKLAM</PageTitle>
+<PageHeader Titulo="Mis cotizaciones" Subtitulo="Documentos externos asociados a tus solicitudes" />
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (mensaje is not null) { <div class="alert alert-success" role="status">@mensaje</div> }
+@if (cargando) { <p class="text-muted">Consultando tus solicitudes…</p> }
+else if (!esClinica) { <div class="alert alert-info">Las solicitudes de pacientes particulares no requieren cotización.</div> }
+else
+{
+    <div class="card mb-3"><div class="card-body">
+        <label for="mis-solicitudes-cotizacion" class="form-label">Solicitud</label>
+        <select id="mis-solicitudes-cotizacion" class="form-select" @bind="idSeleccionado" @bind:after="SeleccionarAsync">
+            <option value="0">Seleccione una solicitud</option>
+            @foreach (var s in solicitudes) { <option value="@s.IdSolicitud">@s.Codigo · @s.TipoProcedimiento · @s.Estado</option> }
+        </select>
+        @if (solicitudes.Count == 0) { <p class="text-muted mt-2 mb-0">Aún no tienes solicitudes.</p> }
+    </div></div>
+    @if (seleccionada is not null)
+    {
+        <div class="card mb-3"><div class="card-header">Solicitud @seleccionada.Codigo</div><div class="card-body">
+            <p class="mb-1">Paciente: @seleccionada.PacienteNombre</p>
+            <p class="mb-0">Procedimiento: @seleccionada.TipoProcedimiento · Estado documental: @seleccionada.Estado</p>
+        </div></div>
+        <div class="card mb-3"><div class="card-header">Cotización vigente</div><div class="card-body">
+            @if (vigente is null) { <p class="text-muted mb-0">Aún no hay una cotización disponible para esta solicitud.</p> }
+            else
+            {
+                <p>Versión @vigente.Version · <strong>@vigente.Estado</strong> · Emitida el @vigente.FechaEmision.ToString("dd/MM/yyyy HH:mm")</p>
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" disabled="@ocupado" @onclick="() => DescargarAsync(vigente.IdCotizacion)">Descargar cotización</button>
+                @if (vigente.Estado == "EMITIDA" && vigente.Vigente)
+                {
+                    <p class="small text-muted">Revisa el archivo del ERP antes de decidir. La aceptación permite al administrador registrar la cirugía; no la crea automáticamente.</p>
+                    @if (decision is null)
+                    { <div class="d-flex gap-2"><button class="btn btn-success" disabled="@ocupado" @onclick="() => decision = true">Aceptar</button>
+                        <button class="btn btn-outline-danger" disabled="@ocupado" @onclick="() => decision = false">Rechazar</button></div> }
+                    else
+                    { <div class="border rounded p-3 mt-2">
+                        <p class="fw-semibold">¿Confirmas que deseas @(decision.Value ? "aceptar" : "rechazar") la versión @vigente.Version?</p>
+                        @if (!decision.Value) { <label for="motivo-cotizacion" class="form-label">Motivo del rechazo (opcional)</label>
+                            <textarea id="motivo-cotizacion" class="form-control mb-2" maxlength="150" @bind="motivo"></textarea> }
+                        <div class="d-flex gap-2"><button class="btn @(decision.Value ? "btn-success" : "btn-danger")" disabled="@ocupado" @onclick="ConfirmarAsync">@(ocupado ? "Enviando…" : "Confirmar decisión")</button>
+                            <button class="btn btn-outline-secondary" disabled="@ocupado" @onclick="() => decision = null">Cancelar</button></div>
+                    </div> }
+                }
+            }
+        </div></div>
+        <div class="card"><div class="card-header">Historial</div><div class="card-body">
+            @if (historial.Count == 0) { <p class="text-muted mb-0">No hay versiones anteriores.</p> }
+            else { <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Versión</th><th>Estado</th><th>Fecha</th><th>Documento</th></tr></thead><tbody>
+                @foreach (var c in historial) { <tr><td>@c.Version @(c.Vigente ? "(vigente)" : "")</td><td>@c.Estado</td><td>@c.FechaEmision.ToString("dd/MM/yyyy")</td><td><button class="btn btn-outline-primary btn-sm" disabled="@ocupado" @onclick="() => DescargarAsync(c.IdCotizacion)">Descargar</button></td></tr> }
+            </tbody></table></div> }
+        </div></div>
+    }
+}
+
+@code {
+    private bool esClinica, cargando = true, ocupado;
+    private List<SolicitudCirugiaDTO> solicitudes = [];
+    private SolicitudCirugiaDTO? seleccionada;
+    private List<CotizacionDTO> historial = [];
+    private CotizacionDTO? vigente;
+    private int idSeleccionado;
+    private bool? decision;
+    private string motivo = "";
+    private string? error, mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { var estado = await Autenticacion.GetAuthenticationStateAsync();
+            esClinica = estado.User.IsInRole("CLINICA_HOSPITAL");
+            if (esClinica) solicitudes = await Solicitudes.ListarPropiasAsync(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException) { error = MensajeDeError.Texto(ex); }
+        finally { cargando = false; }
+    }
+    private async Task SeleccionarAsync()
+    {
+        error = mensaje = null;
+        decision = null;
+        seleccionada = solicitudes.FirstOrDefault(s => s.IdSolicitud == idSeleccionado);
+        historial = []; vigente = null;
+        if (seleccionada is null) return;
+        try { await RecargarAsync(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException) { error = MensajeDeError.Texto(ex); }
+    }
+    private async Task RecargarAsync()
+    {
+        historial = await Cotizaciones.ListarAsync(idSeleccionado);
+        vigente = await Cotizaciones.VigenteAsync(idSeleccionado);
+    }
+    private async Task ConfirmarAsync()
+    {
+        if (ocupado || decision is null || vigente is null) return;
+        ocupado = true; error = mensaje = null;
+        try { await Cotizaciones.DecidirAsync(vigente.IdCotizacion, decision.Value, motivo);
+            mensaje = decision.Value ? "Cotización aceptada." : "Cotización rechazada.";
+            decision = null; motivo = ""; await RecargarAsync(); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException)
+        {
+            error = MensajeDeError.Texto(ex);
+            try { await RecargarAsync(); }
+            catch (HttpRequestException consulta) { error += " No se pudo actualizar el estado: " + consulta.Message; }
+        }
+        finally { ocupado = false; }
+    }
+    private async Task DescargarAsync(int id)
+    {
+        if (ocupado) return;
+        ocupado = true; error = null;
+        try { var archivo = await Cotizaciones.DescargarAsync(id);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido); }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException or JSException) { error = MensajeDeError.Texto(ex); }
+        finally { ocupado = false; }
+    }
+}

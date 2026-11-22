@@ -1,61 +1,134 @@
-﻿@page "/inventario/despachos"
+@page "/inventario/despachos"
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@inject IDespachoService DespachoService
 
 <PageTitle>Despachos y retornos</PageTitle>
+<PageHeader Titulo="Despachos y retornos" Subtitulo="Control visual de equipos y kits enviados">
+    <a class="btn btn-primary" href="/inventario/despachos/nuevo">Registrar despacho</a>
+</PageHeader>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <span class="text-muted">Operaciones / Despachos y retornos</span>
-        <h2 class="mt-2">Despachos y retornos</h2>
-        <p class="text-muted">Control del equipo y kit enviados al establecimiento</p>
-    </div>
-</div>
+@if (mensajeError != null)
+{
+    <Aviso Tipo="@tonoMensaje" Mensaje="@mensajeError" AlCerrar="() => mensajeError = null" />
+}
 
-<div class="row mb-4 align-items-end">
+<div class="row g-2 mb-3">
     <div class="col-md-8">
-        <label class="form-label">Búsqueda</label>
-        <input type="text" class="form-control" placeholder="Cirugía, cliente o equipo" />
+        <label for="buscar-despacho" class="form-label">Búsqueda</label>
+        <input id="buscar-despacho" class="form-control" placeholder="Despacho, cirugía, cliente o equipo"
+               value="@busqueda" @oninput="OnBusquedaChanged" />
     </div>
     <div class="col-md-4">
-        <label class="form-label">Retorno</label>
-        <select class="form-select">
-            <option>Pendientes de retorno</option>
+        <label for="retorno-despacho" class="form-label">Retorno</label>
+        <select id="retorno-despacho" class="form-select" value="@estado" @onchange="OnEstadoChanged">
+            <option value="pendientes">Pendientes de retorno</option>
+            <option value="retornados">Retornos registrados</option>
+            <option value="todos">Todos</option>
         </select>
     </div>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead class="table-light">
-            <tr>
-                <th>DESPACHO</th>
-                <th>CIRUGÍA / DESTINO</th>
-                <th>EQUIPO</th>
-                <th>SALIDA</th>
-                <th>RETORNO</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr style="cursor: pointer;" onclick="window.location.href='inventario/despachos/detalle/DSP-026'">
-                <td>DSP-026</td>
-                <td>CIR-026 · San Felipe</td>
-                <td>CR-02 · BI-026</td>
-                <td>26 oct · 06:30</td>
-                <td><span class="text-warning">Pendiente</span></td>
-            </tr>
-            <tr>
-                <td>DSP-027</td>
-                <td>CIR-027 · Almenara</td>
-                <td>NN-01 · BI-027</td>
-                <td>26 oct · 07:00</td>
-                <td><span class="text-warning">Pendiente</span></td>
-            </tr>
-            <tr>
-                <td>DSP-024</td>
-                <td>CIR-024 · San Felipe</td>
-                <td>CR-03 · BI-024</td>
-                <td>22 oct · 12:00</td>
-                <td><span class="text-success">Registrado</span></td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+@if (cargando)
+{
+    <div class="card p-4 text-center text-muted">Cargando despachos...</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>DESPACHO</th>
+                    <th>CIRUGÍA / DESTINO</th>
+                    <th>EQUIPO / KIT</th>
+                    <th>SALIDA</th>
+                    <th>RETORNO</th>
+                    <th class="text-end">ACCIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var despacho in despachos)
+                {
+                    <tr>
+                        <td><strong>@despacho.Codigo</strong></td>
+                        <td>
+                            CIR-@despacho.IdCirugia.ToString("000") · @(despacho.Clinica ?? despacho.Cliente ?? "—")
+                            @if (!string.IsNullOrWhiteSpace(despacho.Procedimiento))
+                            {
+                                <div class="text-muted small">@despacho.Procedimiento</div>
+                            }
+                        </td>
+                        <td>@(despacho.Equipo ?? "Sin equipo") · @(despacho.Kit ?? "Sin kit")</td>
+                        <td>@(despacho.Salida?.ToString("dd/MM/yyyy HH:mm") ?? despacho.FechaSalida ?? "—")</td>
+                        <td>
+                            @if (despacho.Retorno != null)
+                            {
+                                <span class="badge bg-secondary">@despacho.Retorno.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" href="/inventario/despachos/@despacho.Codigo">Ver detalle</a>
+                        </td>
+                    </tr>
+                }
+                @if (!despachos.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No hay despachos para este filtro.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private string busqueda = "";
+    private string estado = "pendientes";
+    private bool cargando = true;
+    private string? mensajeError;
+    private TipoAviso tonoMensaje = TipoAviso.Error;
+    private List<DespachoDTO> despachos = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDespachos();
+    }
+
+    private async Task OnBusquedaChanged(ChangeEventArgs e)
+    {
+        busqueda = e.Value?.ToString() ?? "";
+        await CargarDespachos();
+    }
+
+    private async Task OnEstadoChanged(ChangeEventArgs e)
+    {
+        estado = e.Value?.ToString() ?? "todos";
+        await CargarDespachos();
+    }
+
+    private async Task CargarDespachos()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            despachos = await DespachoService.ListarAsync(estado, busqueda);
+        }
+        catch (Exception ex)
+        {
+            despachos = [];
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudieron obtener los despachos: " + MensajeDeError.Texto(ex);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

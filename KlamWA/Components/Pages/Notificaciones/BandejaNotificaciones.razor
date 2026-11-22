@@ -5,6 +5,7 @@
 @inject INotificacionService NotificacionService
 @inject VistaPreviaRol Vista
 @inject AvisosSinLeer Contador
+@implements IDisposable
 
 <PageTitle>Notificaciones | Klam</PageTitle>
 <div class="breadcrumb-line">Espacio de trabajo <span>/</span> Notificaciones</div>
@@ -28,10 +29,7 @@
 }
 @if (mensajeError != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @mensajeError
-        <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
-    </div>
+    <Aviso Tipo="@tonoMensaje" Mensaje="@mensajeError" AlCerrar="() => mensajeError = null" />
 }
 
 @if (desconocido)
@@ -140,7 +138,36 @@ else
     private bool procesando;
     private string? mensajeOk;
     private string? mensajeError;
+    private TipoAviso tonoMensaje = TipoAviso.Error;
     private List<NotificacionDTO> avisos = [];
+
+    // RF11: el sondeo del layout actualiza el contador; si hay más avisos sin leer que en la lista,
+    // llegó uno nuevo y la bandeja se recarga sola (sin F5).
+    protected override void OnInitialized() => Contador.Cambio += AlCambiarContador;
+
+    private void AlCambiarContador()
+    {
+        if (cargando || procesando || vacia || desconocido) return;
+        if (Contador.Cantidad is int noLeidas && noLeidas > avisos.Count(a => !a.Leida))
+        {
+            _ = InvokeAsync(RecargarAvisosNuevos);
+        }
+    }
+
+    private async Task RecargarAvisosNuevos()
+    {
+        try
+        {
+            avisos = await NotificacionService.ListarAsync();
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            // se mantiene la lista actual; el próximo sondeo lo vuelve a intentar
+        }
+    }
+
+    public void Dispose() => Contador.Cambio -= AlCambiarContador;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -173,7 +200,8 @@ else
         {
             avisos = [];
             errorCarga = true;
-            mensajeError = "No se pudieron cargar las notificaciones: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudieron cargar las notificaciones: " + MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -195,7 +223,8 @@ else
         }
         catch (Exception ex)
         {
-            mensajeError = "Error al marcar aviso: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "Error al marcar aviso: " + MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -216,7 +245,8 @@ else
         }
         catch (Exception ex)
         {
-            mensajeError = "Error al marcar notificaciones: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "Error al marcar notificaciones: " + MensajeDeError.Texto(ex);
         }
         finally
         {

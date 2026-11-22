@@ -89,7 +89,7 @@ else
         }
         catch (Exception ex) when (ex is HttpRequestException or ServicioException)
         {
-            mensajeError = ex.Message;
+            mensajeError = MensajeDeError.Texto(ex);
         }
         finally { cargando = false; }
     }
@@ -106,7 +106,7 @@ else
         }
         catch (Exception ex) when (ex is HttpRequestException or ServicioException)
         {
-            mensajeError = ex.Message;
+            mensajeError = MensajeDeError.Texto(ex);
         }
         finally { enviando = false; }
     }

@@ -125,7 +125,7 @@ else if (Requisitos is not null)
         {
             Requisitos = null;
             RequiereLogin = ex.StatusCode == HttpStatusCode.Unauthorized;
-            Error = ex.StatusCode == HttpStatusCode.Forbidden ? "Esta solicitud no pertenece a tu cuenta." : ex.Message;
+            Error = ex.StatusCode == HttpStatusCode.Forbidden ? "Esta solicitud no pertenece a tu cuenta." : MensajeDeError.Texto(ex);
         }
         finally { Cargando = false; }
     }
@@ -146,7 +146,12 @@ else if (Requisitos is not null)
         Archivo = null;
     }
 
-    private void SeleccionarArchivo(InputFileChangeEventArgs e) => Archivo = e.File;
+    private void SeleccionarArchivo(InputFileChangeEventArgs e)
+    {
+        Error = ArchivoDocumentoSeleccion.Validar(e.File);
+        Archivo = Error is null ? e.File : null;
+        Mensaje = null;
+    }
 
     private async Task EnviarAsync()
     {
@@ -165,7 +170,7 @@ else if (Requisitos is not null)
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException)
         {
-            Error = ex.Message;
+            Error = MensajeDeError.Texto(ex);
         }
         finally { Ocupado = false; }
     }
@@ -181,7 +186,7 @@ else if (Requisitos is not null)
         }
         catch (Exception ex) when (ex is HttpRequestException or JSException)
         {
-            Error = ex.Message;
+            Error = MensajeDeError.Texto(ex);
         }
         finally { Ocupado = false; }
     }

@@ -1,0 +1,161 @@
+@page "/usuarios/{Id:int}"
+@inject IUsuarioService UsuarioService
+@inject NavigationManager Navigation
+
+<PageTitle>Detalle de usuario | Klam</PageTitle>
+<div class="breadcrumb-line">
+    <a href="/usuarios">Usuarios</a><span>/</span>Detalle
+</div>
+
+<PageHeader Titulo="Detalle de usuario" Subtitulo="Información de la cuenta y su perfil de acceso.">
+    <a class="btn btn-outline-secondary" href="/usuarios">
+        <Icono Nombre="volver" Tamano="17" /> Volver
+    </a>
+</PageHeader>
+
+@if (!string.IsNullOrEmpty(mensajeError))
+{
+    <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+        <Icono Nombre="alerta" Tamano="20" Clase="me-2" />
+        <div>@mensajeError</div>
+    </div>
+}
+
+@if (cargando)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando usuario...</span>
+        </div>
+        <p class="text-muted mt-2">Cargando datos del usuario...</p>
+    </div>
+}
+else if (usuario is null)
+{
+    <EstadoVacio Titulo="No encontramos esa cuenta" Tono="aviso" Descripcion="Puede que la hayan dado de baja o que el enlace esté desactualizado." Enlace="/usuarios" TextoEnlace="Volver a usuarios" />
+}
+else
+{
+    <section class="card detail-card">
+        <div class="user-detail-header">
+            <span class="avatar avatar-lg">@usuario.Iniciales</span>
+            <div>
+                <h2>@usuario.NombreCompleto</h2>
+                <p>@@@usuario.Username · ID @usuario.Id.ToString("D3")</p>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="role-chip">@usuario.Rol</span>
+                    <EtiquetaEstado Texto="@(usuario.Activo ? "Activo" : "Inactivo")" Tono="@(usuario.Activo ? "success" : "neutral")" />
+                </div>
+            </div>
+        </div>
+
+        <dl class="detail-grid">
+            <div>
+                <dt>Nombres</dt>
+                <dd>@usuario.Nombres</dd>
+            </div>
+            <div>
+                <dt>Apellidos</dt>
+                <dd>@usuario.Apellidos</dd>
+            </div>
+            <div>
+                <dt>Nombre de usuario</dt>
+                <dd>@@@usuario.Username</dd>
+            </div>
+            <div>
+                <dt>Correo electrónico</dt>
+                <dd>@usuario.Email</dd>
+            </div>
+            <div>
+                <dt>Rol del personal</dt>
+                <dd>@usuario.Rol</dd>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(usuario.Especialidad))
+            {
+                <div>
+                    <dt>Especialidad</dt>
+                    <dd>@usuario.Especialidad</dd>
+                </div>
+            }
+            @if (usuario.ComisionAcumulada.HasValue)
+            {
+                <div>
+                    <dt>Comisión acumulada</dt>
+                    <dd>S/. @usuario.ComisionAcumulada.Value.ToString("N2")</dd>
+                </div>
+            }
+            <div>
+                <dt>Estado de cuenta</dt>
+                <dd>@(usuario.Activo ? "Acceso habilitado a la plataforma" : "Cuenta desactivada (acceso bloqueado)")</dd>
+            </div>
+        </dl>
+
+        <div class="card-actions">
+            <a class="btn btn-primary" href="@($"/usuarios/editar/{Id}?rol={usuario.Rol}")">
+                <Icono Nombre="editar" Tamano="17" /> Editar usuario
+            </a>
+            @if (usuario.Activo)
+            {
+                <a class="btn btn-outline-danger" href="@($"/usuarios/eliminar/{Id}?rol={usuario.Rol}")">
+                    <Icono Nombre="eliminar" Tamano="17" /> Desactivar usuario
+                </a>
+            }
+            else
+            {
+                <button class="btn btn-outline-success" type="button" @onclick="ReactivarAsync">
+                    <Icono Nombre="check" Tamano="17" /> Reactivar usuario
+                </button>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [SupplyParameterFromQuery] public string? Rol { get; set; }
+
+    private UsuarioDTO? usuario;
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarUsuarioAsync();
+    }
+
+    private async Task CargarUsuarioAsync()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            usuario = await UsuarioService.ObtenerPorIdAsync(Id, Rol);
+        }
+        catch (ServicioException ex)
+        {
+            mensajeError = MensajeDeError.Texto(ex);
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Error al consultar usuario: " + MensajeDeError.Texto(ex);
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task ReactivarAsync()
+    {
+        if (usuario is null) return;
+        try
+        {
+            await UsuarioService.ReactivarAsync(usuario.Id, usuario.Rol);
+            await CargarUsuarioAsync();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo reactivar el usuario: " + MensajeDeError.Texto(ex);
+        }
+    }
+}

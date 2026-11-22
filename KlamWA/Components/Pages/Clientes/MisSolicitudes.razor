@@ -64,8 +64,8 @@ else
                 HttpStatusCode.Unauthorized => "La sesión expiró. Vuelva a iniciar sesión.",
                 HttpStatusCode.Forbidden => "No tiene permiso para consultar estas solicitudes.",
                 HttpStatusCode.NotFound => "El servicio de solicitudes no está disponible.",
-                HttpStatusCode.BadRequest or HttpStatusCode.Conflict => ex.Message,
-                _ => "No se pudieron cargar las solicitudes: " + ex.Message
+                HttpStatusCode.BadRequest or HttpStatusCode.Conflict => MensajeDeError.Texto(ex),
+                _ => "No se pudieron cargar las solicitudes: " + MensajeDeError.Texto(ex)
             };
         }
         finally { cargando = false; }

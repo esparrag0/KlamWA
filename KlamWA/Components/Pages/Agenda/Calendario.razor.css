@@ -1,165 +1,59 @@
-/* Calendario quirúrgico: rejilla del mes + panel del día seleccionado.
-   Colores y radios del Design System. Los cuatro estados de cirugía usan los
-   mismos pares de color que las píldoras del resto de la aplicación. */
-
-.agenda-grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: .75rem; align-items: stretch; }
-.calendar-surface, .day-panel {
-    min-width: 0;
-    border: 1px solid var(--klam-borde);
-    border-radius: var(--klam-radio);
-    background: var(--klam-superficie);
-    box-shadow: var(--klam-sombra-xs);
-}
-.calendar-surface { padding: .75rem; }
-
-.calendar-toolbar { display: flex; align-items: center; gap: .5rem; min-height: 38px; margin-bottom: .7rem; }
-.calendar-toolbar h2 { margin: 0 .3rem; color: var(--klam-tinta); font-size: var(--klam-t-lg); font-weight: 600; text-transform: capitalize; }
-.month-button, .today-button {
-    min-height: 32px;
-    border: 1px solid var(--klam-borde-fuerte);
-    border-radius: var(--klam-radio-sm);
-    background: var(--klam-superficie);
-    color: var(--klam-texto);
-    cursor: pointer;
-    transition: background .14s ease, border-color .14s ease, color .14s ease;
-}
-.month-button { width: 32px; font-size: 1.2rem; line-height: 1; }
-.today-button { padding: 0 .7rem; font-size: var(--klam-t-base); font-weight: 500; }
-.month-button:hover, .today-button:hover { background: var(--klam-marca-50); border-color: var(--klam-marca-300); color: var(--klam-primario); }
+.agenda-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1rem; align-items: stretch; }
+.calendar-surface, .day-panel { min-width: 0; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio); background: #fff; box-shadow: var(--klam-sombra-sm); }
+.calendar-surface { padding: .85rem; }
+.calendar-toolbar { display: flex; align-items: center; gap: .65rem; min-height: 42px; margin-bottom: .75rem; }
+.calendar-toolbar h2 { margin: 0 .35rem; color: var(--klam-tinta); font-size: 1rem; font-weight: 700; text-transform: capitalize; }
+.month-button, .today-button { min-height: 35px; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-sm); background: #fff; color: var(--klam-tinta); cursor: pointer; }
+.month-button { width: 35px; font-size: 1.4rem; line-height: 1; }
+.today-button { padding: 0 .8rem; font-size: .82rem; font-weight: 600; }
+.month-button:hover, .today-button:hover { background: var(--klam-marca-50); border-color: var(--klam-primario); }
 .month-button:focus-visible, .today-button:focus-visible, .day-number:focus-visible, .surgery-card:focus-visible { outline: 2px solid var(--klam-primario); outline-offset: 2px; }
-
-.calendar-scroll { border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-sm); overflow: hidden; }
+.calendar-scroll { border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-sm); }
 .calendario { table-layout: fixed; width: 100%; min-width: 650px; margin: 0; border-collapse: collapse; }
-.calendario th {
-    padding: .45rem .2rem;
-    border: 0;
-    border-bottom: 1px solid var(--klam-borde);
-    background: var(--klam-superficie-2);
-    color: var(--klam-suave);
-    text-align: center;
-    font-size: var(--klam-t-xs);
-    font-weight: 600;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-}
-.calendario td {
-    width: 14.28%;
-    height: 94px;
-    padding: .3rem;
-    border: 1px solid var(--klam-borde);
-    border-left: 0;
-    border-top: 0;
-    vertical-align: top;
-    cursor: pointer;
-    transition: background .12s ease;
-}
-.calendario td:last-child { border-right: 0; }
-.calendario tr:last-child td { border-bottom: 0; }
-.calendario td:hover { background: var(--klam-superficie-2); }
+.calendario th { padding: .5rem .2rem; border: 1px solid var(--klam-borde); background: var(--klam-marca-50); color: var(--klam-tinta); text-align: center; font-size: .78rem; }
+.calendario td { width: 14.28%; height: 92px; padding: .3rem; border: 1px solid var(--klam-borde); vertical-align: top; cursor: pointer; transition: background .12s ease; }
+.calendario td:hover { background: var(--klam-marca-50); }
 .calendario td.fuera-de-mes { background: var(--klam-superficie-2); color: var(--klam-tenue); cursor: default; }
 .calendario td.seleccionado { background: var(--klam-marca-50); box-shadow: inset 0 0 0 2px var(--klam-primario); }
-
-/* Grid en vez de ancho fijo con text-align: así un día de dos cifras cabe
-   centrado dentro del círculo de «hoy» en lugar de desbordarlo. */
-.day-number {
-    display: inline-grid;
-    place-items: center;
-    width: 26px; height: 26px;
-    margin-bottom: .2rem;
-    padding: 0;
-    border: 0;
-    border-radius: var(--klam-radio-xs);
-    background: transparent;
-    color: var(--klam-texto);
-    font-weight: 600;
-    font-size: var(--klam-t-sm);
-    font-variant-numeric: tabular-nums;
-}
-.fuera-de-mes .day-number { color: var(--klam-tenue); font-weight: 400; }
+.day-number { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-bottom: .25rem; padding: 0; border: 0; border-radius: var(--klam-radio-xs); background: transparent; color: var(--klam-tinta); font-weight: 700; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.fuera-de-mes .day-number { color: var(--klam-tenue); }
 .day-number.hoy { border-radius: 50%; background: var(--klam-marca-800); color: #fff; }
 .seleccionado .day-number { color: var(--klam-primario); }
 .seleccionado .day-number.hoy { color: #fff; }
-
-/* Un evento del mes es una pastilla fina: lo que importa en la rejilla es
-   cuántos hay y de qué color, no leer el procedimiento entero. */
-.evento {
-    display: block;
-    margin-bottom: .15rem;
-    padding: .2rem .35rem;
-    overflow: hidden;
-    border-radius: var(--klam-radio-xs);
-    font-size: var(--klam-t-xs);
-    font-weight: 500;
-    line-height: 1.3;
-    text-decoration: none;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.evento:hover { filter: brightness(.96); }
-.state-scheduled.evento { background: var(--klam-aviso-suave); color: var(--klam-aviso); }
-.state-progress.evento { background: var(--klam-marca-50); color: var(--klam-primario); }
-.state-finished.evento { background: var(--klam-exito-suave); color: var(--klam-exito); }
-.state-cancelled.evento { background: var(--klam-peligro-suave); color: var(--klam-peligro); }
-.more-events { display: block; margin-top: .1rem; color: var(--klam-suave); font-size: var(--klam-t-xs); font-weight: 500; }
-.calendar-empty { margin: .7rem 0 .2rem; color: var(--klam-suave); text-align: center; font-size: var(--klam-t-base); }
-
-/* --- Panel del día -------------------------------------------------------- */
+.evento { display: block; margin-bottom: .2rem; padding: .26rem .35rem; overflow: hidden; border-radius: var(--klam-radio-xs); color: var(--klam-texto); font-size: .69rem; font-weight: 600; line-height: 1.2; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.evento:hover { filter: brightness(.95); color: var(--klam-tinta); }
+.more-events { display: block; color: var(--klam-primario); font-size: .7rem; font-weight: 700; }
+.state-scheduled.evento { background: var(--klam-aviso-suave); }
+.state-progress.evento { background: var(--klam-exito-suave); }
+.state-finished.evento { background: var(--klam-superficie-3); }
+.state-cancelled.evento { background: var(--klam-peligro-suave); }
+.calendar-empty { margin: .8rem 0 .2rem; color: var(--klam-suave); text-align: center; font-size: .85rem; }
 .day-panel { display: flex; flex-direction: column; padding: 1rem; }
-.day-panel-header { display: flex; gap: .55rem; align-items: flex-start; padding-bottom: .8rem; border-bottom: 1px solid var(--klam-borde); }
-.panel-icon { flex: none; color: var(--klam-tenue); }
-/* capitalize convertía «miércoles 28 de octubre» en «Miércoles 28 De Octubre».
-   En español solo va en mayúscula la primera letra de la fecha. */
-.day-panel-header h2 { margin: 0; color: var(--klam-tinta); font-size: var(--klam-t-md); font-weight: 600; line-height: 1.35; text-transform: none; }
+.day-panel-header { display: flex; gap: .65rem; align-items: flex-start; padding-bottom: .9rem; border-bottom: 1px solid var(--klam-borde); }
+.panel-icon { flex: none; color: var(--klam-primario); }
+.day-panel-header h2 { margin: 0; color: var(--klam-tinta); font-size: .94rem; line-height: 1.35; text-transform: none; }
+/* capitalize convertía «miércoles 28 de octubre» en «Miércoles 28 De Octubre». */
 .day-panel-header h2::first-letter { text-transform: uppercase; }
-.day-panel-header p { margin: .15rem 0 0; color: var(--klam-suave); font-size: var(--klam-t-sm); }
-.day-list { display: flex; flex-direction: column; gap: .5rem; padding-top: .8rem; }
-
-/* La ficha del día sí lleva filete de color a la izquierda: es la lista con la
-   que se trabaja y conviene distinguir el estado sin leer la píldora. */
-.surgery-card {
-    display: block;
-    padding: .65rem .75rem;
-    border: 1px solid var(--klam-borde);
-    border-left: 3px solid var(--klam-tenue);
-    border-radius: var(--klam-radio-sm);
-    background: var(--klam-superficie);
-    box-shadow: none;
-    color: var(--klam-texto);
-    text-decoration: none;
-    transition: border-color .14s ease, background .14s ease;
-}
+.day-panel-header p { margin: .2rem 0 0; color: var(--klam-suave); font-size: .78rem; }
+.day-list { display: flex; flex-direction: column; gap: .65rem; padding-top: .9rem; }
+.surgery-card { display: block; padding: .75rem .8rem; border: 1px solid var(--klam-borde); border-left: 4px solid var(--klam-aviso); border-radius: var(--klam-radio-sm); background: #fff; box-shadow: var(--klam-sombra-xs); color: var(--klam-texto); text-decoration: none; }
 .surgery-card:hover { background: var(--klam-superficie-2); border-color: var(--klam-borde-fuerte); color: var(--klam-texto); }
 .surgery-card.state-scheduled { border-left-color: var(--klam-aviso); }
-.surgery-card.state-progress { border-left-color: var(--klam-primario); }
-.surgery-card.state-finished { border-left-color: var(--klam-exito); }
+.surgery-card.state-progress { border-left-color: var(--klam-exito); }
+.surgery-card.state-finished { border-left-color: var(--klam-tenue); }
 .surgery-card.state-cancelled { border-left-color: var(--klam-peligro); }
-.surgery-card.state-scheduled:hover { border-left-color: var(--klam-aviso); }
-.surgery-card.state-progress:hover { border-left-color: var(--klam-primario); }
-.surgery-card.state-finished:hover { border-left-color: var(--klam-exito); }
-.surgery-card.state-cancelled:hover { border-left-color: var(--klam-peligro); }
-
-.card-top { display: flex; align-items: center; justify-content: space-between; gap: .4rem; font-size: var(--klam-t-base); }
-.card-top strong { color: var(--klam-tinta); font-variant-numeric: tabular-nums; }
-.status-pill {
-    padding: .15rem .5rem;
-    border-radius: var(--klam-radio-pill);
-    background: var(--klam-aviso-suave);
-    color: var(--klam-aviso);
-    font-size: var(--klam-t-xs);
-    font-weight: 600;
-    white-space: nowrap;
-}
-.state-progress .status-pill { background: var(--klam-marca-50); color: var(--klam-primario); }
-.state-finished .status-pill { background: var(--klam-exito-suave); color: var(--klam-exito); }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: .4rem; font-size: .8rem; }
+.card-top strong { color: var(--klam-tinta); }
+.status-pill { padding: .2rem .45rem; border-radius: var(--klam-radio-xs); background: var(--klam-aviso-suave); font-size: .68rem; font-weight: 700; white-space: nowrap; }
+.state-progress .status-pill { background: var(--klam-exito-suave); color: var(--klam-exito); }
+.state-finished .status-pill { background: var(--klam-superficie-3); color: var(--klam-suave); }
 .state-cancelled .status-pill { background: var(--klam-peligro-suave); color: var(--klam-peligro); }
-.surgery-card h3 { margin: .4rem 0 .25rem; font-size: var(--klam-t-md); font-weight: 600; }
-.surgery-card p { margin: .15rem 0; color: var(--klam-suave); font-size: var(--klam-t-sm); }
+.surgery-card h3 { margin: .45rem 0; font-size: .85rem; font-weight: 700; }
+.surgery-card p { margin: .2rem 0; color: var(--klam-suave); font-size: .76rem; }
 .surgery-card p span { color: var(--klam-suave); }
-.detail-link { display: block; margin-top: .5rem; color: var(--klam-primario); font-size: var(--klam-t-sm); font-weight: 600; }
-
-.day-empty { display: flex; flex-direction: column; align-items: center; gap: .35rem; margin: auto 0; padding: 2.25rem 1rem; color: var(--klam-suave); text-align: center; font-size: var(--klam-t-base); }
-.day-empty strong { color: var(--klam-tinta); font-size: var(--klam-t-md); }
-
-@media (max-width: 1180px) { .agenda-grid { grid-template-columns: minmax(0, 1fr) 310px; } }
+.detail-link { display: block; margin-top: .55rem; color: var(--klam-primario); font-size: .75rem; font-weight: 700; }
+.day-empty { display: flex; flex-direction: column; align-items: center; gap: .4rem; margin: auto 0; padding: 2.5rem 1rem; color: var(--klam-suave); text-align: center; font-size: .8rem; }
+.day-empty strong { color: var(--klam-tinta); font-size: .88rem; }
+@media (max-width: 1180px) { .agenda-grid { grid-template-columns: minmax(0, 1fr) 320px; } }
 @media (max-width: 950px) { .agenda-grid { grid-template-columns: 1fr; } .day-panel { min-height: 220px; } }
-@media (max-width: 600px) { .calendar-surface { padding: .5rem; } .day-panel { padding: .85rem; } }
+@media (max-width: 600px) { .calendar-surface { padding: .55rem; } .day-panel { padding: .85rem; } }

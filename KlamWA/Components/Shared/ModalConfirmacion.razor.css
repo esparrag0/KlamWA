@@ -1,13 +1,13 @@
-.confirm-backdrop{position:fixed;inset:0;z-index:1050;display:grid;place-items:center;padding:1rem;background:rgba(9,44,56,.52)}
-.confirm-dialog{position:relative;width:min(100%,540px);padding:2.25rem 2rem 1.75rem;background:var(--klam-superficie);border:1px solid var(--klam-borde);border-radius:var(--klam-radio-lg);box-shadow:0 24px 65px rgba(10,38,50,.22);text-align:center;outline:none}
+.confirm-backdrop{position:fixed;inset:0;z-index:1050;display:grid;place-items:center;padding:1rem;background:rgba(12,35,48,.55)}
+.confirm-dialog{position:relative;width:min(100%,540px);padding:2.25rem 2rem 1.75rem;background:#fff;border:1px solid var(--klam-borde);border-radius:22px;box-shadow:var(--klam-sombra-lg);text-align:center;outline:none}
 .confirm-close{position:absolute;top:1rem;right:1rem;border:0;background:transparent;color:var(--klam-suave);font-size:1.8rem;line-height:1;cursor:pointer}
 .confirm-close:hover{color:var(--klam-tinta)}
-.confirm-icon{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 1.25rem;border-radius:var(--klam-radio);background:var(--klam-peligro-suave);color:var(--klam-peligro)}
-.confirm-title{margin:0;color:var(--klam-tinta);font-size:var(--klam-t-xl);font-weight:700;line-height:1.3}
+.confirm-icon{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 1.25rem;border-radius:18px;background:var(--klam-peligro-suave);color:var(--klam-peligro)}
+.confirm-title{margin:0;color:var(--klam-tinta);font-size:1.45rem;font-weight:700;line-height:1.3}
 .confirm-message{margin:1rem 0 1.75rem;color:var(--klam-suave);line-height:1.55}
 .confirm-extra{text-align:left;margin-bottom:1.5rem}
 .confirm-actions{display:flex;justify-content:flex-end;gap:.75rem;padding-top:1.25rem;border-top:1px solid var(--klam-borde)}
-.confirm-actions .btn{min-width:120px;padding:.65rem 1rem;border-radius:var(--klam-radio-sm);font-weight:600}
+.confirm-actions .btn{min-width:120px;padding:.65rem 1rem;border-radius:10px;font-weight:600}
 .confirm-actions .btn-danger{background:var(--klam-peligro);border-color:var(--klam-peligro)}
 .confirm-actions .btn-danger:hover{background:var(--klam-peligro-hover);border-color:var(--klam-peligro-hover)}
 @media(max-width:480px){.confirm-dialog{padding:2rem 1.25rem 1.25rem}.confirm-actions{flex-direction:column-reverse}.confirm-actions .btn{width:100%}}

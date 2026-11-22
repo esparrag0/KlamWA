@@ -1,131 +1,83 @@
 /* ============================================================================
- * KLAM · Design System
+ * BIOKLAM · Design System
  * ----------------------------------------------------------------------------
- * Estándar visual único de la plataforma. Se carga DESPUÉS de bootstrap,
- * app.css y rol5-simple.css: rol5-simple arma la estructura (flex, grid,
- * posiciones) y este archivo pone la piel (color, tipo, forma, espacio).
+ * Estándar visual único del equipo. Se carga DESPUÉS de bootstrap, app.css y
+ * rol5-simple.css, así que lo que se define aquí manda sobre todo lo anterior.
  *
- * Decisiones que sostienen el sistema
- * -----------------------------------
- *  1. UN SOLO ACENTO. La paleta sale del logotipo: petróleo #0B3C49, teal
- *     #1A8A92 y agua #4FD1C5. El azul de enlaces desapareció; antes convivían
- *     dos primarios y ninguna pantalla se veía decidida.
- *  2. EL COLOR ES INFORMACIÓN. Fuera de la marca, el color solo aparece para
- *     decir en qué estado está algo. Una tabla en calma es gris y blanca.
- *  3. GRADIENTE EN TRES SITIOS. Lateral, botón primario y filo de la tarjeta
- *     de acceso. Vertical, nunca diagonal. Nada de veladuras de adorno.
- *  4. ESCALAS, NO VALORES SUELTOS. Tipografía, espacio, radio y sombra salen
- *     de una escala. Si un número no está en la escala, no se usa.
- *  5. PESOS REALES. Solo 400/500/600/700, que son los que carga Inter. Pesos
- *     intermedios como 650 se redondean solos y la finura era ficticia.
+ * Reglas del sistema:
+ *   1. Ningún módulo define su propia paleta. Todo sale de los tokens de :root.
+ *   2. Los colores de estado viven en las clases .estado-* y .status-*.
+ *   3. Los gradientes son de apoyo, nunca protagonistas: superficie y marca.
  *
- * Orden del archivo
- * -----------------
+ * Orden del archivo:
  *   01 Tokens · 02 Base · 03 Shell · 04 Encabezados · 05 Tarjetas
  *   06 Botones · 07 Formularios · 08 Tablas · 09 Estados · 10 Avisos
- *   11 Navegación · 12 Piezas sueltas · 13 Bootstrap · 14 Responsive
+ *   11 Navegación · 12 Piezas sueltas · 13 Responsive
  * ========================================================================== */
 
 /* ---------------------------------------------------------------- 01 TOKENS */
 :root {
-    /* --- Marca -------------------------------------------------------------
-       Tomada del logotipo (wwwroot/img/klam-logo.svg), no de una paleta
-       genérica: así el wordmark y la interfaz son el mismo color. */
-    --klam-marca-900: #072730;          /* fondo más profundo del lateral    */
-    --klam-marca-800: #0B3C49;          /* petróleo del logotipo             */
-    --klam-marca-700: #0E5663;
-    --klam-marca-600: #0E7C86;          /* primario: acción y enlaces        */
-    --klam-marca-500: #13929B;
-    --klam-marca-400: #4FD1C5;          /* agua del logotipo: solo acentos   */
-    --klam-marca-300: #8FE3DA;
-    --klam-marca-100: #D6F2EF;
-    --klam-marca-50:  #EDF8F7;
+    /* --- Marca ------------------------------------------------------------ */
+    --klam-marca-900: #072A33;          /* fondo profundo del lateral        */
+    --klam-marca-800: #0B3B45;
+    --klam-marca-700: #115E63;
+    --klam-marca-600: #0F766E;          /* primario de la marca              */
+    --klam-marca-500: #0D9488;
+    --klam-marca-400: #2DD4BF;
+    --klam-marca-50:  #ECFDF8;
 
-    /* --- Semánticos --------------------------------------------------------
-       Un único acento. "accion" existe por compatibilidad y apunta al mismo
-       teal: las pantallas antiguas que lo invocan quedan dentro del sistema. */
+    /* --- Semánticos ------------------------------------------------------- */
     --klam-primario: var(--klam-marca-600);
-    --klam-primario-hover: #0A646D;
-    --klam-primario-suave: var(--klam-marca-50);
-    --klam-accion: var(--klam-marca-600);
-    --klam-accion-hover: var(--klam-primario-hover);
-    --klam-accion-suave: var(--klam-marca-50);
+    --klam-primario-hover: #0B5F59;
+    --klam-accion: #1D4ED8;             /* enlaces y acciones secundarias    */
+    --klam-accion-hover: #1E40AF;
+    --klam-accion-suave: #EFF4FF;
+    --klam-peligro: #BE123C;
+    --klam-peligro-hover: #9F1239;
+    --klam-peligro-suave: #FFF1F3;
+    --klam-aviso: #B45309;
+    --klam-aviso-suave: #FFF8EB;
+    --klam-exito: #047857;
+    --klam-exito-suave: #ECFDF5;
 
-    --klam-peligro: #A81F3A;
-    --klam-peligro-hover: #8C1830;
-    --klam-peligro-suave: #FDECEF;
-    --klam-peligro-borde: #F6D2D9;
-
-    --klam-aviso: #95600D;
-    --klam-aviso-suave: #FEF6E7;
-    --klam-aviso-borde: #F5E2BE;
-
-    --klam-exito: #09694A;
-    --klam-exito-suave: #E8F6EF;
-    --klam-exito-borde: #C4E7D7;
-
-    /* --- Tinta -------------------------------------------------------------
-       Neutros con una pizca de petróleo: los grises pertenecen a la marca. */
-    --klam-tinta: #12303A;              /* titulares y cifras                */
-    --klam-texto: #46606A;              /* cuerpo                            */
-    --klam-suave: #5F7A84;              /* secundario, rótulos               */
-    --klam-tenue: #90A4AC;              /* terciario, marcas de agua         */
+    /* --- Tinta ------------------------------------------------------------ */
+    --klam-tinta: #0E2A31;              /* titulares                         */
+    --klam-texto: #3F565E;              /* cuerpo                            */
+    --klam-suave: #6E858D;              /* secundario                        */
+    --klam-tenue: #93A7AE;              /* terciario, placeholders           */
 
     /* --- Superficies ------------------------------------------------------ */
-    --klam-fondo: #F4F7F8;
+    --klam-fondo: #F5F8F9;
     --klam-superficie: #FFFFFF;
-    --klam-superficie-2: #F7FAFA;       /* cabeceras de tabla, zonas inertes */
-    --klam-superficie-3: #EDF2F3;
-    --klam-borde: #E3EAEC;
-    --klam-borde-fuerte: #CEDADE;
+    --klam-superficie-2: #F8FAFB;       /* cabeceras de tabla, zonas inertes */
+    --klam-superficie-3: #EEF3F5;
+    --klam-borde: #E1E9EC;
+    --klam-borde-fuerte: #CBD9DE;
 
-    /* --- Gradientes --------------------------------------------------------
-       Verticales y de recorrido corto. El degradado diagonal muy abierto es
-       el que delata una plantilla; este apenas se nota y da profundidad. */
-    --klam-grad-marca: linear-gradient(180deg, #0E4452 0%, #092C38 100%);
-    --klam-grad-primario: linear-gradient(180deg, #11858F 0%, #0C707A 100%);
-    --klam-grad-primario-hover: linear-gradient(180deg, #0E767F 0%, #0A5F68 100%);
-    --klam-grad-peligro: linear-gradient(180deg, #B82742 0%, #9A1B33 100%);
-    --klam-grad-filo: linear-gradient(90deg, #0B3C49 0%, #0E7C86 48%, #4FD1C5 100%);
-
-    /* --- Tipografía --------------------------------------------------------
-       Escala fija. Nada entre un peldaño y el siguiente. */
-    --klam-fuente: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --klam-t-xs:   .6875rem;            /* 11px · dato muy menor             */
-    --klam-t-sm:   .75rem;              /* 12px · rótulos, pie de tabla      */
-    --klam-t-base: .8125rem;            /* 13px · celdas, texto denso        */
-    --klam-t-md:   .875rem;             /* 14px · cuerpo por defecto         */
-    --klam-t-lg:   1rem;                /* 16px · título de tarjeta          */
-    --klam-t-xl:   1.25rem;             /* 20px · título de sección          */
-    --klam-t-2xl:  1.625rem;            /* 26px · título de pantalla         */
-    --klam-t-3xl:  2.125rem;            /* 34px · portada                    */
-
-    /* --- Espacio (retícula de 4) ------------------------------------------ */
-    --klam-e1: .25rem;
-    --klam-e2: .5rem;
-    --klam-e3: .75rem;
-    --klam-e4: 1rem;
-    --klam-e5: 1.25rem;
-    --klam-e6: 1.5rem;
-    --klam-e8: 2rem;
-    --klam-e10: 2.5rem;
+    /* --- Gradientes ------------------------------------------------------- */
+    --klam-grad-marca: linear-gradient(160deg, #0B3B45 0%, #072A33 100%);
+    --klam-grad-primario: linear-gradient(135deg, #0F766E 0%, #0D9488 100%);
+    --klam-grad-primario-hover: linear-gradient(135deg, #0B5F59 0%, #0F766E 100%);
+    --klam-grad-sutil: linear-gradient(180deg, #FFFFFF 0%, #FBFDFD 100%);
+    --klam-grad-destacado: linear-gradient(135deg, #ECFDF8 0%, #F2F9FF 100%);
 
     /* --- Forma ------------------------------------------------------------ */
-    --klam-radio-xs: 5px;
-    --klam-radio-sm: 7px;
-    --klam-radio: 10px;
-    --klam-radio-lg: 14px;
+    --klam-radio-xs: 6px;
+    --klam-radio-sm: 8px;
+    --klam-radio: 12px;
+    --klam-radio-lg: 16px;
     --klam-radio-pill: 999px;
-    --klam-alto-boton: 36px;
+    --klam-alto-boton: 38px;
 
-    /* --- Sombras -----------------------------------------------------------
-       Casi invisibles. El trabajo lo hace el filete de 1px; la sombra solo
-       despega del fondo lo que de verdad flota. */
-    --klam-sombra-xs: 0 1px 1px rgba(18, 48, 58, .04);
-    --klam-sombra-sm: 0 1px 2px rgba(18, 48, 58, .05);
-    --klam-sombra: 0 1px 2px rgba(18, 48, 58, .04), 0 8px 20px -10px rgba(18, 48, 58, .14);
-    --klam-sombra-lg: 0 18px 44px -14px rgba(18, 48, 58, .26);
-    --klam-anillo: 0 0 0 3px rgba(14, 124, 134, .16);
+    /* --- Sombras ---------------------------------------------------------- */
+    --klam-sombra-xs: 0 1px 2px rgba(14, 42, 49, .05);
+    --klam-sombra-sm: 0 1px 2px rgba(14, 42, 49, .04), 0 2px 6px rgba(14, 42, 49, .05);
+    --klam-sombra: 0 1px 3px rgba(14, 42, 49, .05), 0 6px 18px rgba(14, 42, 49, .07);
+    --klam-sombra-lg: 0 12px 34px rgba(14, 42, 49, .13);
+    --klam-anillo: 0 0 0 3px rgba(15, 118, 110, .18);
+
+    /* --- Tipografía ------------------------------------------------------- */
+    --klam-fuente: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
     /* Compatibilidad con nombres antiguos del sistema */
     --klam-neutro: var(--klam-suave);
@@ -137,42 +89,27 @@
 /* ------------------------------------------------------------------ 02 BASE */
 html, body {
     font-family: var(--klam-fuente);
-    font-size: 16px;
-    line-height: 1.5;
+    font-size: 15.5px;
     background: var(--klam-fondo);
     color: var(--klam-texto);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* cv05: ele con cola, se distingue del uno y de la i mayúscula */
-    font-feature-settings: 'cv05' 1;
+    font-feature-settings: 'cv05' 1, 'ss03' 1;
 }
-body { font-size: var(--klam-t-md); }
 
 h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     color: var(--klam-tinta);
-    font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: -.011em;
+    font-weight: 650;
+    letter-spacing: -.015em;
 }
-h1, .h1 { font-size: var(--klam-t-2xl); letter-spacing: -.021em; }
-h2, .h2 { font-size: var(--klam-t-xl); letter-spacing: -.015em; }
-h3, .h3 { font-size: var(--klam-t-lg); }
-h4, h5, h6 { font-size: var(--klam-t-md); }
 
-a { color: var(--klam-primario); text-underline-offset: .18em; }
-a:hover { color: var(--klam-primario-hover); }
-strong, b { font-weight: 600; color: var(--klam-tinta); }
-small, .small { font-size: var(--klam-t-sm); }
-p { line-height: 1.6; }
+a { color: var(--klam-accion); text-underline-offset: .2em; }
+a:hover { color: var(--klam-accion-hover); }
+strong, b { font-weight: 650; color: var(--klam-tinta); }
+small, .small { font-size: .82rem; }
 hr { border-color: var(--klam-borde); opacity: 1; }
 .text-muted { color: var(--klam-suave) !important; }
-::selection { background: rgba(14, 124, 134, .15); }
-
-/* Las cifras se comparan en vertical: siempre tabulares */
-td, th, .stat-card strong, .metric-card strong, time,
-.table, .page-number, .count-label { font-variant-numeric: tabular-nums; }
-
-:focus-visible { outline: 2px solid var(--klam-primario); outline-offset: 2px; }
+::selection { background: rgba(15, 118, 110, .16); }
 
 /* Barras de desplazamiento discretas */
 * { scrollbar-width: thin; scrollbar-color: var(--klam-borde-fuerte) transparent; }
@@ -183,108 +120,138 @@ td, th, .stat-card strong, .metric-card strong, time,
 /* ----------------------------------------------------------------- 03 SHELL */
 .app-shell { background: var(--klam-fondo); }
 
-/* El lateral es la única superficie oscura de la aplicación y el ancla de la
-   marca. Plano, sin resplandores: el brillo lo da el indicador de activo. */
 .app-sidebar {
-    width: 252px;
+    width: 268px;
     background: var(--klam-grad-marca);
-    border-right: 1px solid rgba(255, 255, 255, .07);
+    border-right: 1px solid rgba(255, 255, 255, .06);
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, .04);
 }
+/* Brillo sutil en el lateral: da vida sin competir con el contenido */
+.app-sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 340px;
+    background: radial-gradient(120% 70% at 20% 0%, rgba(45, 212, 191, .16) 0%, transparent 70%);
+    pointer-events: none;
+}
+.app-sidebar > * { position: relative; }
 
 .app-topbar {
     height: auto;
-    min-height: 58px;
-    padding: var(--klam-e2) var(--klam-e6);
-    background: rgba(255, 255, 255, .88);
-    backdrop-filter: saturate(1.3) blur(12px);
-    -webkit-backdrop-filter: saturate(1.3) blur(12px);
+    min-height: 64px;
+    padding: .6rem 1.75rem;
+    background: rgba(255, 255, 255, .86);
+    backdrop-filter: saturate(1.4) blur(10px);
+    -webkit-backdrop-filter: saturate(1.4) blur(10px);
     border-bottom: 1px solid var(--klam-borde);
     position: sticky;
     top: 0;
     z-index: 30;
 }
 .topbar-brand {
-    color: var(--klam-suave);
-    font-size: var(--klam-t-sm);
-    font-weight: 500;
-    letter-spacing: 0;
+    color: var(--klam-marca-800);
+    font-size: .82rem;
+    font-weight: 750;
+    letter-spacing: .12em;
     text-decoration: none;
 }
 .topbar-brand:hover { color: var(--klam-primario); }
 
-.app-content { padding: var(--klam-e6) var(--klam-e8) var(--klam-e10); }
+.app-content {
+    padding: 1.9rem 2.1rem 3rem;
+    position: relative;
+}
+/* Veladura de color detrás del encabezado de cada pantalla */
+.app-content::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 260px;
+    background: radial-gradient(90% 100% at 0% 0%, rgba(13, 148, 136, .07) 0%, transparent 62%),
+                radial-gradient(70% 100% at 100% 0%, rgba(29, 78, 216, .05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+.app-content > * { position: relative; z-index: 1; }
 
 .avatar {
-    background: var(--klam-superficie-3);
-    color: var(--klam-marca-700);
-    font-size: var(--klam-t-sm);
-    font-weight: 600;
-    box-shadow: inset 0 0 0 1px var(--klam-borde);
-}
-.user-cell .avatar, .app-topbar .avatar {
-    background: var(--klam-marca-50);
-    color: var(--klam-primario);
-    box-shadow: inset 0 0 0 1px var(--klam-marca-100);
+    background: var(--klam-grad-primario);
+    color: #fff;
+    font-weight: 650;
+    letter-spacing: .02em;
+    box-shadow: var(--klam-sombra-xs);
 }
 
 /* ----------------------------------------------------------- 04 ENCABEZADOS */
-/* Ruta y título, sin ficha de icono ni rótulo de color. Un encabezado de
-   pantalla se sostiene con el tamaño del título; lo demás era adorno. */
-.breadcrumb-line, .page-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: var(--klam-e1);
-    font-size: var(--klam-t-sm);
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
+.breadcrumb-line {
+    font-size: .76rem;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
     color: var(--klam-suave);
-    margin-bottom: var(--klam-e2);
+    margin-bottom: .55rem;
 }
 .breadcrumb-line span { color: var(--klam-tenue); }
-.page-eyebrow::before { content: none; }
-/* Si la pantalla ya trae su propia miga de pan, esa manda */
-.breadcrumb-line + .page-heading .page-eyebrow { display: none; }
-.breadcrumb-line + .page-heading { margin-top: calc(var(--klam-e2) * -1); }
 
 .page-heading {
     border-bottom: 1px solid var(--klam-borde) !important;
-    padding-bottom: var(--klam-e4) !important;
-    margin-bottom: var(--klam-e6) !important;
+    padding-bottom: 1.15rem !important;
+    margin-bottom: 1.65rem !important;
 }
 .page-heading h1 {
-    font-size: var(--klam-t-2xl);
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: -.021em;
+    font-size: 1.72rem;
+    font-weight: 680;
+    line-height: 1.18;
+    letter-spacing: -.025em;
     color: var(--klam-tinta);
 }
-.page-heading small {
-    font-size: var(--klam-t-md);
-    color: var(--klam-suave);
-    max-width: 68ch;
-}
+.page-heading small { font-size: .9rem; color: var(--klam-suave); }
 .page-heading .btn { min-width: 0; }
-.page-glyph { display: none; }
+
+/* Marca de sección sobre el título (patrón "AUDIT · Activity Timeline") */
+.page-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .42rem;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--klam-primario);
+    margin-bottom: .35rem;
+}
+.page-eyebrow::before {
+    content: "";
+    width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--klam-grad-primario);
+}
+/* Si la pantalla ya trae su propia miga de pan, esa manda y el rótulo sobra */
+.breadcrumb-line + .page-heading .page-eyebrow { display: none; }
+
+/* Ficha de icono junto al título */
+.page-glyph {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: none;
+    border-radius: var(--klam-radio);
+    background: var(--klam-grad-destacado);
+    border: 1px solid var(--klam-borde);
+    color: var(--klam-primario);
+}
 
 .section-heading {
-    padding: var(--klam-e3) var(--klam-e4);
+    padding: .95rem 1.15rem;
     border-bottom: 1px solid var(--klam-borde);
-    background: var(--klam-superficie);
+    background: var(--klam-superficie-2);
     border-radius: var(--klam-radio) var(--klam-radio) 0 0;
 }
-.section-heading h2 { font-size: var(--klam-t-md); font-weight: 600; color: var(--klam-tinta); letter-spacing: 0; }
-.section-heading > span { font-size: var(--klam-t-sm); color: var(--klam-suave); }
-.count-label {
-    display: inline-block;
-    margin-left: var(--klam-e1);
-    padding: .08rem .4rem;
-    border-radius: var(--klam-radio-pill);
-    background: var(--klam-superficie-3);
-    color: var(--klam-suave);
-    font-size: var(--klam-t-sm);
-    font-weight: 600;
-}
+.section-heading h2 { font-size: .98rem; font-weight: 650; color: var(--klam-tinta); }
+.section-heading > span { font-size: .78rem; color: var(--klam-suave); }
 
 /* --------------------------------------------------------------- 05 TARJETAS */
 .card {
@@ -294,137 +261,121 @@ td, th, .stat-card strong, .metric-card strong, time,
     box-shadow: var(--klam-sombra-sm);
 }
 .card-header {
-    background: var(--klam-superficie);
+    background: var(--klam-superficie-2);
     border-bottom: 1px solid var(--klam-borde);
     border-radius: var(--klam-radio) var(--klam-radio) 0 0 !important;
-    padding: var(--klam-e3) var(--klam-e4);
-    font-size: var(--klam-t-md);
-    font-weight: 600;
-    letter-spacing: 0;
+    padding: .85rem 1.15rem;
+    font-size: .85rem;
+    font-weight: 650;
+    letter-spacing: .01em;
     color: var(--klam-tinta);
 }
-.card-body { padding: var(--klam-e4); }
+.card-body { padding: 1.15rem; }
 .card-footer {
     background: var(--klam-superficie-2);
     border-top: 1px solid var(--klam-borde);
     border-radius: 0 0 var(--klam-radio) var(--klam-radio) !important;
-    padding: var(--klam-e3) var(--klam-e4);
+    padding: .85rem 1.15rem;
 }
 
-/* Indicador: rótulo pequeño, cifra grande y tabular, icono al margen.
-   Compacto a propósito; una tira de indicadores se lee de un vistazo. */
+/* Tarjetas de indicador: cifra grande, rótulo arriba, icono a la derecha */
 .stat-card, .metric-card {
-    background: var(--klam-superficie);
+    background: var(--klam-grad-sutil);
     border: 1px solid var(--klam-borde);
     border-radius: var(--klam-radio);
     box-shadow: var(--klam-sombra-xs);
-    padding: var(--klam-e4);
-    transition: border-color .15s ease, box-shadow .15s ease;
+    padding: 1.05rem 1.15rem;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
 }
-.stat-card:hover, .metric-card:hover {
-    background: var(--klam-superficie);
+.stat-card:hover {
+    background: var(--klam-grad-sutil);
     border-color: var(--klam-borde-fuerte);
-    box-shadow: var(--klam-sombra-sm);
+    box-shadow: var(--klam-sombra);
+    transform: translateY(-1px);
 }
 .stat-card div > span, .metric-card > span {
     color: var(--klam-suave);
-    font-size: var(--klam-t-sm);
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .085em;
+    text-transform: uppercase;
 }
 .stat-card strong, .metric-card strong {
-    font-size: var(--klam-t-2xl);
-    font-weight: 600;
-    line-height: 1.15;
-    letter-spacing: -.025em;
+    font-size: 1.85rem;
+    font-weight: 680;
+    line-height: 1.1;
+    letter-spacing: -.03em;
     color: var(--klam-tinta);
+    font-variant-numeric: tabular-nums;
 }
-.stat-card small, .metric-card small {
-    color: var(--klam-suave);
-    font-size: var(--klam-t-sm);
-    font-weight: 400;
-    letter-spacing: 0;
-}
-/* El detalle va debajo de la cifra, no colgando de su línea de base: así los
-   tres bloques del indicador (rótulo · cifra · detalle) se apilan iguales. */
-.stat-card strong small, .metric-card strong small { display: block; margin-top: .1rem; }
+.stat-card small, .metric-card small { color: var(--klam-suave); font-size: .79rem; }
 .metric-card > svg, .stat-card > svg:last-child { color: var(--klam-tenue); }
 .stat-icon, .quick-icon {
     color: var(--klam-primario);
     background: var(--klam-marca-50);
     border-radius: var(--klam-radio-sm);
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
 }
 
+/* Tarjeta de indicador destacada */
 .metric-card.is-destacada, .stat-card.is-destacada {
-    background: var(--klam-marca-50);
-    border-color: var(--klam-marca-100);
+    background: var(--klam-grad-destacado);
+    border-color: #CCEDE6;
 }
 
 /* --------------------------------------------------------------- 06 BOTONES */
 .btn {
     min-height: var(--klam-alto-boton);
-    padding: .35rem .85rem;
+    padding: .42rem .95rem;
     border-radius: var(--klam-radio-sm);
-    font-size: var(--klam-t-md);
-    font-weight: 500;
-    letter-spacing: 0;
+    font-size: .875rem;
+    font-weight: 600;
+    letter-spacing: .005em;
     white-space: nowrap;
     box-shadow: none;
-    transition: background .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+    transition: background .15s ease, border-color .15s ease, color .15s ease,
+                box-shadow .15s ease, transform .12s ease;
 }
-.btn-sm { min-height: 30px; padding: .2rem .6rem; font-size: var(--klam-t-base); border-radius: var(--klam-radio-xs); }
-.btn-lg { min-height: 42px; padding: .5rem 1.25rem; font-size: var(--klam-t-lg); border-radius: var(--klam-radio-sm); }
+.btn:active { transform: translateY(1px); }
+.btn-sm { min-height: 32px; padding: .28rem .7rem; font-size: .82rem; border-radius: var(--klam-radio-xs); }
+.btn-lg { min-height: 46px; padding: .6rem 1.4rem; font-size: .95rem; border-radius: var(--klam-radio); }
 
-/* Primario y éxito comparten aspecto: en Klam «guardar» y «confirmar» son la
-   misma acción de avance, y tenerlos distintos partía cada formulario. */
 .btn-primary, .btn-success {
     background: var(--klam-grad-primario);
-    border-color: #0A6971;
+    border-color: transparent;
     color: #fff;
-    font-weight: 600;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+    box-shadow: 0 1px 2px rgba(15, 118, 110, .28), inset 0 1px 0 rgba(255, 255, 255, .14);
 }
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active,
 .btn-success:hover, .btn-success:focus, .btn-success:active {
     background: var(--klam-grad-primario-hover);
-    border-color: #084F57;
-    color: #fff;
-}
-.btn-primary:disabled, .btn-success:disabled {
-    background: var(--klam-marca-600);
     border-color: transparent;
-    opacity: .45;
-    box-shadow: none;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(15, 118, 110, .3);
 }
+.btn-primary:disabled, .btn-success:disabled { background: var(--klam-marca-600); opacity: .5; box-shadow: none; }
 
-.btn-outline-primary, .btn-outline-success {
-    color: var(--klam-primario);
-    border-color: var(--klam-borde-fuerte);
-    background: var(--klam-superficie);
-    font-weight: 500;
+.btn-outline-primary { color: var(--klam-accion); border-color: var(--klam-borde-fuerte); background: var(--klam-superficie); }
+.btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+    background: var(--klam-accion-suave);
+    border-color: var(--klam-accion);
+    color: var(--klam-accion-hover);
 }
-.btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active,
-.btn-outline-success:hover, .btn-outline-success:focus, .btn-outline-success:active {
-    background: var(--klam-marca-50);
-    border-color: var(--klam-marca-300);
-    color: var(--klam-primario-hover);
-}
+.btn-outline-success { color: var(--klam-primario); border-color: var(--klam-borde-fuerte); background: var(--klam-superficie); }
+.btn-outline-success:hover, .btn-outline-success:focus { background: var(--klam-marca-50); border-color: var(--klam-primario); color: var(--klam-primario-hover); }
 
 .btn-danger {
-    background: var(--klam-grad-peligro);
-    border-color: #8E1A30;
+    background: linear-gradient(135deg, #BE123C 0%, #E11D48 100%);
+    border-color: transparent;
     color: #fff;
-    font-weight: 600;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+    box-shadow: 0 1px 2px rgba(190, 18, 60, .26);
 }
-.btn-danger:hover, .btn-danger:focus { background: linear-gradient(180deg, #A32139 0%, #8A162C 100%); border-color: #781326; color: #fff; }
-.btn-outline-danger { color: var(--klam-peligro); border-color: var(--klam-peligro-borde); background: var(--klam-superficie); }
+.btn-danger:hover, .btn-danger:focus { background: linear-gradient(135deg, #9F1239 0%, #BE123C 100%); border-color: transparent; color: #fff; }
+.btn-outline-danger { color: var(--klam-peligro); border-color: #F3C6CF; background: var(--klam-superficie); }
 .btn-outline-danger:hover, .btn-outline-danger:focus { background: var(--klam-peligro-suave); border-color: var(--klam-peligro); color: var(--klam-peligro-hover); }
 
-/* Neutros: Volver, Cancelar, Filtrar… un único aspecto en todo el sistema */
+/* Neutros: Volver, Cancelar, Actualizar… un único aspecto en todo el sistema */
 .btn-outline-secondary, .btn-outline-dark, .btn-light {
     color: var(--klam-texto);
     border-color: var(--klam-borde-fuerte);
@@ -438,35 +389,34 @@ td, th, .stat-card strong, .metric-card strong, time,
     color: var(--klam-tinta);
 }
 .btn-outline-secondary:disabled, .btn-outline-dark:disabled, .btn-light:disabled { color: var(--klam-tenue); background: var(--klam-superficie); opacity: .6; }
-.btn-secondary { background: var(--klam-marca-800); border-color: var(--klam-marca-800); color: #fff; }
-.btn-secondary:hover, .btn-secondary:focus { background: var(--klam-marca-900); border-color: var(--klam-marca-900); color: #fff; }
+.btn-secondary { background: var(--klam-texto); border-color: var(--klam-texto); color: #fff; }
+.btn-secondary:hover, .btn-secondary:focus { background: var(--klam-tinta); border-color: var(--klam-tinta); color: #fff; }
 
-.btn-link { color: var(--klam-primario); font-weight: 500; text-decoration: none; }
-.btn-link:hover { color: var(--klam-primario-hover); text-decoration: underline; }
+.btn-link { color: var(--klam-accion); font-weight: 600; text-decoration: none; }
+.btn-link:hover { color: var(--klam-accion-hover); text-decoration: underline; }
 
 .btn:focus-visible { outline: none; box-shadow: var(--klam-anillo); }
 
 /* ----------------------------------------------------------- 07 FORMULARIOS */
 .form-label {
     color: var(--klam-tinta);
-    font-size: var(--klam-t-base);
-    font-weight: 500;
-    letter-spacing: 0;
-    margin-bottom: var(--klam-e1);
+    font-size: .8rem;
+    font-weight: 650;
+    letter-spacing: .01em;
+    margin-bottom: .35rem;
 }
 .form-control, .form-select {
     min-height: var(--klam-alto-boton);
-    padding: .35rem .7rem;
+    padding: .45rem .8rem;
     background: var(--klam-superficie);
     border: 1px solid var(--klam-borde-fuerte);
     border-radius: var(--klam-radio-sm);
     color: var(--klam-tinta);
-    font-size: var(--klam-t-md);
-    box-shadow: none;
-    transition: border-color .14s ease, box-shadow .14s ease;
+    font-size: .88rem;
+    box-shadow: var(--klam-sombra-xs);
+    transition: border-color .15s ease, box-shadow .15s ease;
 }
 .form-control::placeholder { color: var(--klam-tenue); }
-.form-control:hover, .form-select:hover { border-color: var(--klam-tenue); }
 .form-control:focus, .form-select:focus {
     border-color: var(--klam-primario);
     box-shadow: var(--klam-anillo);
@@ -474,59 +424,53 @@ td, th, .stat-card strong, .metric-card strong, time,
 }
 .form-control:disabled, .form-select:disabled, .form-control[readonly] {
     background: var(--klam-superficie-3);
-    border-color: var(--klam-borde);
     color: var(--klam-suave);
     box-shadow: none;
 }
-textarea.form-control { min-height: 92px; line-height: 1.6; }
-.form-text, .field-help { color: var(--klam-suave); font-size: var(--klam-t-sm); }
+textarea.form-control { min-height: 96px; line-height: 1.55; }
+.form-text, .field-help { color: var(--klam-suave); font-size: .78rem; }
 .form-check-input { border-color: var(--klam-borde-fuerte); }
 .form-check-input:checked { background-color: var(--klam-primario); border-color: var(--klam-primario); }
 .form-check-input:focus { border-color: var(--klam-primario); box-shadow: var(--klam-anillo); }
-.input-group-text { background: var(--klam-superficie-2); border-color: var(--klam-borde-fuerte); color: var(--klam-suave); border-radius: var(--klam-radio-sm); font-size: var(--klam-t-md); }
+.input-group-text { background: var(--klam-superficie-2); border-color: var(--klam-borde-fuerte); color: var(--klam-suave); border-radius: var(--klam-radio-sm); }
 
-.validation-message, .invalid-feedback { color: var(--klam-peligro); font-size: var(--klam-t-base); font-weight: 400; }
+.validation-message, .invalid-feedback { color: var(--klam-peligro); font-size: .8rem; font-weight: 500; }
 .invalid, .form-control.invalid { outline: none; border-color: var(--klam-peligro); }
-.valid.modified:not([type=checkbox]) { outline: none; border-color: var(--klam-marca-300); }
+.valid.modified:not([type=checkbox]) { outline: none; border-color: var(--klam-marca-500); }
 
-/* Barra de filtros: una pieza del encabezado de la tabla, no controles sueltos */
+/* Barra de filtros: una pieza, no controles sueltos */
 .filter-toolbar {
-    align-items: center;
-    padding: var(--klam-e3) var(--klam-e4);
-    gap: var(--klam-e2);
+    padding: 1rem 1.15rem;
+    gap: .65rem;
     background: var(--klam-superficie-2);
     border-bottom: 1px solid var(--klam-borde);
+    border-radius: var(--klam-radio) var(--klam-radio) 0 0;
 }
-.filter-toolbar .form-control, .filter-toolbar .form-select { background: var(--klam-superficie); }
-.search-control input { padding-left: 2.1rem; }
-.search-control svg { top: .6rem; left: .7rem; color: var(--klam-tenue); }
-.form-actions, .card-actions { gap: var(--klam-e2); }
+.search-control input { padding-left: 2.2rem; }
+.search-control svg { top: .72rem; left: .75rem; color: var(--klam-tenue); }
+.form-actions, .card-actions { gap: .6rem; }
 .card-actions { border-top: 1px solid var(--klam-borde); background: var(--klam-superficie-2); border-radius: 0 0 var(--klam-radio) var(--klam-radio); }
 
 /* ---------------------------------------------------------------- 08 TABLAS */
-/* Aquí vive Klam: cirugías, solicitudes, despachos, consumos. La fila es la
-   unidad de trabajo, así que respira, y el encabezado de columna se aparta. */
 .table {
     --bs-table-bg: transparent;
     color: var(--klam-texto);
-    font-size: var(--klam-t-base);
+    font-size: .875rem;
     border-color: var(--klam-borde);
     margin-bottom: 0;
 }
-.table > :not(caption) > * > * { padding: var(--klam-e3) var(--klam-e4); }
+.table > :not(caption) > * > * { padding: .78rem .9rem; }
 .table thead th, .klam-table thead th {
     background: var(--klam-superficie-2);
     color: var(--klam-suave);
-    font-size: var(--klam-t-xs);
-    font-weight: 600;
-    /* Las versalitas aquí sí son información: marcan dónde acaba el rótulo y
-       empiezan los datos. Es el único sitio del sistema donde se usan. */
-    letter-spacing: .06em;
+    font-size: .71rem;
+    font-weight: 700;
+    letter-spacing: .085em;
     text-transform: uppercase;
     white-space: nowrap;
     vertical-align: middle;
     border-bottom: 1px solid var(--klam-borde) !important;
-    padding: var(--klam-e2) var(--klam-e4);
+    padding: .72rem .9rem;
 }
 .table td, .table tbody th, .klam-table td, .klam-table tbody th {
     vertical-align: middle;
@@ -537,38 +481,28 @@ textarea.form-control { min-height: 92px; line-height: 1.6; }
 .table-hover > tbody > tr:hover > *, .klam-table tbody tr:hover > * { background: var(--klam-superficie-2); color: var(--klam-tinta); }
 .table > :not(:first-child) { border-top: 0; }
 .table td strong, .user-cell strong { color: var(--klam-tinta); font-weight: 600; }
-.table td small, .user-cell small { color: var(--klam-suave); font-size: var(--klam-t-sm); }
+.table td small, .user-cell small { color: var(--klam-suave); }
 .table td.acciones, .table th.acciones { text-align: right; white-space: nowrap; width: 1%; }
 .table td.text-end { white-space: nowrap; }
-.table td.acciones .btn + .btn, .table td.text-end .btn + .btn { margin-left: var(--klam-e1); }
-.btn-accion { min-width: 10rem; }
-.email-cell { color: var(--klam-suave); }
+.table td.acciones .btn + .btn, .table td.text-end .btn + .btn { margin-left: .35rem; }
+.btn-accion { min-width: 10.5rem; }
 
 /* Una tabla dentro de una tarjeta no dibuja bordes dobles */
 .card > .table-responsive > .table, .card > .table { border-radius: 0; }
 .card > .table-responsive:last-child, .card > .table:last-child { border-radius: 0 0 var(--klam-radio) var(--klam-radio); overflow: hidden; }
 
 .table-footer {
-    padding: var(--klam-e3) var(--klam-e4);
+    padding: .8rem 1.15rem;
     border-top: 1px solid var(--klam-borde);
-    background: var(--klam-superficie);
+    background: var(--klam-superficie-2);
     color: var(--klam-suave);
-    font-size: var(--klam-t-base);
+    font-size: .8rem;
     border-radius: 0 0 var(--klam-radio) var(--klam-radio);
 }
-.page-number { border: 1px solid var(--klam-borde-fuerte); border-radius: var(--klam-radio-xs); padding: .1rem .45rem; background: var(--klam-superficie); color: var(--klam-tinta); font-weight: 600; }
-
-/* Acciones de fila: iconos en calma que se encienden al pasar por encima */
-.table-actions { gap: var(--klam-e1); }
-.table-actions a, .table-actions button {
-    color: var(--klam-tenue);
-    border-radius: var(--klam-radio-xs);
-    padding: .3rem;
-    display: inline-flex;
-    transition: color .14s ease, background .14s ease;
-}
-.table-actions a:hover, .table-actions button:hover { color: var(--klam-primario); background: var(--klam-marca-50); }
-/* Borrar no grita desde la fila: se enciende solo cuando se apunta a él */
+.page-number { border: 1px solid var(--klam-borde-fuerte); border-radius: var(--klam-radio-xs); padding: .15rem .5rem; background: var(--klam-superficie); color: var(--klam-tinta); font-weight: 600; }
+.table-actions { gap: .3rem; }
+.table-actions a { color: var(--klam-suave); border-radius: var(--klam-radio-xs); padding: .3rem; display: inline-flex; }
+.table-actions a:hover { color: var(--klam-primario); background: var(--klam-marca-50); }
 .table-actions .danger-link { color: var(--klam-tenue); }
 .table-actions .danger-link:hover { color: var(--klam-peligro); background: var(--klam-peligro-suave); }
 
@@ -577,104 +511,170 @@ textarea.form-control { min-height: 92px; line-height: 1.6; }
 .tabla-solicitudes td.acciones, .tabla-solicitudes td.text-nowrap { white-space: nowrap; }
 
 /* --------------------------------------------------------------- 09 ESTADOS */
-/* El sistema de estados es el corazón del producto y el único sitio donde el
-   color manda. Un lenguaje para todo: cirugías, solicitudes, documentos,
-   órdenes de compra y despachos. Fondo tenue, texto saturado, punto de 5px. */
-.estado-badge, .status-pill, .status-chip {
+/* Píldoras suaves: fondo tenue, texto saturado, sin bordes duros */
+.estado-badge {
     display: inline-flex;
     align-items: center;
-    gap: .35rem;
-    font-size: var(--klam-t-sm);
-    font-weight: 600;
-    line-height: 1.3;
-    letter-spacing: 0;
-    padding: .2rem .55rem;
+    gap: .4rem;
+    font-size: .76rem;
+    font-weight: 650;
+    line-height: 1.25;
+    letter-spacing: .005em;
+    padding: .3em .7em;
     border-radius: var(--klam-radio-pill);
     white-space: nowrap;
-    box-shadow: inset 0 0 0 1px rgba(18, 48, 58, .05);
 }
-.estado-badge-lg { font-size: var(--klam-t-md); padding: .28rem .75rem; }
-.status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
+.estado-badge-lg { font-size: .88rem; padding: .34em .9em; }
+.estado-pendiente { background: var(--klam-accion-suave); color: #1E40AF; }
+.estado-validado  { background: var(--klam-exito-suave); color: #065F46; }
+.estado-rechazado { background: var(--klam-peligro-suave); color: #9F1239; }
+.estado-neutro    { background: var(--klam-superficie-3); color: var(--klam-texto); }
 
-.estado-pendiente, .status-warning, .status-chip.pending { background: var(--klam-aviso-suave); color: var(--klam-aviso); }
-.estado-validado, .status-success, .status-chip.validated { background: var(--klam-exito-suave); color: var(--klam-exito); }
-.estado-rechazado, .status-chip.rejected { background: var(--klam-peligro-suave); color: var(--klam-peligro); }
-.estado-neutro, .status-neutral, .status-chip.neutral { background: var(--klam-superficie-3); color: var(--klam-suave); }
-.status-teal { background: var(--klam-marca-50); color: var(--klam-primario); }
+.status-pill {
+    display: inline-flex;
+    gap: .42rem;
+    align-items: center;
+    border-radius: var(--klam-radio-pill);
+    font-size: .76rem;
+    padding: .3rem .68rem;
+    font-weight: 650;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-success { color: #065F46; background: var(--klam-exito-suave); }
+.status-neutral { color: var(--klam-texto); background: var(--klam-superficie-3); }
+.status-teal    { color: #115E59; background: var(--klam-marca-50); }
+.status-warning { color: #92400E; background: var(--klam-aviso-suave); }
 
-.badge { font-weight: 600; font-size: var(--klam-t-sm); padding: .2rem .55rem; border-radius: var(--klam-radio-pill); letter-spacing: 0; }
-
-/* El rol no es un estado: se distingue siendo el único chip con filete */
+.badge { font-weight: 650; font-size: .74rem; padding: .36em .7em; border-radius: var(--klam-radio-pill); letter-spacing: .005em; }
 .role-chip {
     display: inline-block;
-    border: 1px solid var(--klam-borde-fuerte);
-    background: var(--klam-superficie);
-    border-radius: var(--klam-radio-xs);
-    padding: .14rem .45rem;
-    font-size: var(--klam-t-sm);
-    font-weight: 500;
+    border: 1px solid var(--klam-borde);
+    background: var(--klam-superficie-2);
+    border-radius: var(--klam-radio-pill);
+    padding: .22rem .62rem;
+    font-size: .76rem;
+    font-weight: 600;
     color: var(--klam-texto);
     white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------- 10 AVISOS */
-.alert {
+/* Cuatro tonos y uno solo por situación. El criterio no es la gravedad, es
+   quién puede arreglar lo que pasó:
+     info      contexto, no es un problema                       azul
+     exito     la acción se completó                             verde
+     atencion  no se pudo y depende de quien lo usa:
+               un dato, un estado, un permiso                    ámbar
+     error     falló el sistema; lo que toca es reintentar       rosa
+   El componente Aviso.razor pinta .klam-aviso; las pantallas que todavía
+   usan .alert de Bootstrap comparten exactamente los mismos colores, así que
+   ninguna se queda fuera del sistema mientras se van migrando. */
+
+.klam-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: .7rem;
+    padding: .85rem 1rem;
+    margin-bottom: 1.15rem;
     border: 1px solid transparent;
     border-radius: var(--klam-radio);
-    padding: var(--klam-e3) var(--klam-e4);
-    font-size: var(--klam-t-md);
+    font-size: .875rem;
+    line-height: 1.5;
+}
+.klam-aviso-glifo { display: grid; place-items: center; flex: none; width: 20px; height: 20px; margin-top: .06rem; opacity: .85; }
+.klam-aviso-texto { flex: 1; min-width: 0; }
+.klam-aviso-texto strong { display: block; color: inherit; font-weight: 650; margin-bottom: .08rem; }
+.klam-aviso-texto p { margin: 0; color: inherit; }
+.klam-aviso-texto p + p { margin-top: .3rem; }
+.klam-aviso-accion { flex: none; display: flex; align-items: center; gap: .4rem; }
+.klam-aviso-accion .btn { background: rgba(255, 255, 255, .72); border-color: currentColor; color: inherit; }
+.klam-aviso-accion .btn:hover { background: #fff; border-color: currentColor; color: inherit; }
+.klam-aviso-cerrar {
+    flex: none;
+    display: inline-flex;
+    padding: .2rem;
+    border: 0;
+    border-radius: var(--klam-radio-xs);
+    background: transparent;
+    color: inherit;
+    opacity: .5;
+    cursor: pointer;
+    transition: opacity .14s ease, background .14s ease;
+}
+.klam-aviso-cerrar:hover { opacity: 1; background: rgba(14, 42, 49, .08); }
+
+.alert, .klam-aviso-info {
+    border: 1px solid transparent;
+    border-radius: var(--klam-radio);
+    font-size: .875rem;
     box-shadow: none;
 }
+.alert { padding: .85rem 1rem; }
 .alert .fw-bold, .alert strong { color: inherit; }
-.alert-success { background: var(--klam-exito-suave); border-color: var(--klam-exito-borde); color: var(--klam-exito); }
-.alert-info    { background: var(--klam-marca-50); border-color: var(--klam-marca-100); color: var(--klam-marca-700); }
-.alert-warning { background: var(--klam-aviso-suave); border-color: var(--klam-aviso-borde); color: var(--klam-aviso); }
-.alert-danger  { background: var(--klam-peligro-suave); border-color: var(--klam-peligro-borde); color: var(--klam-peligro); }
+.alert-success, .klam-aviso-exito    { background: var(--klam-exito-suave);   border-color: #BBF0DC; color: #065F46; }
+.alert-info,    .klam-aviso-info     { background: var(--klam-accion-suave);  border-color: #CFDEFB; color: #1E3A8A; }
+.alert-warning, .klam-aviso-atencion { background: var(--klam-aviso-suave);   border-color: #FBE3B6; color: #92400E; }
+.alert-danger,  .klam-aviso-error    { background: var(--klam-peligro-suave); border-color: #F7CBD4; color: #9F1239; }
 .alert-secondary { background: var(--klam-superficie-2); border-color: var(--klam-borde); color: var(--klam-texto); }
+/* La equis de Bootstrap es bastante más grande que la de Aviso.razor; se iguala
+   para que los bloques que aún no están migrados no desentonen. */
+.alert-dismissible .btn-close {
+    width: .65em;
+    height: .65em;
+    padding: .95rem;
+    background-size: .65em;
+    opacity: .4;
+}
+.alert-dismissible .btn-close:hover { opacity: .85; }
 
-.demo-note { color: var(--klam-suave); font-size: var(--klam-t-base); }
-.demo-feedback { color: var(--klam-primario); background: var(--klam-marca-50); border-radius: var(--klam-radio-sm); padding: var(--klam-e2) var(--klam-e3); font-size: var(--klam-t-base); }
+.demo-note { color: var(--klam-suave); font-size: .79rem; }
+.demo-feedback { color: #115E59; background: var(--klam-marca-50); border-radius: var(--klam-radio-sm); padding: .6rem .75rem; font-size: .8rem; }
 
-/* Pantalla vacía: sobria y con una salida clara */
+/* Estado vacío. No es un error y no debe parecerlo: el glifo es un círculo
+   apagado y no una ficha de color, porque antes la lupa teal pesaba más que
+   el propio mensaje. La salida es secundaria y solo aparece si hay a dónde ir. */
 .empty-state {
     background: var(--klam-superficie);
     border: 1px solid var(--klam-borde);
     border-radius: var(--klam-radio);
-    padding: var(--klam-e10) var(--klam-e8);
+    padding: 3rem 2rem;
     box-shadow: none;
 }
-.empty-state h2 { font-size: var(--klam-t-lg); margin: var(--klam-e3) 0 var(--klam-e1); }
-.empty-state p { color: var(--klam-suave); font-size: var(--klam-t-md); max-width: 46ch; margin-inline: auto; }
+.empty-state h2 { font-size: 1.05rem; font-weight: 650; margin: 1rem 0 .35rem; }
+.empty-state p { color: var(--klam-suave); font-size: .9rem; max-width: 46ch; margin: 0 auto; }
+.empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; margin-top: 1.5rem; }
 .empty-icon, .notification-symbol {
-    color: var(--klam-primario);
-    background: var(--klam-marca-50);
+    color: var(--klam-tenue);
+    background: var(--klam-superficie-3);
     border: 0;
-    border-radius: var(--klam-radio);
-    width: 44px;
-    height: 44px;
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
 }
-.empty-icon.danger { color: var(--klam-peligro); background: var(--klam-peligro-suave); }
-.not-found-code { font-size: 3.25rem; font-weight: 600; color: var(--klam-tenue); letter-spacing: -.04em; }
+.empty-state-aviso .empty-icon, .empty-icon.danger {
+    color: var(--klam-peligro);
+    background: var(--klam-peligro-suave);
+    border: 0;
+}
+.not-found-code { font-size: 3.6rem; font-weight: 700; color: var(--klam-tenue); letter-spacing: -.04em; }
 
 /* ----------------------------------------------------------- 11 NAVEGACIÓN */
-.view-tabs, .nav-tabs { gap: var(--klam-e3); border-bottom: 1px solid var(--klam-borde); margin-bottom: var(--klam-e5); }
-.view-tabs a, .nav-tabs .nav-link {
-    padding: var(--klam-e2) 0;
-    border: 0;
+.view-tabs { gap: .25rem; border-bottom: 1px solid var(--klam-borde); margin-bottom: 1.25rem; }
+.view-tabs a {
+    padding: .6rem .9rem;
     border-bottom: 2px solid transparent;
     color: var(--klam-suave);
-    font-size: var(--klam-t-md);
-    font-weight: 500;
-    margin-bottom: -1px;
-    background: transparent;
-}
-.view-tabs a:hover, .nav-tabs .nav-link:hover { color: var(--klam-tinta); border-bottom-color: var(--klam-borde-fuerte); background: transparent; }
-.view-tabs a.active, .nav-tabs .nav-link.active {
-    border-bottom-color: var(--klam-primario);
-    color: var(--klam-primario);
+    font-size: .87rem;
     font-weight: 600;
-    background: transparent;
+    margin-bottom: -1px;
 }
+.view-tabs a:hover { color: var(--klam-tinta); }
+.view-tabs a.active { border-bottom-color: var(--klam-primario); color: var(--klam-primario); font-weight: 650; }
+
+.nav-tabs { border-bottom-color: var(--klam-borde); }
+.nav-tabs .nav-link { border: 0; border-bottom: 2px solid transparent; color: var(--klam-suave); font-weight: 600; font-size: .87rem; }
+.nav-tabs .nav-link:hover { border-bottom-color: var(--klam-borde-fuerte); color: var(--klam-tinta); }
+.nav-tabs .nav-link.active { background: transparent; border-bottom-color: var(--klam-primario); color: var(--klam-primario); }
 
 .quick-links > a { border-bottom: 1px solid var(--klam-borde); color: var(--klam-texto); }
 .quick-links > a:hover { background: var(--klam-superficie-2); }
@@ -684,87 +684,73 @@ textarea.form-control { min-height: 92px; line-height: 1.6; }
 
 .mini-notification, .notification-row { border-bottom: 1px solid var(--klam-borde); }
 .mini-notification:hover { background: var(--klam-superficie-2); }
-.mini-notification p { color: var(--klam-texto); font-size: var(--klam-t-md); }
-.mini-notification small, .notification-meta, .notification-meta time { color: var(--klam-suave); font-size: var(--klam-t-sm); }
+.mini-notification p { color: var(--klam-texto); font-size: .84rem; }
+.mini-notification small, .notification-meta, .notification-meta time { color: var(--klam-suave); font-size: .78rem; }
 .notification-row.is-unread { background: var(--klam-marca-50); }
-.unread-dot { background: var(--klam-primario); }
+.unread-dot { background: var(--klam-marca-500); }
 .notification-message { background: var(--klam-superficie-2); border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-sm); }
 .notification-count { background: var(--klam-peligro); box-shadow: 0 0 0 2px #fff; }
 
 .modal-content { border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-lg); box-shadow: var(--klam-sombra-lg); }
-.modal-header, .modal-footer { border-color: var(--klam-borde); padding: var(--klam-e4) var(--klam-e5); }
-.modal-header { background: var(--klam-superficie); border-radius: var(--klam-radio-lg) var(--klam-radio-lg) 0 0; }
-.modal-footer { background: var(--klam-superficie-2); border-radius: 0 0 var(--klam-radio-lg) var(--klam-radio-lg); }
-.modal-title { font-size: var(--klam-t-lg); }
+.modal-header, .modal-footer { border-color: var(--klam-borde); padding: 1rem 1.25rem; }
+.modal-header { background: var(--klam-superficie-2); border-radius: var(--klam-radio-lg) var(--klam-radio-lg) 0 0; }
+.modal-title { font-size: 1.02rem; }
 
 /* ------------------------------------------------------ 12 PIEZAS SUELTAS */
 .detail-card { max-width: 980px; }
-.detail-grid { gap: var(--klam-e4) var(--klam-e6); padding: var(--klam-e4); }
-.detail-grid dt {
-    color: var(--klam-suave);
-    font-size: var(--klam-t-sm);
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-    margin-bottom: .1rem;
-}
-.detail-grid dd { color: var(--klam-tinta); font-size: var(--klam-t-md); font-weight: 500; margin-bottom: 0; }
-.user-detail-header, .notification-detail-title {
-    border-bottom: 1px solid var(--klam-borde);
-    background: var(--klam-superficie);
-    border-radius: var(--klam-radio) var(--klam-radio) 0 0;
-    padding: var(--klam-e5);
-}
-.user-detail-header h2, .notification-detail-title h2 { font-size: var(--klam-t-xl); }
-.profile-summary h2, .role-card h2, .notification-aside h2 { font-size: var(--klam-t-lg); }
-.delete-preview { border-radius: var(--klam-radio); }
+.detail-grid { gap: 1.1rem 1.5rem; padding: 1.15rem; }
+.detail-grid dt { color: var(--klam-suave); font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; margin-bottom: .2rem; }
+.detail-grid dd { color: var(--klam-tinta); font-size: .9rem; font-weight: 500; margin-bottom: 0; }
+.user-detail-header, .notification-detail-title { border-bottom: 1px solid var(--klam-borde); background: var(--klam-superficie-2); border-radius: var(--klam-radio) var(--klam-radio) 0 0; padding: 1.15rem; }
+.user-detail-header h2, .notification-detail-title h2 { font-size: 1.14rem; }
+.profile-summary h2, .role-card h2, .notification-aside h2 { font-size: 1rem; }
+.delete-preview { border-radius: var(--klam-radio-lg); }
 .delete-person { border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-sm); background: var(--klam-superficie-2); }
 .channel-row { border-top: 1px solid var(--klam-borde); }
-.raci-legend b { border: 1px solid var(--klam-borde); background: var(--klam-superficie-2); border-radius: var(--klam-radio-xs); padding: .14rem .45rem; font-size: var(--klam-t-base); }
-.card-footer-link { padding: var(--klam-e3) var(--klam-e4); font-weight: 500; font-size: var(--klam-t-md); }
-.mobile-table-hint { color: var(--klam-suave); font-size: var(--klam-t-sm); }
+.raci-legend b { border: 1px solid var(--klam-borde); background: var(--klam-superficie-2); border-radius: var(--klam-radio-xs); padding: .18rem .5rem; font-size: .8rem; }
+.count-label { color: var(--klam-suave); font-size: .82rem; }
+.card-footer-link { padding: .8rem 1.15rem; font-weight: 600; font-size: .85rem; }
 
-/* Acceso: una tarjeta, centrada, sobre el petróleo de la marca.
-   Es la primera pantalla que ve un cliente, así que aquí sí hay color. */
-.login-page { background: var(--klam-grad-marca); }
-.login-form-panel {
-    position: relative;
-    overflow: hidden;
-    padding: var(--klam-e8);
-    border-radius: var(--klam-radio-lg);
-    box-shadow: 0 24px 60px -20px rgba(7, 39, 48, .55);
-    background: var(--klam-superficie);
-    border: 0;
+/* Acceso: tarjeta centrada sobre fondo con color de marca */
+.login-page {
+    background:
+        radial-gradient(90% 70% at 15% 0%, rgba(13, 148, 136, .14) 0%, transparent 60%),
+        radial-gradient(80% 70% at 100% 100%, rgba(29, 78, 216, .1) 0%, transparent 58%),
+        var(--klam-fondo);
 }
-/* El filo de color sobre la tarjeta: la única licencia decorativa del sistema */
+.login-form-panel {
+    padding: 2.4rem;
+    border-radius: var(--klam-radio-lg);
+    box-shadow: var(--klam-sombra-lg);
+    background: var(--klam-superficie);
+    border: 1px solid var(--klam-borde);
+}
+.login-form-panel h1 { font-size: 1.62rem; font-weight: 680; letter-spacing: -.025em; }
+.password-toggle { color: var(--klam-tenue); border-radius: var(--klam-radio-xs); }
+.password-toggle:hover { color: var(--klam-primario); background: var(--klam-marca-50); }
+
+.login-submit { min-height: 46px; font-size: .95rem; }
+/* Filo de color sobre la tarjeta de acceso: la única licencia decorativa aquí */
+.login-form-panel { position: relative; overflow: hidden; }
 .login-form-panel::before {
     content: "";
     position: absolute;
     inset: 0 0 auto;
-    height: 3px;
-    background: var(--klam-grad-filo);
+    height: 4px;
+    background: linear-gradient(90deg, #0F766E 0%, #0D9488 45%, #2DD4BF 100%);
 }
-.login-form-panel h1 { font-size: var(--klam-t-xl); font-weight: 600; letter-spacing: -.015em; }
-.login-form-panel > p { font-size: var(--klam-t-md); }
-.password-toggle { color: var(--klam-tenue); border-radius: var(--klam-radio-xs); }
-.password-toggle:hover { color: var(--klam-primario); background: var(--klam-marca-50); }
-.login-submit { min-height: 42px; font-size: var(--klam-t-md); }
-.login-logo { width: 104px; margin-bottom: var(--klam-e6); }
+.login-logo { width: 118px; margin-bottom: 1.6rem; }
 
 .skip-link { border-radius: var(--klam-radio-sm); box-shadow: var(--klam-sombra); border: 1px solid var(--klam-borde); }
 
-/* -------------------------------------------- 13 UTILIDADES DE BOOTSTRAP */
-/* Bootstrap trae su azul y su verde de fábrica en cada utilidad. Aquí se
-   reconducen a la paleta para que ninguna pantalla se salga del sistema. */
+/* Utilidades de Bootstrap reconducidas a la paleta del sistema -------------- */
 .text-primary { color: var(--klam-primario) !important; }
 .text-success { color: var(--klam-exito) !important; }
 .text-danger  { color: var(--klam-peligro) !important; }
-.text-warning { color: var(--klam-aviso) !important; }
 .text-secondary { color: var(--klam-suave) !important; }
 .text-dark { color: var(--klam-tinta) !important; }
 .bg-light { background: var(--klam-superficie-2) !important; }
 .border, .border-bottom, .border-top, .border-start, .border-end { border-color: var(--klam-borde) !important; }
-.spinner-border.text-primary { color: var(--klam-primario) !important; }
 
 .table-light > :not(caption) > * > *, .table > thead.table-light th {
     background: var(--klam-superficie-2);
@@ -772,48 +758,51 @@ textarea.form-control { min-height: 92px; line-height: 1.6; }
     border-color: var(--klam-borde);
 }
 .table-striped > tbody > tr:nth-of-type(odd) > * { background: var(--klam-superficie-2); color: var(--klam-texto); }
-.table-sm > :not(caption) > * > * { padding: var(--klam-e2) var(--klam-e3); }
+.table-sm > :not(caption) > * > * { padding: .58rem .75rem; }
 .table-borderless > :not(caption) > * > * { border: 0; }
 
-.badge.bg-success { background: var(--klam-exito-suave) !important; color: var(--klam-exito) !important; }
-.badge.bg-warning { background: var(--klam-aviso-suave) !important; color: var(--klam-aviso) !important; }
-.badge.bg-danger  { background: var(--klam-peligro-suave) !important; color: var(--klam-peligro) !important; }
-.badge.bg-primary { background: var(--klam-marca-50) !important; color: var(--klam-primario) !important; }
-.badge.bg-secondary, .badge.text-bg-secondary { background: var(--klam-superficie-3) !important; color: var(--klam-suave) !important; }
+.badge.bg-success { background: var(--klam-exito-suave) !important; color: #065F46 !important; }
+.badge.bg-warning { background: var(--klam-aviso-suave) !important; color: #92400E !important; }
+.badge.bg-danger  { background: var(--klam-peligro-suave) !important; color: #9F1239 !important; }
+.badge.bg-primary { background: var(--klam-accion-suave) !important; color: #1E40AF !important; }
+.badge.bg-secondary, .badge.text-bg-secondary { background: var(--klam-superficie-3) !important; color: var(--klam-texto) !important; }
 
 /* Separadores de grupo dentro del lateral */
 .nav-caption {
-    padding: var(--klam-e4) var(--klam-e3) var(--klam-e1);
-    color: rgba(190, 221, 225, .45);
-    font-size: var(--klam-t-xs);
-    font-weight: 600;
-    letter-spacing: .1em;
+    padding: .9rem .85rem .35rem;
+    color: rgba(214, 238, 240, .5);
+    font-size: .67rem;
+    font-weight: 700;
+    letter-spacing: .13em;
     text-transform: uppercase;
 }
 
-/* ------------------------------------------------------------ 14 RESPONSIVE */
+/* ------------------------------------------------------------ 13 RESPONSIVE */
 @media (max-width: 1200px) {
-    .app-content { padding: var(--klam-e5) var(--klam-e5) var(--klam-e8); }
+    .app-content { padding: 1.6rem 1.5rem 2.5rem; }
 }
 @media (max-width: 900px) {
     .app-sidebar { width: 100%; background: var(--klam-grad-marca); }
-    .app-topbar { padding: var(--klam-e2) var(--klam-e4); position: static; }
-    .app-content { padding: var(--klam-e4) var(--klam-e4) var(--klam-e8); }
-    .page-heading h1 { font-size: var(--klam-t-xl); }
+    .app-sidebar::before { height: 140px; }
+    .app-topbar { padding: .5rem 1rem; position: static; }
+    .app-content { padding: 1.15rem 1rem 2rem; }
+    .page-heading h1 { font-size: 1.44rem; }
 }
 @media (max-width: 600px) {
-    .app-content { padding: var(--klam-e3) var(--klam-e3) var(--klam-e6); }
-    .page-heading { padding-bottom: var(--klam-e3) !important; margin-bottom: var(--klam-e4) !important; }
-    .page-heading h1 { font-size: var(--klam-t-xl); }
-    .stat-card strong, .metric-card strong { font-size: var(--klam-t-xl); }
+    html, body { font-size: 15px; }
+    .app-content { padding: 1rem .9rem 2rem; }
+    .page-heading { padding-bottom: .9rem !important; margin-bottom: 1.2rem !important; }
+    .page-heading h1 { font-size: 1.32rem; }
+    .stat-card strong, .metric-card strong { font-size: 1.55rem; }
     .detail-grid { grid-template-columns: 1fr; }
-    .card-body, .card-header, .card-footer, .filter-toolbar { padding-left: var(--klam-e3); padding-right: var(--klam-e3); }
-    .table > :not(caption) > * > * { padding: var(--klam-e2) var(--klam-e3); }
-    .login-form-panel { padding: var(--klam-e6) var(--klam-e5); }
+    .card-body, .card-header, .card-footer, .filter-toolbar { padding-left: .95rem; padding-right: .95rem; }
+    .table > :not(caption) > * > * { padding: .65rem .7rem; }
+    .btn { width: auto; }
     .form-actions, .card-actions { justify-content: stretch; }
 }
 
 /* Respeta a quien pide menos movimiento */
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
+    .btn:active, .stat-card:hover { transform: none; }
 }

@@ -1,0 +1,242 @@
+@page "/reportes/comparativo"
+@page "/reportes/comparativo/{IdCirugia:int}"
+@using System.Globalization
+@using KlamWA.DTOs
+@using KlamWA.Servicios
+@using KlamWA.ViewModels
+@inject IReporteService ReporteService
+@inject IClienteService ClienteService
+@inject IJSRuntime JS
+
+<PageTitle>Control de consumo | Klam</PageTitle>
+<PageHeader Titulo="Control de consumo por cirugía" Subtitulo="Despachado, consumido y diferencia de cada cirugía con consumo completo (RF19)">
+    <a class="btn btn-outline-secondary" href="/reportes/consumo">Ver uso de insumos</a>
+</PageHeader>
+
+@if (_error != null)
+{
+    <Aviso Tipo="@tonoError" Mensaje="@_error" AlCerrar="() => _error = null" />
+}
+
+<div class="card mb-3">
+    <div class="card-header">Criterios del reporte</div>
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label for="desde-cmp" class="form-label small">Desde</label>
+                <input id="desde-cmp" type="date" class="form-control form-control-sm" @bind="_desde" />
+            </div>
+            <div class="col-md-2">
+                <label for="hasta-cmp" class="form-label small">Hasta</label>
+                <input id="hasta-cmp" type="date" class="form-control form-control-sm" @bind="_hasta" />
+            </div>
+            <div class="col-md-2">
+                <label for="id-cirugia" class="form-label small">ID de cirugía</label>
+                <input id="id-cirugia" type="number" min="1" class="form-control form-control-sm"
+                       placeholder="Todas" @bind="_idCirugiaTexto" />
+            </div>
+            <div class="col-md-6">
+                <label for="cliente-cmp" class="form-label small">Cliente</label>
+                <select id="cliente-cmp" class="form-select form-select-sm" @bind="_cliente">
+                    <option value="">Todos</option>
+                    @foreach (var cliente in _clientes)
+                    {
+                        <option value='@($"{cliente.Tipo}|{cliente.Id}")'>@cliente.Nombre (@cliente.TipoEtiqueta)</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary mt-3" disabled="@_cargando" @onclick="GenerarAsync">
+            @(_cargando ? "Generando..." : "Generar reporte")
+        </button>
+    </div>
+</div>
+
+@if (_reporte is not null)
+{
+    <div class="card mb-3">
+        <div class="card-header">Datos del reporte</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Generado</dt>
+                <dd class="col-sm-9">@(_reporte.Generado?.ToString("dd/MM/yyyy · HH:mm") ?? "—")</dd>
+                <dt class="col-sm-3">Periodo</dt>
+                <dd class="col-sm-9">@FormatearFecha(_reporte.Desde) – @FormatearFecha(_reporte.Hasta)</dd>
+                <dt class="col-sm-3">Cirugías incluidas</dt>
+                <dd class="col-sm-9">@_reporte.Cirugias.Count</dd>
+            </dl>
+        </div>
+        <div class="card-footer d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <small class="text-muted">Diferencia: cantidad despachada menos cantidad consumida.</small>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(_reporte.Cirugias.Count == 0)"
+                        @onclick='() => ExportarAsync("excel")'>Descargar Excel</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(_reporte.Cirugias.Count == 0)"
+                        @onclick='() => ExportarAsync("pdf")'>Descargar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    @if (_reporte.Cirugias.Count == 0)
+    {
+        <div class="card p-4 text-center text-muted">
+            No hay cirugías con consumo completo con los criterios seleccionados.
+        </div>
+    }
+
+    @foreach (var cirugia in _reporte.Cirugias)
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex flex-wrap justify-content-between gap-2">
+                <span><strong>CIR-@cirugia.IdCirugia.ToString("000")</strong> · @cirugia.Procedimiento</span>
+                <span class="text-muted small">@(cirugia.Fecha?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-3">
+                    <dt class="col-sm-2">Paciente</dt>
+                    <dd class="col-sm-4">@(cirugia.Paciente ?? "—")</dd>
+                    <dt class="col-sm-2">Documento</dt>
+                    <dd class="col-sm-4">@(cirugia.DocumentoPaciente ?? "—")</dd>
+                    <dt class="col-sm-2">Médico</dt>
+                    <dd class="col-sm-4">@(cirugia.Medico ?? "—")</dd>
+                    <dt class="col-sm-2">Cliente</dt>
+                    <dd class="col-sm-4">@(cirugia.Cliente ?? "—")</dd>
+                </dl>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <caption class="visually-hidden">Comparativo de insumos de la cirugía CIR-@cirugia.IdCirugia.ToString("000")</caption>
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Insumo</th>
+                                <th scope="col">Medida</th>
+                                <th scope="col" class="text-end">Despachado</th>
+                                <th scope="col" class="text-end">Consumido</th>
+                                <th scope="col" class="text-end">Diferencia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var linea in cirugia.Insumos)
+                            {
+                                <tr>
+                                    <td>@linea.Nombre</td>
+                                    <td>@linea.Medida</td>
+                                    <td class="text-end">@linea.Despachada</td>
+                                    <td class="text-end">@linea.Consumida</td>
+                                    <td class="text-end">@linea.Diferencia</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int? IdCirugia { get; set; }
+
+    private DateOnly? _desde;
+    private DateOnly? _hasta;
+    private string _idCirugiaTexto = "";
+    private string _cliente = "";
+    private List<ClienteOpcionViewModel> _clientes = [];
+
+    private ReporteComparativoDTO? _reporte;
+    private FiltroComparativo? _filtroUsado;
+    private bool _cargando;
+    private string? _error;
+    private TipoAviso tonoError = TipoAviso.Error;
+    private int? _ultimoIdRuta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _clientes = (await ClienteService.Listar()).OrderBy(c => c.Nombre).ToList();
+        }
+        catch (ServicioException ex)
+        {
+            (_error, tonoError) = MensajeDeError.De(ex);
+        }
+        _ultimoIdRuta = IdCirugia;
+        AplicarIdRuta();
+        await GenerarAsync();
+    }
+
+    // Si se abre /reportes/comparativo/{id} desde otra pantalla, el reporte se filtra por esa cirugía.
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IdCirugia != _ultimoIdRuta)
+        {
+            _ultimoIdRuta = IdCirugia;
+            AplicarIdRuta();
+            await GenerarAsync();
+        }
+    }
+
+    private void AplicarIdRuta()
+    {
+        _idCirugiaTexto = IdCirugia is int id ? id.ToString(CultureInfo.InvariantCulture) : "";
+    }
+
+    private async Task GenerarAsync()
+    {
+        _error = null;
+        if (_desde > _hasta)
+        {
+            _error = "El inicio del periodo no puede ser posterior al fin.";
+            return;
+        }
+
+        _cargando = true;
+        var filtro = FiltroActual();
+        try
+        {
+            _reporte = await ReporteService.ComparativoAsync(filtro);
+            _filtroUsado = filtro;
+        }
+        catch (ServicioException ex)
+        {
+            (_error, tonoError) = MensajeDeError.De(ex);
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private async Task ExportarAsync(string formato)
+    {
+        if (_filtroUsado is null) return;
+        _error = null;
+        try
+        {
+            var archivo = await ReporteService.ExportarComparativoAsync(_filtroUsado, formato);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (ServicioException ex)
+        {
+            (_error, tonoError) = MensajeDeError.De(ex);
+        }
+    }
+
+    private FiltroComparativo FiltroActual()
+    {
+        int? idCirugia = int.TryParse(_idCirugiaTexto, out var c) ? (int?)c : null;
+        string? tipoCliente = null;
+        int? idCliente = null;
+        if (!string.IsNullOrWhiteSpace(_cliente))
+        {
+            var partes = _cliente.Split('|');
+            tipoCliente = partes[0];
+            idCliente = int.TryParse(partes.ElementAtOrDefault(1), out var id) ? (int?)id : null;
+        }
+        return new FiltroComparativo(_desde, _hasta, idCirugia, tipoCliente, idCliente);
+    }
+
+    private static string FormatearFecha(string? fecha) =>
+        DateOnly.TryParseExact(fecha, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+            ? d.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+            : "—";
+}

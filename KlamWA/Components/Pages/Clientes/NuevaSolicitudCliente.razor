@@ -134,7 +134,7 @@
             var exacta = resultado.FirstOrDefault(o => string.Equals(o.Nombre, consultado, StringComparison.OrdinalIgnoreCase));
             if (exacta is not null) ElegirClinica(exacta);
         }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (HttpRequestException ex) { error = MensajeDeError.Texto(ex); }
         finally { buscandoClinica = false; }
     }
 
@@ -166,7 +166,7 @@
             textoClinica = string.Empty;
             sugerencias = [];
         }
-        catch (HttpRequestException ex) { error = ex.Message; }
+        catch (HttpRequestException ex) { error = MensajeDeError.Texto(ex); }
         enviando = false;
     }
 }

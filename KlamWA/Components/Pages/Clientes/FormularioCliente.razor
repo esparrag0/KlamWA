@@ -218,7 +218,7 @@
             // Por defecto el usuario es el documento del cliente; el administrador puede cambiarlo.
             CuentaUsuario = ViewModel.Tipo == DatosClientes.Particular ? ViewModel.Dni : ViewModel.Ruc;
         }
-        catch (HttpRequestException ex) { MensajeError = ex.Message; }
+        catch (HttpRequestException ex) { MensajeError = MensajeDeError.Texto(ex); }
     }
 
     // Solo se ejecuta si el ViewModel es válido (ayuda de UX); la BL de Java valida de verdad.
@@ -233,7 +233,7 @@
                 await Api.ActualizarAsync(Tipo ?? "", Id.Value, ViewModel.ToRegistro());
                 MensajeOk = "Cliente actualizado.";
             }
-            catch (HttpRequestException ex) { MensajeError = ex.Message; }
+            catch (HttpRequestException ex) { MensajeError = MensajeDeError.Texto(ex); }
             enviando = false;
             return;
         }
@@ -246,7 +246,7 @@
             ClienteCreadoTipo = creado.TipoCliente;
             ViewModel = new ClienteViewModel { Tipo = ViewModel.Tipo };
         }
-        catch (HttpRequestException ex) { MensajeError = ex.Message; }
+        catch (HttpRequestException ex) { MensajeError = MensajeDeError.Texto(ex); }
         enviando = false;
     }
 
@@ -270,7 +270,7 @@
             MensajeCuentaOk = $"Cuenta «{CredencialNueva.UserName}» habilitada. Se enviaron las credenciales al correo del cliente.";
             CuentaUsuario = "";
         }
-        catch (HttpRequestException ex) { MensajeCuentaError = ex.Message; }
+        catch (HttpRequestException ex) { MensajeCuentaError = MensajeDeError.Texto(ex); }
         finally { habilitando = false; }
     }
 

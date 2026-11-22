@@ -3,6 +3,7 @@
 @using KlamWA.Servicios
 @inject INotificacionService NotificacionService
 @inject AvisosSinLeer Contador
+@inject VistaPreviaRol Vista
 
 <PageTitle>Detalle de notificación | Klam</PageTitle>
 <div class="breadcrumb-line"><a href="/notificaciones">Notificaciones</a><span>/</span>Detalle del aviso</div>
@@ -31,10 +32,7 @@ else
     }
     @if (mensajeError != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @mensajeError
-            <button type="button" class="btn-close" aria-label="Close" @onclick="() => mensajeError = null"></button>
-        </div>
+        <Aviso Tipo="@tonoMensaje" Mensaje="@mensajeError" AlCerrar="() => mensajeError = null" />
     }
 
     <section class="card detail-card">
@@ -66,6 +64,13 @@ else
                     Ver cirugía <Icono Nombre="flecha" Tamano="17" />
                 </a>
             }
+            else if (aviso.IdSolicitud != null && Vista.Perfil.Clave == "administrador")
+            {
+                @* RF11: el aviso de nueva solicitud lleva a su revisión *@
+                <a class="btn btn-primary" href="@($"/solicitudes/revision/{aviso.IdSolicitud}")">
+                    Ver solicitud <Icono Nombre="flecha" Tamano="17" />
+                </a>
+            }
         </div>
     </section>
 }
@@ -77,6 +82,7 @@ else
     private bool procesando;
     private string? mensajeOk;
     private string? mensajeError;
+    private TipoAviso tonoMensaje = TipoAviso.Error;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -89,7 +95,8 @@ else
         catch (Exception ex)
         {
             aviso = null;
-            mensajeError = "No se pudo recuperar la notificación: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "No se pudo recuperar la notificación: " + MensajeDeError.Texto(ex);
         }
         finally
         {
@@ -111,7 +118,8 @@ else
         }
         catch (Exception ex)
         {
-            mensajeError = "Error al marcar aviso: " + ex.Message;
+            tonoMensaje = MensajeDeError.Tono(ex);
+            mensajeError = "Error al marcar aviso: " + MensajeDeError.Texto(ex);
         }
         finally
         {

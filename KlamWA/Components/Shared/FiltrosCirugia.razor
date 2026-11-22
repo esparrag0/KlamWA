@@ -100,11 +100,11 @@
         }
         catch (ServicioException ex)
         {
-            errorCatalogos = ex.Message;
+            errorCatalogos = MensajeDeError.Texto(ex);
         }
         catch (HttpRequestException ex)
         {
-            errorCatalogos = ex.Message;
+            errorCatalogos = MensajeDeError.Texto(ex);
         }
     }
 
