@@ -11,4 +11,5 @@ public sealed class RegistrarSolicitudDTO
     public string DoctorNombre { get; set; } = string.Empty;
     public string FechaHoraSolicitada { get; set; } = string.Empty;
     public string? Observaciones { get; set; }
+    public ClinicaNuevaDTO? ClinicaNueva { get; set; }
 }

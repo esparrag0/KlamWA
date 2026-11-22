@@ -50,6 +50,10 @@ else
                         <div class="col-12 col-md-auto align-self-end"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarPorNombre">@(operacionActual == "buscar-cliente" && procesando ? "Buscando..." : "Buscar por nombre")</button></div>
                     }
                     @if (procesando && operacionActual == "buscar-cliente") { <div class="col-12 text-muted small" role="status"><span class="spinner-border spinner-border-sm me-2"></span>Consultando clientes…</div> }
+                    @if (ViewModel.ClinicaNuevaLista)
+                    {
+                        <div class="col-12"><div class="alert alert-success mb-0">Clínica nueva: @nuevo.Nombre (@nuevo.Ruc). Al registrar la solicitud se le enviarán credenciales temporales a @nuevo.EmailContacto para que suba la orden de compra.</div></div>
+                    }
                     @if (seleccionado is not null)
                     {
                         <div class="col-12"><div class="border rounded p-2 bg-light">Cliente seleccionado: @seleccionado.Nombre (@(seleccionado.Dni ?? seleccionado.Ruc))</div></div>
@@ -67,7 +71,7 @@ else
                 @if (mostrarRegistro)
                 {
                     <hr />
-                    <h6>Registrar cliente nuevo</h6>
+                    <h6>@(ViewModel.TipoCliente == "Clinica" ? "Clínica no registrada en BIOKLAM: ingrese sus datos" : "Registrar cliente nuevo")</h6>
                     <div class="row g-3">
                         <CampoForm Obligatorio="true" Etiqueta="@(ViewModel.TipoCliente == "Particular" ? "Nombre completo" : "Razón social")"><input class="form-control" @bind="nuevo.Nombre" /></CampoForm>
                         <CampoForm Obligatorio="true" Etiqueta="Dirección"><input class="form-control" @bind="nuevo.Direccion" /></CampoForm>
@@ -79,7 +83,7 @@ else
                             <CampoForm Etiqueta="Periodo de crédito"><input class="form-control" @bind="nuevo.PeriodoCredito" /></CampoForm>
                             <div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" @bind="nuevo.TieneConsignacion" /><span class="form-check-label">Tiene consignación</span></label></div>
                         }
-                        <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarCliente">@(procesando && operacionActual == "registrar-cliente" ? "Registrando cliente..." : "Registrar y seleccionar cliente")</button></div>
+                        <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarCliente">@(ViewModel.TipoCliente == "Clinica" ? "Usar estos datos de la clínica" : (procesando && operacionActual == "registrar-cliente" ? "Registrando cliente..." : "Registrar y seleccionar cliente"))</button></div>
                     </div>
                 }
                 @if (mensajeCliente is not null) { <div class="alert alert-@tipoMensajeCliente mt-3 mb-0" role="@(tipoMensajeCliente == "danger" ? "alert" : "status")">@mensajeCliente</div> }
@@ -89,6 +93,8 @@ else
         <div class="card mb-3" style="max-width:900px">
             <div class="card-header">Datos de la cirugía</div>
             <div class="card-body"><div class="row g-3">
+                @if (ViewModel.TipoCliente == "Particular")
+                {
                 <CampoForm Obligatorio="true" Etiqueta="Clínica u hospital donde se realizará" Columnas="col-12" Para="destino-busqueda">
                     <div class="input-group"><input id="destino-busqueda" class="form-control" placeholder="Buscar por RUC o nombre" @bind="destinoBusqueda" @bind:after="InvalidarDestino" /><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="BuscarDestino">@(procesando && operacionActual == "buscar-destino" ? "Buscando..." : "Buscar")</button></div>
                 </CampoForm>
@@ -159,6 +165,7 @@ else
     private List<ClienteBusquedaDTO> resultados = [];
     private List<ClienteBusquedaDTO> destinos = [];
     private string ruc = string.Empty, nombreBusqueda = string.Empty, destinoBusqueda = string.Empty;
+    private const string MensajeClinicaRegistrada = "La clínica ya está registrada en BIOKLAM: la solicitud debe hacerla la propia clínica desde su cuenta.";
     private string? mensaje;
     private string tipoMensaje = "danger";
     private string? mensajeCliente, mensajeDestino;
@@ -183,6 +190,7 @@ else
     private void CambiarTipo()
     {
         seleccionado = null; resultados = []; ViewModel.IdCliente = 0;
+                }
         mostrarRegistro = false; nuevo = new(); mensajeCliente = null;
     }
     private void InvalidarCliente()
@@ -226,11 +234,14 @@ else
         if (!porRuc && string.IsNullOrWhiteSpace(nombreBusqueda)) { NotificarCliente("Ingrese un nombre para buscar."); return; }
         await Ejecutar(async () => {
             seleccionado = null; ViewModel.IdCliente = 0;
-            resultados = porRuc ? await Clientes.BuscarClinicasPorRucAsync(ruc) : await Clientes.BuscarClinicasPorNombreAsync(nombreBusqueda.Trim());
-            mostrarRegistro = resultados.Count == 0;
-            if (mostrarRegistro) { nuevo = new() { Ruc = ruc, Nombre = porRuc ? string.Empty : nombreBusqueda.Trim() }; NotificarCliente("No se encontró la institución. Puede registrarla aquí.", "info"); }
-            else if (porRuc) ElegirCliente(resultados[0]);
-            else NotificarCliente("Seleccione la institución encontrada.", "info");
+            var encontradas = porRuc ? await Clientes.BuscarClinicasPorRucAsync(ruc) : await Clientes.BuscarClinicasPorNombreAsync(nombreBusqueda.Trim());
+            resultados = [];
+            ViewModel.ClinicaNuevaLista = false;
+            // Si la clínica ya está en BIOKLAM, la solicitud la hace la propia clínica con su cuenta.
+            if (encontradas.Count > 0) { mostrarRegistro = false; NotificarCliente(MensajeClinicaRegistrada); return; }
+            mostrarRegistro = true;
+            nuevo = new() { Ruc = porRuc ? ruc : null, Nombre = porRuc ? string.Empty : nombreBusqueda.Trim() };
+            NotificarCliente("La clínica no está registrada en BIOKLAM. Ingrese sus datos para solicitar la cirugía a su nombre.", "info");
         }, "buscar-cliente");
     }
     private async Task BuscarDestino()
@@ -267,12 +278,21 @@ else
         if (ViewModel.TipoCliente == "Particular") nuevo.Dni = ViewModel.Dni;
         if (ViewModel.TipoCliente == "Particular" && (nuevo.Dni?.Length != 8 || !nuevo.Dni.All(char.IsDigit)))
         { NotificarCliente("Ingrese un DNI de 8 dígitos."); return; }
+        if (ViewModel.TipoCliente == "Clinica")
+        {
+            // La clínica se crea al registrar la solicitud, no antes.
+            await Ejecutar(async () => {
+                var existentes = await Clientes.BuscarClinicasPorRucAsync(nuevo.Ruc!);
+                if (existentes.Count > 0) { mostrarRegistro = false; NotificarCliente(MensajeClinicaRegistrada); return; }
+                ViewModel.ClinicaNuevaLista = true; mostrarRegistro = false;
+                NotificarCliente("Datos de la clínica listos.", "success");
+            }, "registrar-cliente");
+            return;
+        }
         await Ejecutar(async () => {
-            var existentes = ViewModel.TipoCliente == "Particular"
-                ? await Clientes.BuscarParticularAsync(nuevo.Dni!)
-                : await Clientes.BuscarClinicasPorRucAsync(nuevo.Ruc!);
+            var existentes = await Clientes.BuscarParticularAsync(nuevo.Dni!);
             if (existentes.Count > 0) { ElegirCliente(existentes[0]); NotificarCliente("El cliente ya existía y quedó seleccionado; no se creó un duplicado.", "info"); return; }
-            var cliente = ViewModel.TipoCliente == "Particular" ? await Clientes.RegistrarParticularAsync(nuevo) : await Clientes.RegistrarClinicaAsync(nuevo);
+            var cliente = await Clientes.RegistrarParticularAsync(nuevo);
             if (cliente.IdCliente <= 0) throw new HttpRequestException("El servicio no devolvió el ID del cliente registrado.");
             ElegirCliente(cliente);
             NotificarCliente($"El cliente {cliente.Nombre} se registró y quedó seleccionado.", "success");
@@ -288,7 +308,12 @@ else
             var fecha = ViewModel.Fecha!.Value.Date + ViewModel.Hora!.Value.TimeOfDay;
             var solicitud = new RegistrarSolicitudDTO {
                 TipoCliente = ViewModel.TipoCliente == "Particular" ? "PARTICULAR" : "CLINICA",
-                IdCliente = ViewModel.IdCliente, IdClinicaDestino = ViewModel.IdClinica,
+                IdCliente = ViewModel.TipoCliente == "Particular" ? ViewModel.IdCliente : 0,
+                IdClinicaDestino = ViewModel.TipoCliente == "Particular" ? ViewModel.IdClinica : 0,
+                ClinicaNueva = ViewModel.TipoCliente == "Clinica" ? new ClinicaNuevaDTO {
+                    Nombre = nuevo.Nombre.Trim(), Ruc = nuevo.Ruc ?? string.Empty, Direccion = nuevo.Direccion.Trim(),
+                    EmailContacto = nuevo.EmailContacto.Trim(), Telefono = nuevo.Telefono.Trim(),
+                    PeriodoCredito = nuevo.PeriodoCredito, TieneConsignacion = nuevo.TieneConsignacion } : null,
                 PacienteNombre = ViewModel.PacienteNombre, Diagnostico = ViewModel.Diagnostico,
                 TipoProcedimiento = ViewModel.Procedimiento, DoctorNombre = ViewModel.Medico,
                 FechaHoraSolicitada = fecha.ToString("yyyy-MM-ddTHH:mm:ss"), Observaciones = ViewModel.Observaciones
@@ -304,7 +329,10 @@ else
                     erroresArchivo[tipo] = MensajeDeError.Texto(ex);
                 }
             }
-            if (TiposRequeridos.All(cargados.Contains)) Mensaje("Solicitud y documentos registrados correctamente.", "success");
+            if (TiposRequeridos.All(cargados.Contains))
+                Mensaje(ViewModel.TipoCliente == "Clinica"
+                    ? $"Solicitud y documentos registrados. Se enviaron credenciales temporales a {nuevo.EmailContacto} para que la clínica ingrese y suba la orden de compra."
+                    : "Solicitud y documentos registrados correctamente.", "success");
             else Mensaje("La solicitud se registró, pero faltan archivos. Corrija el error y reintente la carga.");
         });
     }
