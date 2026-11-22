@@ -149,14 +149,9 @@ hr { border-color: var(--klam-borde); opacity: 1; }
     top: 0;
     z-index: 30;
 }
-.topbar-brand {
-    color: var(--klam-marca-800);
-    font-size: .82rem;
-    font-weight: 750;
-    letter-spacing: .12em;
-    text-decoration: none;
-}
-.topbar-brand:hover { color: var(--klam-primario); }
+/* La barra superior ya no repite la marca: el logotipo del lateral lleva al
+   inicio. Las acciones de cuenta se van solas a la derecha. */
+.topbar-actions { margin-left: auto; }
 
 .app-content {
     padding: 1.9rem 2.1rem 3rem;
@@ -408,7 +403,10 @@ hr { border-color: var(--klam-borde); opacity: 1; }
 .form-control, .form-select {
     min-height: var(--klam-alto-boton);
     padding: .45rem .8rem;
-    background: var(--klam-superficie);
+    /* background-color y no background: el atajo borraba el chevron que
+       Bootstrap pinta como background-image y los desplegables se veían
+       como cajas de texto vacías. */
+    background-color: var(--klam-superficie);
     border: 1px solid var(--klam-borde-fuerte);
     border-radius: var(--klam-radio-sm);
     color: var(--klam-tinta);
@@ -416,6 +414,28 @@ hr { border-color: var(--klam-borde); opacity: 1; }
     box-shadow: var(--klam-sombra-xs);
     transition: border-color .15s ease, box-shadow .15s ease;
 }
+
+/* Flecha de desplegable, en el gris del sistema y con sitio reservado a la
+   derecha para que nunca pise al texto de la opción. */
+.form-select {
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%235F7A84' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5.5 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .7rem center;
+    background-size: 13px 13px;
+}
+.form-select-sm { padding-right: 2rem; background-position: right .55rem center; background-size: 11px 11px; }
+.form-select:disabled { background-image: none; }
+
+/* Un campo con lista de sugerencias también avisa de que se puede desplegar */
+input[list] {
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%2390A4AC' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5.5 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .7rem center;
+    background-size: 13px 13px;
+}
+input[list]::-webkit-calendar-picker-indicator { opacity: 0; }
 .form-control::placeholder { color: var(--klam-tenue); }
 .form-control:focus, .form-select:focus {
     border-color: var(--klam-primario);
@@ -448,6 +468,55 @@ textarea.form-control { min-height: 96px; line-height: 1.55; }
 }
 .search-control input { padding-left: 2.2rem; }
 .search-control svg { top: .72rem; left: .75rem; color: var(--klam-tenue); }
+/* Bloque de alternativa: dos formas de rellenar lo mismo (buscar al paciente
+   ya registrado, o escribirlo a mano). El «o» en medio deja claro que se
+   hace una cosa O la otra, no las dos. */
+.bloque-opciones {
+    border: 1px solid var(--klam-borde);
+    border-radius: var(--klam-radio);
+    background: var(--klam-superficie-2);
+    padding: 1.1rem 1.15rem 1.2rem;
+}
+.bloque-opciones > legend {
+    float: none;
+    width: auto;
+    margin-bottom: .15rem;
+    padding: 0;
+    font-size: .95rem;
+    font-weight: 650;
+    color: var(--klam-tinta);
+}
+.bloque-opciones .form-control, .bloque-opciones .form-select { background-color: var(--klam-superficie); }
+.separador-o {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    margin: 1.05rem 0 .95rem;
+    color: var(--klam-suave);
+    font-size: .78rem;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+.separador-o::before, .separador-o::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--klam-borde);
+}
+
+/* Volver: una flecha discreta sobre el título, no un botón compitiendo con
+   las acciones de la derecha. */
+.volver-atras {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    color: var(--klam-suave);
+    font-weight: 600;
+    text-decoration: none;
+}
+.volver-atras:hover { color: var(--klam-primario); }
+
 .form-actions, .card-actions { gap: .6rem; }
 .card-actions { border-top: 1px solid var(--klam-borde); background: var(--klam-superficie-2); border-radius: 0 0 var(--klam-radio) var(--klam-radio); }
 

@@ -6,10 +6,11 @@
 
 <PageTitle>Agenda de cirugías</PageTitle>
 
+@* «Ver lista» e «Historial» salieron de aquí: están en el menú lateral, bajo
+   Cirugías. Se queda «Nueva cirugía», que es la acción de esta pantalla y el
+   menú no la ofrece en ningún sitio. *@
 <PageHeader Titulo="Calendario de cirugías" Subtitulo="Consulta la programación quirúrgica y el detalle de cada día">
-    @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva">Nueva cirugía</a> }
-    <a class="btn btn-outline-secondary" href="/agenda/lista">Ver lista</a>
-    @if (Vista.Perfil.Clave is "administrador" or "cliente") { <a class="btn btn-outline-secondary" href="/agenda/historial">Historial</a> }
+    @if (Vista.Perfil.Clave == "administrador") { <a class="btn btn-primary" href="/agenda/nueva"><Icono Nombre="mas" Tamano="17" /> Nueva cirugía</a> }
 </PageHeader>
 
 <FiltrosCirugia OnFiltrar="AplicarFiltros" />

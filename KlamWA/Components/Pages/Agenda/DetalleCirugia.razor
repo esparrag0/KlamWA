@@ -1,5 +1,7 @@
 @inject VistaPreviaRol Vista
 @inject ICirugiaService CirugiaSvc
+@inject ICotizacionService Cotizaciones
+@inject IJSRuntime JS
 @page "/agenda/cirugia/{Id:int}"
 @using KlamWA.Components.Shared
 @using KlamWA.Servicios
@@ -25,7 +27,12 @@ else if (c == null)
 }
 else
 {
-    <div class="surgery-breadcrumb"><a href="/agenda/lista">Cirugías</a><span>/</span><span>Cirugía #@c.Id</span></div>
+    @* Volver vive aquí arriba, como flecha: antes era un botón a la derecha
+       compitiendo con Editar y Eliminar, que son las acciones de verdad. *@
+    <div class="surgery-breadcrumb">
+        <a class="volver-atras" href="/agenda/lista" aria-label="Volver a la lista de cirugías"><Icono Nombre="volver" Tamano="16" /> Cirugías</a>
+        <span>/</span><span>Cirugía #@c.Id</span>
+    </div>
     <header class="surgery-heading">
         <span class="heading-icon"><Icono Nombre="calendario" Tamano="25" /></span>
         <div class="heading-copy"><div class="heading-title"><h1>Cirugía #@c.Id</h1><EstadoBadge Estado="@c.Estado" Grande="true" /></div><p>@c.Procedimiento</p></div>
@@ -38,7 +45,6 @@ else
             {
                 <a class="btn btn-outline-danger" href="/agenda/eliminar/@c.Id">Eliminar</a>
             }
-            <a class="btn btn-outline-dark" href="/agenda/lista">Volver</a>
         </div>
     </header>
 
@@ -161,11 +167,37 @@ else
         @if (Vista.Perfil.Clave is "administrador" or "cliente") {
             <div class="card mb-3">
                 <div class="card-header">Cotización</div>
+                @* El precio sale del backend (PrecioPactado), no está escrito a mano.
+                   Lo que faltaba era el archivo: si la cirugía viene de una solicitud
+                   con cotización adjunta, aquí se puede descargar. *@
                 <div class="card-body">
-                    @if (c.PrecioCotizacion is double precio)
+                    @if (cotizacion is not null)
+                    {
+                        <div class="fs-4">S/ @cotizacion.PrecioPactado.ToString("N2")</div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-1 mb-3">
+                            <span class="estado-badge @ClaseCotizacion(cotizacion.Estado)">@cotizacion.Estado</span>
+                            <small class="text-muted">Versión @cotizacion.Version · @cotizacion.FechaEmision.ToString("dd/MM/yyyy")</small>
+                        </div>
+                        @if (cotizacion.ArchivoDisponible)
+                        {
+                            <button type="button" class="btn btn-outline-primary btn-sm" disabled="@descargando" @onclick="DescargarCotizacion">
+                                <Icono Nombre="descargar" Tamano="16" /> @(descargando ? "Descargando…" : "Descargar cotización")
+                            </button>
+                        }
+                        else
+                        {
+                            <p class="text-muted small mb-0">Esta cotización no tiene archivo adjunto.</p>
+                        }
+                        @if (errorCotizacion != null)
+                        {
+                            <p class="text-danger small mb-0 mt-2">@errorCotizacion</p>
+                        }
+                    }
+                    else if (c.PrecioCotizacion is double precio)
                     {
                         <div class="fs-4">S/ @precio.ToString("N2")</div>
-                        <span class="badge text-bg-secondary">@c.EstadoCotizacion</span>
+                        <span class="estado-badge estado-neutro">@c.EstadoCotizacion</span>
+                        <p class="text-muted small mb-0 mt-2">Esta cirugía no está vinculada a una solicitud con cotización, así que no hay archivo que descargar.</p>
                     }
                     else
                     {
@@ -244,6 +276,56 @@ else
 
     private bool EsAdmin => Vista.Perfil.Clave == "administrador";
 
+    // Cotización vigente de la solicitud que originó la cirugía, para poder
+    // bajar el archivo desde aquí en vez de ir a buscarlo a otra pantalla.
+    private CotizacionDTO? cotizacion;
+    private bool descargando;
+    private string? errorCotizacion;
+
+    private static string ClaseCotizacion(string estado) => estado?.ToUpperInvariant() switch
+    {
+        "ACEPTADA" => "estado-validado",
+        "RECHAZADA" => "estado-rechazado",
+        "EMITIDA" => "estado-pendiente",
+        _ => "estado-neutro"
+    };
+
+    private async Task CargarCotizacion()
+    {
+        cotizacion = null;
+        errorCotizacion = null;
+        if (c?.SolicitudId is not int idSolicitud) return;
+        try
+        {
+            cotizacion = await Cotizaciones.VigenteAsync(idSolicitud);
+        }
+        catch (Exception)
+        {
+            // Sin cotización accesible se cae al precio pactado de la cirugía;
+            // no vale la pena molestar con un aviso por un dato secundario.
+        }
+    }
+
+    private async Task DescargarCotizacion()
+    {
+        if (descargando || cotizacion is null) return;
+        descargando = true;
+        errorCotizacion = null;
+        try
+        {
+            var archivo = await Cotizaciones.DescargarAsync(cotizacion.IdCotizacion);
+            await JS.InvokeVoidAsync("klamDescargarDocumento", archivo.Contenido, archivo.Nombre, archivo.TipoContenido);
+        }
+        catch (Exception ex)
+        {
+            errorCotizacion = MensajeDeError.Texto(ex);
+        }
+        finally
+        {
+            descargando = false;
+        }
+    }
+
     protected override Task OnParametersSetAsync()
     {
         mensajeError = null;
@@ -263,6 +345,7 @@ else
             if (c != null)
             {
                 esClinica = c.TipoCliente == "CLINICA_HOSPITAL";
+                await CargarCotizacion();
             }
         }
         catch (ServicioException ex)

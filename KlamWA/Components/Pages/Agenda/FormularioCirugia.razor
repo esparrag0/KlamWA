@@ -23,7 +23,7 @@
 
 @if (cargando)
 {
-    <div class="alert alert-info">Cargando datos...</div>
+    <div class="card"><Espera Texto="Consultando procedimientos, clientes y bandejas" /></div>
 }
 else if (opciones != null)
 {
@@ -36,34 +36,70 @@ else if (opciones != null)
                 <div class="row g-3">
                     <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2">Datos de cirugía</h2></div>
                     <CampoForm Obligatorio="true" Etiqueta="Tipo de procedimiento">
-                        <InputSelect class="form-select" @bind-Value="ViewModel.TipoProcedimiento" @bind-Value:after="CambiarProcedimiento">
+                        @* «Otro» abre un campo libre: antes, un procedimiento que no
+                           estuviera en el catálogo no se podía registrar. *@
+                        <select class="form-select" value="@SeleccionProcedimiento" @onchange="CambiarSeleccionProcedimiento">
                             <option value="">-- Seleccione un procedimiento --</option>
                             @foreach (string nombre in procedimientosRegistrados) { <option value="@nombre">@nombre</option> }
-                        </InputSelect>
+                            <option value="@OtroProcedimiento">Otro (escribirlo abajo)</option>
+                        </select>
+                        @if (esOtroProcedimiento)
+                        {
+                            <input class="form-control mt-2" placeholder="Nombre del procedimiento"
+                                   value="@ViewModel.TipoProcedimiento" @onchange="EscribirProcedimiento" />
+                        }
                         <ValidationMessage For="() => ViewModel.TipoProcedimiento" />
                     </CampoForm>
                     <CampoForm Obligatorio="true" Etiqueta="Doctor">
                         <InputText class="form-control" @bind-Value="ViewModel.Doctor" />
                         <ValidationMessage For="() => ViewModel.Doctor" />
                     </CampoForm>
-                    <CampoForm Etiqueta="Paciente registrado (opcional)" Columnas="col-12">
-                        <select class="form-select" value="@pacienteRegistradoId" @onchange="SeleccionarPacienteRegistrado">
-                            <option value="0">-- Otro paciente (escribir los datos abajo) --</option>
-                            @foreach (OpcionDTO paciente in opciones.Clientes.Where(c => c.Tipo == "PACIENTE_PARTICULAR"))
-                            {
-                                <option value="@paciente.Id">@paciente.Nombre@(string.IsNullOrWhiteSpace(paciente.Documento) ? "" : $" · DNI {paciente.Documento}")</option>
-                            }
-                        </select>
-                        <div class="form-text">Si el paciente ya está registrado como cliente, elíjalo y se completan sus datos. También puede escribirlos a mano.</div>
-                    </CampoForm>
-                    <CampoForm Etiqueta="Paciente (persona que se opera)" Obligatorio="true">
-                        <InputText class="form-control" @bind-Value="ViewModel.PacienteNombre" />
-                        <ValidationMessage For="() => ViewModel.PacienteNombre" />
-                    </CampoForm>
-                    <CampoForm Etiqueta="Documento del paciente (DNI u otro)">
-                        <InputText class="form-control" @bind-Value="ViewModel.PacienteDocumento" />
-                        <ValidationMessage For="() => ViewModel.PacienteDocumento" />
-                    </CampoForm>
+
+                    @* Paciente: buscar al registrado O escribirlo a mano. Antes eran dos
+                       campos seguidos y parecía que había que rellenar los dos; el «o»
+                       del medio deja claro que es una cosa u otra. La búsqueda es por
+                       escritura y no una lista desplegable, porque con cientos de
+                       pacientes el desplazamiento es inviable. *@
+                    <div class="col-12">
+                        <fieldset class="bloque-opciones">
+                            <legend>Paciente</legend>
+                            <p class="form-text mt-0 mb-3">Basta con una de las dos formas.</p>
+
+                            <label class="form-label" for="buscar-paciente">Buscar un paciente ya registrado</label>
+                            <input id="buscar-paciente" class="form-control" list="lista-pacientes" autocomplete="off"
+                                   placeholder="Escribe el nombre o el documento" value="@busquedaPaciente"
+                                   @onchange="SeleccionarPacienteRegistrado" />
+                            <datalist id="lista-pacientes">
+                                @foreach (OpcionDTO paciente in PacientesRegistrados)
+                                {
+                                    <option value="@EtiquetaPaciente(paciente)"></option>
+                                }
+                            </datalist>
+                            <div class="form-text">
+                                @if (pacienteRegistradoId > 0)
+                                {
+                                    <span class="text-success">Datos completados desde el registro. Puedes corregirlos abajo si hace falta.</span>
+                                }
+                                else
+                                {
+                                    @($"{PacientesRegistrados.Count()} paciente(s) registrado(s). Escribe para ir filtrando.")
+                                }
+                            </div>
+
+                            <div class="separador-o"><span>o escríbelos a mano</span></div>
+
+                            <div class="row g-3">
+                                <CampoForm Etiqueta="Paciente (persona que se opera)" Obligatorio="true">
+                                    <InputText class="form-control" @bind-Value="ViewModel.PacienteNombre" />
+                                    <ValidationMessage For="() => ViewModel.PacienteNombre" />
+                                </CampoForm>
+                                <CampoForm Etiqueta="Documento del paciente (DNI u otro)">
+                                    <InputText class="form-control" @bind-Value="ViewModel.PacienteDocumento" />
+                                    <ValidationMessage For="() => ViewModel.PacienteDocumento" />
+                                </CampoForm>
+                            </div>
+                        </fieldset>
+                    </div>
                     <CampoForm Obligatorio="true" Etiqueta="Diagnóstico" Columnas="col-12">
                         <InputTextArea class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" />
                         <ValidationMessage For="() => ViewModel.Diagnostico" />
@@ -77,14 +113,28 @@ else if (opciones != null)
                         <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="ViewModel.FechaHoraFin" />
                         <ValidationMessage For="() => ViewModel.FechaHoraFin" />
                     </CampoForm>
+                    @* Mismo motivo que en el paciente: la cartera de clientes crece y
+                       un desplegable largo obliga a desplazarse a ciegas. *@
                     <CampoForm Obligatorio="true" Etiqueta="Cliente (clínica u hospital, o paciente particular)" Columnas="col-12">
-                        <InputSelect class="form-select" @bind-Value="ViewModel.ClienteClave">
-                            <option value="">-- Seleccione --</option>
+                        <input class="form-control" list="lista-clientes" autocomplete="off"
+                               placeholder="Escribe el nombre de la clínica, el hospital o el paciente"
+                               value="@busquedaCliente" @onchange="SeleccionarCliente" />
+                        <datalist id="lista-clientes">
                             @foreach (OpcionDTO cliente in opciones.Clientes)
                             {
-                                <option value="@($"{cliente.Tipo}:{cliente.Id}")">@cliente.Nombre (@TextoTipoCliente(cliente.Tipo))</option>
+                                <option value="@EtiquetaCliente(cliente)"></option>
                             }
-                        </InputSelect>
+                        </datalist>
+                        <div class="form-text">
+                            @if (ClienteElegido is OpcionDTO elegido)
+                            {
+                                <span class="text-success">Cliente elegido: @elegido.Nombre (@TextoTipoCliente(elegido.Tipo))</span>
+                            }
+                            else
+                            {
+                                @($"{opciones.Clientes.Count} cliente(s) disponibles. Escribe para ir filtrando.")
+                            }
+                        </div>
                         <ValidationMessage For="() => ViewModel.ClienteClave" />
                     </CampoForm>
                     <div class="col-12"><h2 class="h6 text-primary border-bottom pb-2 mt-2">Bandeja y consumibles</h2></div>
@@ -97,32 +147,93 @@ else if (opciones != null)
                             }
                         </InputSelect>
                     </CampoForm>
+                    @* Las plantillas se filtran por procedimiento, así que en una cirugía
+                       nueva la lista sale vacía hasta elegirlo. Antes no lo decía y
+                       parecía que no hubiera ninguna configurada. *@
                     <CampoForm Obligatorio="@(BandejasFiltradas.Any())" Etiqueta="Plantilla de bandeja" Columnas="col-12">
-                        <InputSelect class="form-select" @bind-Value="ViewModel.IdBandeja" @bind-Value:after="CargarPlantilla">
-                            <option value="0">-- Seleccione una bandeja compatible --</option>
+                        <InputSelect class="form-select" @bind-Value="ViewModel.IdBandeja" @bind-Value:after="CargarPlantilla"
+                                     disabled="@(!BandejasFiltradas.Any())">
+                            <option value="0">@TextoBandejaVacia</option>
                             @foreach (BandejaDTO bandeja in BandejasFiltradas)
                             {
                                 <option value="@bandeja.IdBandeja">@bandeja.Tipo · @bandeja.Procedimiento</option>
                             }
                         </InputSelect>
-                        <div class="form-text">Se muestran las plantillas configuradas para este procedimiento. Es obligatoria cuando el procedimiento tiene plantillas compatibles.</div>
+                        <div class="form-text">@AyudaBandeja</div>
                     </CampoForm>
                     @if (plantilla != null)
                     {
+                        @* Todo dentro de una tarjeta: el nombre y el botón de ajuste
+                           arriba, la explicación, la tabla y, solo en modo ajuste, la
+                           fila para añadir. Antes el botón flotaba suelto encima de la
+                           tabla y nada decía que servía para desbloquear los campos. *@
                         <div class="col-12">
-                            <div class="alert alert-light border mb-2"><strong>@plantilla.Tipo</strong> · Las cantidades previstas corresponden solo a esta cirugía.</div>
-                            <button type="button" class="btn btn-sm btn-outline-primary mb-2" @onclick="() => personalizarConsumibles = true">Personalizar consumibles</button>
-                            <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Consumible</th><th style="width:140px">Cantidad prevista</th><th style="width:100px">Acción</th></tr></thead><tbody>
-                                @foreach (var linea in ViewModel.ConsumiblesPrevistos.ToList())
+                            <div class="card">
+                                <div class="section-heading d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <h2>@plantilla.Tipo</h2>
+                                        <span>Cantidades previstas solo para esta cirugía</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm @(personalizarConsumibles ? "btn-primary" : "btn-outline-secondary")"
+                                            @onclick="() => personalizarConsumibles = !personalizarConsumibles">
+                                        @(personalizarConsumibles ? "Terminar de ajustar" : "Ajustar cantidades")
+                                    </button>
+                                </div>
+                                <div class="card-body pb-0">
+                                    <p class="form-text mt-0 mb-0">
+                                        @(personalizarConsumibles
+                                            ? "Cambia las cantidades, quita lo que no se vaya a usar o añade un consumible. Solo afecta a esta cirugía: la plantilla no se modifica."
+                                            : "Son las cantidades estándar de la plantilla. Si esta cirugía necesita otras, pulsa «Ajustar cantidades».")
+                                    </p>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Consumible</th>
+                                                <th style="width:160px">Cantidad prevista</th>
+                                                <th class="acciones">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var linea in ViewModel.ConsumiblesPrevistos.ToList())
+                                            {
+                                                int idConsumible = linea.Key;
+                                                <tr>
+                                                    <td>@NombreConsumible(idConsumible)</td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm" min="1"
+                                                               disabled="@(!personalizarConsumibles)"
+                                                               @bind="ViewModel.ConsumiblesPrevistos[idConsumible]" />
+                                                    </td>
+                                                    <td class="acciones">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                disabled="@(!personalizarConsumibles)"
+                                                                @onclick="() => QuitarConsumible(idConsumible)">Quitar</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                            @if (ViewModel.ConsumiblesPrevistos.Count == 0)
+                                            {
+                                                <tr><td colspan="3" class="text-muted">Esta plantilla no tiene consumibles previstos.</td></tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                @if (personalizarConsumibles)
                                 {
-                                    int idConsumible = linea.Key;
-                                    <tr><td>@NombreConsumible(idConsumible)</td><td><input type="number" class="form-control form-control-sm" min="1" disabled="@(!personalizarConsumibles)" @bind="ViewModel.ConsumiblesPrevistos[idConsumible]" /></td><td><button type="button" class="btn btn-sm btn-outline-danger" disabled="@(!personalizarConsumibles)" @onclick="() => QuitarConsumible(idConsumible)">Quitar</button></td></tr>
+                                    <div class="card-footer d-flex flex-wrap gap-2 align-items-center">
+                                        <select class="form-select form-select-sm" style="max-width:300px" @bind="consumibleAgregar">
+                                            <option value="0">Elige un consumible para añadir</option>
+                                            @foreach (var consumible in catalogoConsumibles.Where(x => x.Activo && !ViewModel.ConsumiblesPrevistos.ContainsKey(x.IdConsumible)))
+                                            {
+                                                <option value="@consumible.IdConsumible">@consumible.NombreComercial</option>
+                                            }
+                                        </select>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(consumibleAgregar == 0)" @onclick="AgregarConsumible">Añadir</button>
+                                        <button type="button" class="btn btn-sm btn-link ms-auto" @onclick="RestablecerCantidades">Restablecer la plantilla</button>
+                                    </div>
                                 }
-                            </tbody></table></div>
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <select class="form-select form-select-sm" style="max-width:280px" @bind="consumibleAgregar"><option value="0">-- Agregar consumible --</option>@foreach (var consumible in catalogoConsumibles.Where(x => x.Activo && !ViewModel.ConsumiblesPrevistos.ContainsKey(x.IdConsumible))) { <option value="@consumible.IdConsumible">@consumible.NombreComercial</option> }</select>
-                                <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(!personalizarConsumibles || consumibleAgregar == 0)" @onclick="AgregarConsumible">Agregar consumible</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RestablecerEstandar">Restablecer valores estándar</button>
                             </div>
                         </div>
                     }
@@ -186,6 +297,12 @@ else if (opciones != null)
             {
                 ViewModel = new CirugiaViewModel();
             }
+            // Los campos de búsqueda arrancan con lo ya elegido; si no, al editar
+            // saldrían vacíos y parecería que se perdió el cliente.
+            busquedaCliente = ClienteElegido is OpcionDTO elegido ? EtiquetaCliente(elegido) : "";
+            busquedaPaciente = "";
+            pacienteRegistradoId = 0;
+            esOtroProcedimiento = false;
         }
         catch (ServicioException ex)
         {
@@ -248,10 +365,18 @@ else if (opciones != null)
         }
     }
 
-    private void RestablecerEstandar()
+    /// Devuelve las cantidades de la plantilla sin salir del modo de ajuste,
+    /// que es lo que espera quien pulsa «Restablecer la plantilla» para seguir
+    /// retocando desde los valores estándar.
+    private void RestablecerCantidades()
     {
         ViewModel.ConsumiblesPrevistos = plantilla?.Consumibles
             .ToDictionary(x => x.IdConsumible, x => x.Cantidad) ?? [];
+    }
+
+    private void RestablecerEstandar()
+    {
+        RestablecerCantidades();
         personalizarConsumibles = false;
     }
     private void QuitarConsumible(int id) => ViewModel.ConsumiblesPrevistos.Remove(id);
@@ -290,15 +415,95 @@ else if (opciones != null)
     }
 
     private int pacienteRegistradoId;
+    private string busquedaPaciente = "";
+    private string busquedaCliente = "";
 
+    private IEnumerable<OpcionDTO> PacientesRegistrados =>
+        opciones?.Clientes.Where(c => c.Tipo == "PACIENTE_PARTICULAR") ?? [];
+
+    // La etiqueta es lo que se escribe y lo que se ve en las sugerencias, así que
+    // lleva nombre y documento: con homónimos, el documento desempata.
+    private static string EtiquetaPaciente(OpcionDTO p) =>
+        string.IsNullOrWhiteSpace(p.Documento) ? p.Nombre : $"{p.Nombre} · DNI {p.Documento}";
+
+    private string EtiquetaCliente(OpcionDTO c) => $"{c.Nombre} ({TextoTipoCliente(c.Tipo)})";
+
+    private OpcionDTO? ClienteElegido =>
+        opciones?.Clientes.FirstOrDefault(c => $"{c.Tipo}:{c.Id}" == ViewModel.ClienteClave);
+
+    /// Busca por etiqueta completa, por nombre o por documento: quien escribe
+    /// puede teclear el DNI entero sin acordarse del nombre exacto.
     private void SeleccionarPacienteRegistrado(ChangeEventArgs e)
     {
-        pacienteRegistradoId = int.TryParse(e.Value?.ToString(), out int id) ? id : 0;
-        OpcionDTO? paciente = opciones?.Clientes.FirstOrDefault(c => c.Tipo == "PACIENTE_PARTICULAR" && c.Id == pacienteRegistradoId);
-        if (paciente is null) return;
+        busquedaPaciente = e.Value?.ToString()?.Trim() ?? "";
+        OpcionDTO? paciente = PacientesRegistrados.FirstOrDefault(p =>
+                string.Equals(EtiquetaPaciente(p), busquedaPaciente, StringComparison.OrdinalIgnoreCase))
+            ?? PacientesRegistrados.FirstOrDefault(p =>
+                string.Equals(p.Nombre, busquedaPaciente, StringComparison.OrdinalIgnoreCase))
+            ?? PacientesRegistrados.FirstOrDefault(p =>
+                !string.IsNullOrWhiteSpace(p.Documento)
+                && string.Equals(p.Documento, busquedaPaciente, StringComparison.OrdinalIgnoreCase));
+
+        if (paciente is null)
+        {
+            pacienteRegistradoId = 0;
+            return;
+        }
+        pacienteRegistradoId = paciente.Id;
+        busquedaPaciente = EtiquetaPaciente(paciente);
         ViewModel.PacienteNombre = paciente.Nombre;
         ViewModel.PacienteDocumento = paciente.Documento;
     }
 
+    private void SeleccionarCliente(ChangeEventArgs e)
+    {
+        busquedaCliente = e.Value?.ToString()?.Trim() ?? "";
+        OpcionDTO? cliente = opciones?.Clientes.FirstOrDefault(c =>
+                string.Equals(EtiquetaCliente(c), busquedaCliente, StringComparison.OrdinalIgnoreCase))
+            ?? opciones?.Clientes.FirstOrDefault(c =>
+                string.Equals(c.Nombre, busquedaCliente, StringComparison.OrdinalIgnoreCase));
+
+        // Sin coincidencia se deja vacío para que la validación del formulario avise;
+        // si no, se guardaría una cirugía con un cliente que nadie eligió.
+        ViewModel.ClienteClave = cliente is null ? "" : $"{cliente.Tipo}:{cliente.Id}";
+        if (cliente is not null) busquedaCliente = EtiquetaCliente(cliente);
+    }
+
     private string TextoTipoCliente(string? tipo) => tipo == "PACIENTE_PARTICULAR" ? "particular" : "clínica";
+
+    // --- Procedimiento «Otro» ------------------------------------------------
+    private const string OtroProcedimiento = "__otro";
+    private bool esOtroProcedimiento;
+
+    private string SeleccionProcedimiento =>
+        esOtroProcedimiento ? OtroProcedimiento : ViewModel.TipoProcedimiento;
+
+    private async Task CambiarSeleccionProcedimiento(ChangeEventArgs e)
+    {
+        string valor = e.Value?.ToString() ?? "";
+        esOtroProcedimiento = valor == OtroProcedimiento;
+        ViewModel.TipoProcedimiento = esOtroProcedimiento ? "" : valor;
+        await CambiarProcedimiento();
+    }
+
+    private async Task EscribirProcedimiento(ChangeEventArgs e)
+    {
+        ViewModel.TipoProcedimiento = e.Value?.ToString()?.Trim() ?? "";
+        await CambiarProcedimiento();
+    }
+
+    // --- Ayuda del desplegable de bandejas -----------------------------------
+    private bool SinProcedimiento => string.IsNullOrWhiteSpace(ViewModel.TipoProcedimiento);
+
+    private string TextoBandejaVacia =>
+        SinProcedimiento ? "Elige primero el tipo de procedimiento"
+        : BandejasFiltradas.Any() ? "-- Seleccione una bandeja compatible --"
+        : "No hay plantillas para este procedimiento";
+
+    private string AyudaBandeja =>
+        SinProcedimiento
+            ? "Las plantillas se filtran por procedimiento: en cuanto elijas uno, aparecerán aquí las compatibles."
+            : BandejasFiltradas.Any()
+                ? "Plantillas configuradas para este procedimiento. Es obligatoria cuando hay alguna compatible."
+                : $"Ninguna plantilla está configurada para «{ViewModel.TipoProcedimiento}». Puedes guardar la cirugía sin bandeja y crear la plantilla en Inventario y logística → Plantillas de bandejas.";
 }
