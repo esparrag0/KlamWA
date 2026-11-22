@@ -285,7 +285,7 @@ else
                 var existentes = await Clientes.BuscarClinicasPorRucAsync(nuevo.Ruc!);
                 if (existentes.Count > 0) { mostrarRegistro = false; NotificarCliente(MensajeClinicaRegistrada); return; }
                 ViewModel.ClinicaNuevaLista = true; mostrarRegistro = false;
-                NotificarCliente("Datos de la clínica listos.", "success");
+                mensajeCliente = null;
             }, "registrar-cliente");
             return;
         }
