@@ -1,47 +1,47 @@
-.surgery-breadcrumb { display: flex; gap: .5rem; align-items: center; margin-bottom: .9rem; color: #67818b; font-size: .82rem; }
-.surgery-breadcrumb a { color: #087888; text-decoration: none; }
+.surgery-breadcrumb { display: flex; gap: .5rem; align-items: center; margin-bottom: .9rem; color: var(--klam-suave); font-size: .82rem; }
+.surgery-breadcrumb a { color: var(--klam-primario); text-decoration: none; }
 .surgery-breadcrumb a:hover { text-decoration: underline; }
 .surgery-heading { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.1rem; }
-.heading-icon { display: grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: .65rem; background: #e4f5f4; color: #087888; }
+.heading-icon { display: grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: var(--klam-radio-sm); background: var(--klam-marca-50); color: var(--klam-primario); }
 .heading-copy { min-width: 0; }
 .heading-title { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
-.heading-title h1 { margin: 0; color: #143946; font-size: 1.5rem; font-weight: 700; }
-.heading-copy p { margin: .18rem 0 0; color: #526b73; font-size: .9rem; }
+.heading-title h1 { margin: 0; color: var(--klam-tinta); font-size: 1.5rem; font-weight: 700; }
+.heading-copy p { margin: .18rem 0 0; color: var(--klam-suave); font-size: .9rem; }
 .heading-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-left: auto; }
-.surgery-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1.2rem; padding: .85rem .4rem; border: 1px solid #dce7e9; border-radius: .75rem; background: #fff; box-shadow: 0 3px 14px #0b3c490b; }
-.surgery-summary > div { display: flex; align-items: center; gap: .7rem; min-width: 0; padding: .3rem .9rem; border-right: 1px solid #dce7e9; }
+.surgery-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1.2rem; padding: .85rem .4rem; border: 1px solid var(--klam-borde); border-radius: .75rem; background: #fff; box-shadow: 0 3px 14px var(--klam-marca-800)0b; }
+.surgery-summary > div { display: flex; align-items: center; gap: .7rem; min-width: 0; padding: .3rem .9rem; border-right: 1px solid var(--klam-borde); }
 .surgery-summary > div:last-child { border-right: 0; }
-.summary-icon { flex: none; color: #087888; }
-.surgery-summary small { display: block; color: #66808a; font-size: .72rem; }
-.surgery-summary strong { display: block; overflow: hidden; color: #173946; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
+.summary-icon { flex: none; color: var(--klam-primario); }
+.surgery-summary small { display: block; color: var(--klam-suave); font-size: .72rem; }
+.surgery-summary strong { display: block; overflow: hidden; color: var(--klam-tinta); font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
 .surgery-content { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; align-items: start; }
 .surgery-main, .surgery-aside { min-width: 0; }
-.detail-tabs { display: flex; gap: .2rem; margin-bottom: .85rem; overflow-x: auto; border-bottom: 1px solid #dce7e9; }
-.detail-tabs button { flex: none; padding: .7rem .8rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #57717b; font-size: .82rem; font-weight: 600; cursor: pointer; }
-.detail-tabs button:hover { color: #087888; background: #f2f9f8; }
-.detail-tabs button.active { border-bottom-color: #087888; color: #075d69; }
-.detail-tabs button:focus-visible, .closing-links a:focus-visible { outline: 2px solid #168898; outline-offset: 2px; }
-.surgery-content .card { overflow: hidden; border-color: #dce7e9; border-radius: .7rem; box-shadow: 0 3px 12px #0b3c490b; }
-.surgery-content .card-header { padding: .75rem 1rem; border-bottom-color: #dce7e9; background: #f1f7f8; color: #153c48; font-size: .88rem; font-weight: 700; }
+.detail-tabs { display: flex; gap: .2rem; margin-bottom: .85rem; overflow-x: auto; border-bottom: 1px solid var(--klam-borde); }
+.detail-tabs button { flex: none; padding: .7rem .8rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--klam-suave); font-size: .82rem; font-weight: 600; cursor: pointer; }
+.detail-tabs button:hover { color: var(--klam-primario); background: var(--klam-superficie-2); }
+.detail-tabs button.active { border-bottom-color: var(--klam-primario); color: var(--klam-primario); }
+.detail-tabs button:focus-visible, .closing-links a:focus-visible { outline: 2px solid var(--klam-primario); outline-offset: 2px; }
+.surgery-content .card { overflow: hidden; border-color: var(--klam-borde); border-radius: .7rem; box-shadow: 0 3px 12px var(--klam-marca-800)0b; }
+.surgery-content .card-header { padding: .75rem 1rem; border-bottom-color: var(--klam-borde); background: var(--klam-superficie-2); color: var(--klam-tinta); font-size: .88rem; font-weight: 700; }
 .surgery-content .card-body { padding: 1rem; }
-.surgery-main dl dt, .surgery-main dl dd { padding-top: .48rem; padding-bottom: .48rem; margin-bottom: 0; border-bottom: 1px solid #edf1f2; font-size: .85rem; }
-.surgery-main dl dt { color: #31525d; }
-.surgery-main dl dd { color: #173946; }
+.surgery-main dl dt, .surgery-main dl dd { padding-top: .48rem; padding-bottom: .48rem; margin-bottom: 0; border-bottom: 1px solid var(--klam-superficie-3); font-size: .85rem; }
+.surgery-main dl dt { color: var(--klam-tinta); }
+.surgery-main dl dd { color: var(--klam-tinta); }
 .surgery-aside .card-body { font-size: .84rem; }
-.surgery-status .card-header .klam-icon { color: #087888; }
+.surgery-status .card-header .klam-icon { color: var(--klam-primario); }
 .status-content { display: flex; align-items: center; gap: .8rem; }
-.status-icon { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: .75rem; background: #e5f5f3; color: #087888; }
+.status-icon { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: .75rem; background: var(--klam-marca-50); color: var(--klam-primario); }
 .status-copy { min-width: 0; }
-.status-copy p { margin: .35rem 0 0; color: #526b73; line-height: 1.45; }
-.status-copy .status-reason { color: #9b3037; }
-.status-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e4edef; }
-.status-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; flex: 1 1 auto; border-radius: .5rem; font-size: .82rem; font-weight: 600; }
-.status-actions .btn-primary { background: #087888; border-color: #087888; }
-.status-actions .btn-primary:hover { background: #065e6b; border-color: #065e6b; }
+.status-copy p { margin: .35rem 0 0; color: var(--klam-suave); line-height: 1.45; }
+.status-copy .status-reason { color: var(--klam-peligro); }
+.status-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--klam-borde); }
+.status-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; flex: 1 1 auto; border-radius: var(--klam-radio-sm); font-size: .82rem; font-weight: 600; }
+.status-actions .btn-primary { background: var(--klam-primario); border-color: var(--klam-primario); }
+.status-actions .btn-primary:hover { background: var(--klam-primario-hover); border-color: var(--klam-primario-hover); }
 .closing-links { display: flex; flex-direction: column; gap: .35rem; }
-.closing-links a { display: block; padding: .55rem .65rem; border: 1px solid #d2e5e5; border-radius: .4rem; color: #087280; font-size: .8rem; font-weight: 600; text-decoration: none; }
-.closing-links a:hover { background: #e8f6f5; }
+.closing-links a { display: block; padding: .55rem .65rem; border: 1px solid var(--klam-borde); border-radius: var(--klam-radio-xs); color: var(--klam-primario); font-size: .8rem; font-weight: 600; text-decoration: none; }
+.closing-links a:hover { background: var(--klam-marca-50); }
 @media (max-width: 1100px) { .surgery-content { grid-template-columns: minmax(0, 1fr) 290px; } .surgery-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .surgery-summary > div:nth-child(2) { border-right: 0; } }
 @media (max-width: 900px) { .surgery-content { grid-template-columns: 1fr; } .surgery-heading { flex-wrap: wrap; } .heading-actions { width: 100%; margin-left: 0; } }
-@media (max-width: 600px) { .surgery-summary { grid-template-columns: 1fr; } .surgery-summary > div { border-right: 0; border-bottom: 1px solid #dce7e9; } .surgery-summary > div:last-child { border-bottom: 0; } .heading-title h1 { font-size: 1.25rem; } }
+@media (max-width: 600px) { .surgery-summary { grid-template-columns: 1fr; } .surgery-summary > div { border-right: 0; border-bottom: 1px solid var(--klam-borde); } .surgery-summary > div:last-child { border-bottom: 0; } .heading-title h1 { font-size: 1.25rem; } }
 @media (max-width: 600px) { .status-actions { flex-direction: column; } .status-actions .btn { width: 100%; } }

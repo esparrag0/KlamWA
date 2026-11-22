@@ -64,20 +64,20 @@ public static class DatosAgenda
     // Texto oscuro sobre mostaza para que se lea bien
     public static string ColorTexto(string estado) => estado switch
     {
-        "Programada" => "#8A6200",
-        "En curso" => "#166534",
-        "Culminada" => "#374151",
-        "Cancelada" => "#991B1B",
-        _ => "#334155"
+        "Programada" => "#92400E",
+        "En curso" => "#065F46",
+        "Culminada" => "#3F565E",
+        "Cancelada" => "#9F1239",
+        _ => "#3F565E"
     };
 
     public static string Color(string estado) => estado switch
     {
-        "Programada" => "#FFF3CD",
-        "En curso" => "#DCFCE7",
-        "Culminada" => "#E5E7EB",
-        "Cancelada" => "#FEE2E2",
-        _ => "#F8FAFC"
+        "Programada" => "#FFF8EB",
+        "En curso" => "#ECFDF5",
+        "Culminada" => "#EEF3F5",
+        "Cancelada" => "#FFF1F3",
+        _ => "#F8FAFB"
     };
 
 }

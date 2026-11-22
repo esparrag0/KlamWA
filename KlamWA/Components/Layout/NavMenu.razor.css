@@ -1,49 +1,126 @@
+/* Lateral de navegación. Los colores y radios salen del Design System
+   (wwwroot/klam-design-system.css); aquí solo se arma la estructura. */
+
 .sidebar-brand {
-    min-height: 76px;
-    padding: 1rem 1.1rem;
-    margin: 0 .75rem;
+    min-height: 72px;
+    padding: 1.05rem 1.25rem;
+    margin: 0 .85rem;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid #ffffff24;
+    border-bottom: 1px solid rgba(255, 255, 255, .11);
 }
-.sidebar-brand img { width: 122px; height: 38px; object-fit: contain; object-position: left; }
+.sidebar-brand img { width: 118px; height: 36px; object-fit: contain; object-position: left; }
+
 .sidebar-body { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; }
-nav { padding: .8rem .65rem 1.5rem; display: flex; flex-direction: column; gap: .22rem; }
+
+nav { padding: 1rem .75rem 1.5rem; display: flex; flex-direction: column; gap: .15rem; }
+
+/* Rótulo de agrupación entre bloques del menú */
+nav ::deep .nav-caption {
+    padding: .9rem .85rem .35rem;
+    color: rgba(214, 238, 240, .5);
+    font-size: .67rem;
+    font-weight: 700;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
 nav ::deep .nav-group-link, .nav-group-button {
     display: flex;
     align-items: center;
-    gap: .8rem;
+    gap: .78rem;
     width: 100%;
-    min-height: 46px;
-    padding: .65rem .8rem;
-    border: 1px solid transparent;
-    border-radius: .55rem;
+    min-height: 42px;
+    padding: .58rem .8rem;
+    border: 0;
+    border-radius: 10px;
     background: transparent;
-    color: #d9eaed;
+    color: #CFE4E7;
     text-decoration: none;
     text-align: left;
-    font-size: .91rem;
-    font-weight: 600;
+    font-size: .875rem;
+    font-weight: 550;
     line-height: 1.25;
     cursor: pointer;
+    position: relative;
+    transition: background .15s ease, color .15s ease;
 }
 .nav-group-button { font-family: inherit; }
-nav ::deep .nav-group-link:hover, .nav-group-button:hover { background: #ffffff14; color: #fff; }
-nav ::deep .nav-group-link.active, .nav-group-button.is-expanded { background: #1b5c69; color: #fff; }
+
+nav ::deep .nav-group-link:hover, .nav-group-button:hover {
+    background: rgba(255, 255, 255, .07);
+    color: #fff;
+}
+
+/* Activo: fondo translúcido y marca vertical de color a la izquierda */
+nav ::deep .nav-group-link.active, .nav-group-button.is-expanded {
+    background: rgba(45, 212, 191, .13);
+    color: #fff;
+    font-weight: 650;
+}
+nav ::deep .nav-group-link.active::before, .nav-group-button.is-expanded::before {
+    content: "";
+    position: absolute;
+    left: -.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(180deg, #2DD4BF 0%, #0D9488 100%);
+}
+nav ::deep .nav-group-link .klam-icon, .nav-group-button .klam-icon { opacity: .82; }
+nav ::deep .nav-group-link.active .klam-icon, .nav-group-button.is-expanded .klam-icon { opacity: 1; color: #5EEAD4; }
+
 nav ::deep .nav-group-link:focus-visible, .nav-group-button:focus-visible,
-.nav-submenu ::deep a:focus-visible { outline: 2px solid #57d4d2; outline-offset: 2px; }
-.nav-chevron { width: .48rem; height: .48rem; margin-left: auto; flex: none; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .16s ease; }
-.is-expanded .nav-chevron { transform: rotate(45deg); }
-.nav-submenu { display: flex; flex-direction: column; margin: 0 0 .35rem 1.45rem; padding-left: .5rem; border-left: 1px solid #ffffff30; }
-.nav-submenu ::deep a { display: block; padding: .5rem .75rem; border-radius: .4rem; color: #bfd8dd; text-decoration: none; font-size: .87rem; }
-.nav-submenu ::deep a:hover { color: #fff; background: #ffffff14; }
-.nav-submenu ::deep a.active { color: #fff; background: #227381; font-weight: 600; }
+.nav-submenu ::deep a:focus-visible { outline: 2px solid #5EEAD4; outline-offset: 2px; }
+
+.nav-chevron {
+    width: .44rem; height: .44rem;
+    margin-left: auto; flex: none;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+    opacity: .65;
+    transition: transform .18s ease;
+}
+.is-expanded .nav-chevron { transform: rotate(45deg); opacity: 1; }
+
+.nav-submenu {
+    display: flex;
+    flex-direction: column;
+    gap: .05rem;
+    margin: .2rem 0 .45rem 1.55rem;
+    padding-left: .7rem;
+    border-left: 1px solid rgba(255, 255, 255, .14);
+}
+.nav-submenu ::deep a {
+    display: block;
+    padding: .46rem .7rem;
+    border-radius: 8px;
+    color: #A9C7CD;
+    text-decoration: none;
+    font-size: .84rem;
+    font-weight: 500;
+    transition: background .15s ease, color .15s ease;
+}
+.nav-submenu ::deep a:hover { color: #fff; background: rgba(255, 255, 255, .07); }
+.nav-submenu ::deep a.active { color: #fff; background: rgba(45, 212, 191, .16); font-weight: 650; }
+
 .mobile-toggle { display: none; }
+
 @media (max-width: 900px) {
-    .sidebar-brand { min-height: 62px; margin: 0; padding: .6rem 1rem; justify-content: space-between; }
-    .sidebar-brand img { width: 110px; height: 32px; }
-    .mobile-toggle { display: grid; place-items: center; width: 40px; height: 38px; border: 1px solid #ffffff55; border-radius: .4rem; background: transparent; color: #fff; }
+    .sidebar-brand { min-height: 60px; margin: 0; padding: .6rem 1rem; justify-content: space-between; }
+    .sidebar-brand img { width: 108px; height: 31px; }
+    .mobile-toggle {
+        display: grid; place-items: center;
+        width: 40px; height: 38px;
+        border: 1px solid rgba(255, 255, 255, .3);
+        border-radius: 9px;
+        background: rgba(255, 255, 255, .06);
+        color: #fff;
+    }
     .sidebar-body { display: none; }
-    .sidebar-body.is-open { display: flex; max-height: calc(100dvh - 62px); }
+    .sidebar-body.is-open { display: flex; max-height: calc(100dvh - 60px); }
     nav { padding-bottom: 1rem; }
 }
