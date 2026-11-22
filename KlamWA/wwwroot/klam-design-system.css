@@ -248,6 +248,13 @@ hr { border-color: var(--klam-borde); opacity: 1; }
 .section-heading h2 { font-size: .98rem; font-weight: 650; color: var(--klam-tinta); }
 .section-heading > span { font-size: .78rem; color: var(--klam-suave); }
 
+/* Encabezado de un bloque dentro de un formulario: va al tamaño de una
+   etiqueta de campo, no al de un título de pantalla. La aclaración estaba
+   envuelta en un div, así que .section-heading > span no la alcanzaba y
+   heredaba el tamaño del cuerpo. */
+.section-heading .plantilla-titulo h2 { font-size: .8rem; font-weight: 650; margin: 0; }
+.section-heading .plantilla-titulo span { display: block; margin-top: .1rem; font-size: .78rem; font-weight: 400; color: var(--klam-suave); }
+
 /* --------------------------------------------------------------- 05 TARJETAS */
 .card {
     background: var(--klam-superficie);
