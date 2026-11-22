@@ -21,7 +21,11 @@
     private readonly List<NotificacionDTO> visibles = [];
     private bool descartado;
 
-    protected override void OnInitialized() => Avisos.Nuevo += Mostrar;
+    protected override void OnInitialized()
+    {
+        Avisos.Nuevo += Mostrar;
+        foreach (var aviso in Avisos.TomarPendientes()) Mostrar(aviso);
+    }
 
     private void Mostrar(NotificacionDTO aviso) => _ = InvokeAsync(async () =>
     {

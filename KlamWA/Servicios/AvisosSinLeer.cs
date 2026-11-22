@@ -13,6 +13,20 @@ public sealed class AvisosSinLeer(INotificacionService notificaciones)
     public int? Cantidad { get; private set; }
     public event Action? Cambio;
     public event Action<NotificacionDTO>? Nuevo;
+    private readonly List<NotificacionDTO> pendientes = [];
+
+    /// Avisos detectados cuando aún no había nadie escuchando (p. ej. al iniciar sesión); quien se suscribe los recoge.
+    public List<NotificacionDTO> TomarPendientes()
+    {
+        var copia = pendientes.ToList();
+        pendientes.Clear();
+        return copia;
+    }
+
+    private void Publicar(NotificacionDTO aviso)
+    {
+        if (Nuevo is null) pendientes.Add(aviso); else Nuevo(aviso);
+    }
 
     public async Task ActualizarAsync()
     {
@@ -40,12 +54,13 @@ public sealed class AvisosSinLeer(INotificacionService notificaciones)
         var lista = await notificaciones.ListarAsync();
         if (primeraVez)
         {
-            // Línea base: los avisos que ya existían al abrir la sesión no se muestran como emergente.
+            // Al entrar: los avisos sin leer que ya existían también salen como emergente (los 3 más recientes).
             ultimoIdVisto = lista.Count == 0 ? 0 : lista.Max(n => n.Id);
+            foreach (var aviso in lista.Where(n => !n.Leida).OrderBy(n => n.Id).TakeLast(3)) Publicar(aviso);
             return;
         }
         var nuevos = lista.Where(n => n.Id > ultimoIdVisto && !n.Leida).OrderBy(n => n.Id).ToList();
         if (lista.Count > 0) ultimoIdVisto = Math.Max(ultimoIdVisto, lista.Max(n => n.Id));
-        foreach (var aviso in nuevos.TakeLast(3)) Nuevo?.Invoke(aviso);
+        foreach (var aviso in nuevos.TakeLast(3)) Publicar(aviso);
     }
 }
