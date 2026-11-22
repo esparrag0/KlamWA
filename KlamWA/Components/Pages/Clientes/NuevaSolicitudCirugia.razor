@@ -120,7 +120,14 @@ else
                 }
                 <CampoForm Obligatorio="true" Etiqueta="Nombre del paciente" Columnas="col-12" Para="paciente"><InputText id="paciente" class="form-control" @bind-Value="ViewModel.PacienteNombre" /><ValidationMessage For="() => ViewModel.PacienteNombre" /></CampoForm>
                 <CampoForm Obligatorio="true" Etiqueta="Diagnóstico" Columnas="col-12" Para="diagnostico"><InputTextArea id="diagnostico" class="form-control" rows="2" @bind-Value="ViewModel.Diagnostico" /><ValidationMessage For="() => ViewModel.Diagnostico" /></CampoForm>
-                <CampoForm Obligatorio="true" Etiqueta="Procedimiento" Para="procedimiento"><InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" /><ValidationMessage For="() => ViewModel.Procedimiento" /></CampoForm>
+                <CampoForm Obligatorio="true" Etiqueta="Procedimiento" Para="procedimiento">@if (procedimientos.Count > 0)
+                    {
+                        <InputSelect id="procedimiento" class="form-select" @bind-Value="ViewModel.Procedimiento">
+                            <option value="">Seleccione un procedimiento</option>
+                            @foreach (var p in procedimientos) { <option value="@p">@p</option> }
+                        </InputSelect>
+                    }
+                    else { <InputText id="procedimiento" class="form-control" @bind-Value="ViewModel.Procedimiento" /> }<ValidationMessage For="() => ViewModel.Procedimiento" /></CampoForm>
                 <CampoForm Obligatorio="true" Etiqueta="Médico" Para="medico"><InputText id="medico" class="form-control" @bind-Value="ViewModel.Medico" /><ValidationMessage For="() => ViewModel.Medico" /></CampoForm>
                 <CampoForm Obligatorio="true" Etiqueta="Fecha" Para="fecha"><InputDate id="fecha" Type="InputDateType.Date" class="form-control" @bind-Value="ViewModel.Fecha" /><ValidationMessage For="() => ViewModel.Fecha" /></CampoForm>
                 <CampoForm Obligatorio="true" Etiqueta="Hora" Para="hora"><InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="ViewModel.Hora" /><ValidationMessage For="() => ViewModel.Hora" /></CampoForm>
@@ -186,6 +193,14 @@ else
         if (error is null) { archivos[tipo] = e.File; erroresArchivo.Remove(tipo); }
         else { archivos.Remove(tipo); erroresArchivo[tipo] = error; }
         mensaje = null;
+    }
+
+    private List<string> procedimientos = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Solo se ofrecen los procedimientos del catálogo; si falla la consulta se deja el campo de texto.
+        try { procedimientos = await Solicitudes.ListarProcedimientosAsync(); } catch (Exception) { procedimientos = []; }
     }
 
     private void CambiarTipo()

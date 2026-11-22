@@ -6,6 +6,7 @@ public interface ISolicitudCirugiaService
 {
     Task<List<SolicitudCirugiaDTO>> ListarAsync();
     Task<List<SolicitudCirugiaDTO>> ListarMiasAsync();
+    Task<List<string>> ListarProcedimientosAsync();
     Task<SolicitudCirugiaDTO> RegistrarAsync(RegistrarSolicitudDTO solicitud);
     Task<SolicitudCirugiaDTO> ConsultarAsync(int idSolicitud);
     Task AprobarAsync(int idSolicitud);

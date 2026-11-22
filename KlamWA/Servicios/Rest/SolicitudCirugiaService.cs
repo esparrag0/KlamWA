@@ -17,6 +17,10 @@ public sealed class SolicitudCirugiaService(
         await HttpUtils.DoGetAutenticado<List<SolicitudCirugiaDTO>>(
             client, "solicitudes/mias", await tokens.ObtenerAsync(autenticacion)) ?? [];
 
+    public async Task<List<string>> ListarProcedimientosAsync() =>
+        await HttpUtils.DoGetAutenticado<List<string>>(
+            client, "solicitudes/procedimientos", await tokens.ObtenerAsync(autenticacion)) ?? [];
+
     public async Task<SolicitudCirugiaDTO> RegistrarAsync(RegistrarSolicitudDTO solicitud) =>
         await HttpUtils.DoPostAutenticado<RegistrarSolicitudDTO, SolicitudCirugiaDTO>(
             client, "solicitudes", await tokens.ObtenerAsync(autenticacion), solicitud)
