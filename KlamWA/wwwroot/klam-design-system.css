@@ -910,6 +910,11 @@ textarea.form-control { min-height: 96px; line-height: 1.55; }
 }
 
 /* ------------------------------------------------------------ 13 RESPONSIVE */
+/* Con poco ancho la columna de acciones deja de ser una sola línea: los botones pasan a la línea siguiente
+   en lugar de salirse de la tarjeta. */
+@media (max-width: 1250px) {
+    .table td.acciones, .table th.acciones { white-space: normal; width: auto; min-width: 8rem; }
+}
 @media (max-width: 1200px) {
     .app-content { padding: 1.6rem 1.5rem 2.5rem; }
 }

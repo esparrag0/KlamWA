@@ -59,7 +59,7 @@ else if (Solicitud is not null)
                     }
                     else
                     {
-                        <div>
+                        <div class="table-responsive">
                             <table class="table table-sm align-middle mb-0">
                                 <thead class="table-light"><tr><th>Documento</th><th>Estado</th><th>Versión</th><th>Fecha de carga</th><th>Observación</th><th class="acciones">Acciones</th></tr></thead>
                                 <tbody>
@@ -78,12 +78,14 @@ else if (Solicitud is not null)
                                             <td class="text-nowrap">@documento.FechaCarga?.ToString("dd/MM/yyyy HH:mm")</td>
                                             <td>@(string.IsNullOrWhiteSpace(documento.MotivoRechazo) ? "—" : documento.MotivoRechazo)</td>
                                             <td class="acciones">
-                                                <button type="button" class="btn btn-outline-secondary btn-sm me-1" disabled="@Ocupado" @onclick="() => DescargarAsync(documento.IdDocumento)">Descargar</button>
-                                                @if (documento.EstadoValidacion == "PENDIENTE")
-                                                {
-                                                    <button type="button" class="btn btn-outline-success btn-sm me-1" disabled="@Ocupado" @onclick="() => ValidarAsync(documento.IdDocumento)">Validar</button>
-                                                    <button type="button" class="btn btn-outline-danger btn-sm" disabled="@Ocupado" @onclick="() => SeleccionarRechazo(documento.IdDocumento)">Rechazar</button>
-                                                }
+                                                <div class="d-flex flex-wrap justify-content-end gap-1">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@Ocupado" @onclick="() => DescargarAsync(documento.IdDocumento)">Descargar</button>
+                                                    @if (documento.EstadoValidacion == "PENDIENTE")
+                                                    {
+                                                        <button type="button" class="btn btn-outline-success btn-sm" disabled="@Ocupado" @onclick="() => ValidarAsync(documento.IdDocumento)">Validar</button>
+                                                        <button type="button" class="btn btn-outline-danger btn-sm" disabled="@Ocupado" @onclick="() => SeleccionarRechazo(documento.IdDocumento)">Rechazar</button>
+                                                    }
+                                                </div>
                                             </td>
                                         </tr>
                                     }
