@@ -88,8 +88,11 @@
     {
         Vista.Cambio += Actualizar;
         Avisos.Cambio += Actualizar;
+        Avisos.SesionExpirada += IrAlLogin;
+        Nav.LocationChanged += AlNavegar;
         Vista.Establecer((await AuthenticationStateTask).User);
-        if (TieneBandeja) await Avisos.ActualizarAsync();
+        // También para clientes: sirve para detectar que la sesión del backend venció (401).
+        await Avisos.ActualizarAsync();
     }
 
     // RF11: sondeo ligero. Cada 15 s se consulta el resumen de avisos; si llega uno nuevo,
@@ -99,7 +102,7 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (firstRender && TieneBandeja) _ = SondearAvisos();
+        if (firstRender) _ = SondearAvisos();
     }
 
     private async Task SondearAvisos()
@@ -123,10 +126,15 @@
     }
 
     private void Actualizar() => _ = InvokeAsync(StateHasChanged);
+    private void AlNavegar(object? remitente, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
+        _ = InvokeAsync(Avisos.ActualizarAsync);
+    private void IrAlLogin() => _ = InvokeAsync(() => Nav.NavigateTo("/cuenta/sesion-expirada", forceLoad: true));
     public void Dispose()
     {
         Vista.Cambio -= Actualizar;
         Avisos.Cambio -= Actualizar;
+        Avisos.SesionExpirada -= IrAlLogin;
+        Nav.LocationChanged -= AlNavegar;
         sondeo.Cancel();
         sondeo.Dispose();
     }

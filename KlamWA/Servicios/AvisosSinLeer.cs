@@ -13,6 +13,8 @@ public sealed class AvisosSinLeer(INotificacionService notificaciones)
     public int? Cantidad { get; private set; }
     public event Action? Cambio;
     public event Action<NotificacionDTO>? Nuevo;
+    /// El backend respondió 401: la sesión ya no existe allí (p. ej. se reinició el servidor).
+    public event Action? SesionExpirada;
     private readonly List<NotificacionDTO> pendientes = [];
 
     /// Avisos detectados cuando aún no había nadie escuchando (p. ej. al iniciar sesión); quien se suscribe los recoge.
@@ -35,6 +37,11 @@ public sealed class AvisosSinLeer(INotificacionService notificaciones)
             var resumen = await notificaciones.ResumenAsync();
             Cantidad = resumen.NoLeidas;
             await DetectarNuevosAsync(resumen.Total);
+        }
+        catch (ServicioException ex) when (ex.CodigoHttp == 401)
+        {
+            Cantidad = null;
+            SesionExpirada?.Invoke();
         }
         catch (Exception)
         {

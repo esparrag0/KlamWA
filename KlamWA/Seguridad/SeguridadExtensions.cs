@@ -52,6 +52,14 @@ public static class SeguridadExtensions
             return Results.LocalRedirect(destino);
         });
 
+        // Sesión vencida en el backend (p. ej. se reinició): se limpia la cookie local y se vuelve al login.
+        app.MapGet("/cuenta/sesion-expirada", async (HttpContext context, ISesionService sesion) =>
+        {
+            try { await sesion.CerrarSesionAsync(context); }
+            catch (Exception) { await context.SignOutAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme); }
+            return Results.LocalRedirect("/login?expirada=1");
+        }).AllowAnonymous();
+
         app.MapPost("/cuenta/logout", async (HttpContext context, ISesionService sesion) =>
         {
             await sesion.CerrarSesionAsync(context);
