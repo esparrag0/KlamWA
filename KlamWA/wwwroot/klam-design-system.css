@@ -156,6 +156,11 @@ hr { border-color: var(--klam-borde); opacity: 1; }
 .app-content {
     padding: 1.9rem 2.1rem 3rem;
     position: relative;
+    /* El contenido ancho (tablas) se desplaza dentro de esta zona y no empuja toda la página,
+       que dejaba el lateral cortado al achicar la ventana. */
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
 }
 /* Veladura de color detrás del encabezado de cada pantalla */
 .app-content::before {
@@ -484,10 +489,12 @@ textarea.form-control { min-height: 96px; line-height: 1.55; }
     background: var(--klam-superficie-2);
     padding: 1.1rem 1.15rem 1.2rem;
 }
+.bloque-opciones > legend + * { clear: both; }
 .bloque-opciones > legend {
-    float: none;
-    width: auto;
-    margin-bottom: .15rem;
+    /* float + 100%: el título queda dentro del recuadro y no montado sobre el borde */
+    float: left;
+    width: 100%;
+    margin-bottom: .35rem;
     padding: 0;
     font-size: .95rem;
     font-weight: 650;

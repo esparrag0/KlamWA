@@ -81,7 +81,6 @@ else
                         {
                             <CampoForm Obligatorio="true" Etiqueta="RUC"><input class="form-control" maxlength="11" @bind="nuevo.Ruc" /></CampoForm>
                             <CampoForm Etiqueta="Periodo de crédito"><input class="form-control" @bind="nuevo.PeriodoCredito" /></CampoForm>
-                            <div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" @bind="nuevo.TieneConsignacion" /><span class="form-check-label">Tiene consignación</span></label></div>
                         }
                         <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarCliente">@(ViewModel.TipoCliente == "Clinica" ? "Usar estos datos de la clínica" : (procesando && operacionActual == "registrar-cliente" ? "Registrando cliente..." : "Registrar y seleccionar cliente"))</button></div>
                     </div>
@@ -113,7 +112,6 @@ else
                     <CampoForm Obligatorio="true" Etiqueta="Correo"><input class="form-control" type="email" @bind="nuevoDestino.EmailContacto" /></CampoForm>
                     <CampoForm Obligatorio="true" Etiqueta="Teléfono"><input class="form-control" @bind="nuevoDestino.Telefono" /></CampoForm>
                     <CampoForm Etiqueta="Periodo de crédito"><input class="form-control" @bind="nuevoDestino.PeriodoCredito" /></CampoForm>
-                    <div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" @bind="nuevoDestino.TieneConsignacion" /><span class="form-check-label">Tiene consignación</span></label></div>
                     <div class="col-12"><button type="button" class="btn btn-outline-primary" disabled="@procesando" @onclick="RegistrarDestino">@(procesando && operacionActual == "registrar-destino" ? "Registrando clínica..." : "Registrar y seleccionar clínica de destino")</button></div>
                 }
                 @if (mensajeDestino is not null) { <div class="col-12"><div class="alert alert-@tipoMensajeDestino mb-0" role="@(tipoMensajeDestino == "danger" ? "alert" : "status")">@mensajeDestino</div></div> }
