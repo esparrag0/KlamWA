@@ -56,6 +56,8 @@ public class ConsumoCirugiaViewModel
         get
         {
             if (IdBandeja is null) return "La cirugía no tiene una bandeja asignada.";
+            if (DocumentacionCierreCompleta)
+                return "La bandeja asignada no tiene consumibles despachados para esta cirugía: asigne una bandeja con consumibles.";
             return RequiereOrdenCompra
                 ? "Primero la clínica debe adjuntar la orden de compra y administración debe validarla."
                 : "Primero se debe validar el comprobante de pago del paciente.";
