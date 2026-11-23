@@ -147,7 +147,6 @@ else
                 new("Mis solicitudes", "Consulta las solicitudes que registraste.", "lista", "/mis-solicitudes"),
                 new("Cirugías coordinadas", "Revisa las cirugías vinculadas a tus solicitudes.", "calendario", "/agenda/lista")],
             "instrumentista" => [new("Consultar calendario", "Revisa la agenda quirúrgica.", "calendario", "/agenda"),
-                new("Mis cirugías", "Consulta los procedimientos asignados.", "lista", "/agenda/lista"),
                 new("Notificaciones", "Revisa tus avisos recientes.", "campana", "/notificaciones")],
             _ => [new("Nueva solicitud", "Envía una solicitud de cirugía.", "mas", "/cliente/solicitudes/nueva"),
                 new("Mis solicitudes", rolAutenticado == "CLINICA_HOSPITAL" ? "Consulta las solicitudes de tu institución." : "Consulta tus solicitudes.", "lista", "/cliente/solicitudes"),
