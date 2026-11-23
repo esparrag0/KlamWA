@@ -1,4 +1,6 @@
 @page "/usuarios/{Id:int}"
+@attribute [Authorize(Roles = "ADMINISTRADOR")]
+@using Microsoft.AspNetCore.Authorization
 @inject IUsuarioService UsuarioService
 @inject NavigationManager Navigation
 
